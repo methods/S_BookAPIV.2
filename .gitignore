@@ -1,3 +1,8 @@
+
+.pytest_cache/
+venv/
+FETCH_HEAD
 .idea/
 __pycharm__/
 __pycache__/
+
