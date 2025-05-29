@@ -65,7 +65,7 @@ Before you begin, ensure you have the following installed:
 3.  Run the Flask application:
 
     ```bash
-    python3 app.py
+    flask --debug run
     ```
     You should see output similar to this, indicating the server is running:
     ```
@@ -78,6 +78,17 @@ Before you begin, ensure you have the following installed:
      * Debugger is active!
      * Debugger PIN: xxx-xxx-xxx
     ```
+
+## How to Run Linting
+This project uses **Pylint** to check code quality and style.
+
+To run the linter, run the following command:
+
+```bash
+./run_pylint.sh
+```
+
+
 ## How to Run Tests and Check Coverage
 This project uses **coverage.py** to measure code coverage.
 1. Run tests and collect coverage data:
@@ -89,6 +100,7 @@ This project uses **coverage.py** to measure code coverage.
 coverage erase
 ```
 command to clean out the old data.
+
 
 ## License
 This project is licensed under the MIT License - see the LICENSE.md file for details.

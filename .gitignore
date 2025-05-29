@@ -11,3 +11,6 @@ __pycache__/
 htmlcov/
 .cache/
 
+
+# VSextension
+HTTP_scripts/
