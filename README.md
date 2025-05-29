@@ -78,14 +78,17 @@ Before you begin, ensure you have the following installed:
      * Debugger is active!
      * Debugger PIN: xxx-xxx-xxx
     ```
-## How to Run Tests
-
-This project utilizes Pytest - in order to run the test
-1. On the terminal run:
-
-    ```bash
-    pytest test_app.py
-    ```
+## How to Run Tests and Check Coverage
+This project uses **coverage.py** to measure code coverage.
+1. Run tests and collect coverage data:
+```bash
+./run_tests.sh
+```
+2. If old data is persisting, you can use an explicit
+```bash
+coverage erase
+```
+command to clean out the old data.
 
 ## License
 This project is licensed under the MIT License - see the LICENSE.md file for details.

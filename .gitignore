@@ -6,3 +6,8 @@ FETCH_HEAD
 __pycharm__/
 __pycache__/
 
+# coverage.py artifacts
+.coverage
+htmlcov/
+.cache/
+
