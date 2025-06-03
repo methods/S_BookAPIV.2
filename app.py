@@ -48,3 +48,8 @@ def add_book():
     books.append(new_book)
 
     return jsonify(books[-1]), 201
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    """Return a custom JSON response for any exception."""
+    return jsonify({"error": str(e)}), 500

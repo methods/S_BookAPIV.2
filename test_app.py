@@ -1,4 +1,5 @@
 # pylint: disable=missing-docstring
+from unittest.mock import patch
 import pytest
 from app import app
 
@@ -73,3 +74,20 @@ def test_add_book_check_request_header_is_json(client):
 
     assert response.status_code == 415
     assert "Request must be JSON" in response.get_json()["error"]
+
+def test_500_response_is_json(client):
+    test_book = {
+        "title": "Valid Title",
+        "author": "AN Other",
+        "synopsis": "Test Synopsis"
+    }
+
+    # Use patch to mock uuid module failing and throwing an exception
+    with patch("uuid.uuid4", side_effect=Exception("An unexpected error occurred")):
+        response = client.post("/books", json = test_book)
+
+        # Check the response code is 500
+        assert response.status_code == 500
+
+        assert response.content_type == "application/json"
+        assert "An unexpected error occurred" in response.get_json()["error"]
