@@ -5,6 +5,7 @@ from data import books
 
 app = Flask(__name__)
 
+# ----------- POST section ------------------
 @app.route("/books", methods=["POST"])
 def add_book():
     """Function to add a new book to the collection."""
@@ -48,6 +49,50 @@ def add_book():
     books.append(new_book)
 
     return jsonify(books[-1]), 201
+
+# ----------- GET section ------------------
+@app.route("/books", methods=["GET"])
+def get_all_books():
+    """
+    Retrieve all books from the database and
+    return them in a JSON response
+    including the total count.
+    """
+    if not books:
+        return jsonify({"error": "No books found"}), 404
+
+    all_books = []
+
+    for book in books:
+        all_books.append(book)
+
+    # validation
+    required_fields = ["id", "title", "synopsis", "author", "links"]
+    missing_fields_info = []
+
+    for book in all_books:
+        missing_fields = [field for field in required_fields if field not in book]
+        if missing_fields:
+            missing_fields_info.append({
+                "book": book,
+                "missing_fields": missing_fields
+            })
+
+    if missing_fields_info:
+        error_message = "Missing required fields:\n"
+        for info in missing_fields_info:
+            error_message += f"Missing fields: {', '.join(info['missing_fields'])} in {info['book']}. \n" # pylint: disable=line-too-long
+
+        print(error_message)
+        return jsonify({"error": error_message}), 500
+
+    count_books = len(all_books)
+    response_data = {
+        "total_count" : count_books,
+        "items" : all_books
+    }
+
+    return jsonify(response_data), 200
 
 @app.errorhandler(Exception)
 def handle_exception(e):

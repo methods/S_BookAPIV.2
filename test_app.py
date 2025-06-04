@@ -10,6 +10,8 @@ def client_fixture():
     app.config['TESTING'] = True
     return app.test_client()
 
+# ------------------- Tests for POST ---------------------------------------------
+
 def test_add_book_creates_new_book(client):
 
     test_book = {
@@ -91,3 +93,49 @@ def test_500_response_is_json(client):
 
         assert response.content_type == "application/json"
         assert "An unexpected error occurred" in response.get_json()["error"]
+
+# ------------------------ Tests for GET --------------------------------------------
+def test_get_all_books_returns_all_books(client):
+    response = client.get("/books")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+    response_data = response.get_json()
+    assert isinstance(response_data, dict)
+    assert 'total_count' in response_data
+    assert 'items' in response_data
+
+
+def test_return_error_404_when_list_is_empty(client):
+    with patch("app.books", []):
+        response = client.get("/books")
+        assert response.status_code == 404
+        assert "No books found" in response.get_json()["error"]
+
+def test_get_books_returns_404_when_books_is_none(client):
+    with patch("app.books", None):
+        response = client.get("/books")
+        assert response.status_code == 404
+        assert "No books found" in response.get_json()["error"]
+
+def test_missing_fields_in_book_object_returned_by_database(client):
+    with patch("app.books", [
+        {
+            "id": "1",
+            "title": "The Great Adventure",
+            "synopsis": "A thrilling adventure through the jungles of South America.",
+            "author": "Jane Doe"
+        },
+        {
+            "id": "2",
+            "title": "Mystery of the Old Manor"
+        },
+        {
+            "id": "3",
+            "title": "The Science of Everything",
+            "synopsis": "An in-depth look at the scientific principles that govern our world."
+        }
+    ]):
+        response = client.get("/books")
+        assert response.status_code == 500
+        assert "Missing fields" in response.get_json()["error"]
