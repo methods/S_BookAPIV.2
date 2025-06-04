@@ -90,7 +90,19 @@ components:
         links:
           $ref: '#/components/schemas/Links' 
           readOnly: true 
-      
+
+    # Schema for the full Books Database Object as returned by the server      
+    BookListResponse:
+      type: object
+      properties:
+        total_count:
+          type: integer
+          description: Total number of books
+          example: 3
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/BookOutput'
 
     # Generic Error schema
     Error:
@@ -160,4 +172,41 @@ paths:
                 $ref: '#/components/schemas/Error'
               example:
                 error: "An unexpected error occurred."
-
+    get:
+      tags:
+        - Books
+      summary: Returns all books in the database
+      description: Retrieve all books from the database and return them in a JSON response including the total count.
+      operationId: getAllBooks
+      responses:
+        '200':
+          description: A list of all books including the total count.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookListResponse'
+                properties:
+                  total_count:
+                    type: integer
+                    description: The number of books returned.
+                    example: 3
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BookOutput'
+        '404':
+          description: No books found in the database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "No books found"
+        '500':
+          description: Internal Server Error. An unexpected error occurred.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "An unexpected error occurred."
