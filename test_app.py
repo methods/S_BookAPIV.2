@@ -139,3 +139,49 @@ def test_missing_fields_in_book_object_returned_by_database(client):
         response = client.get("/books")
         assert response.status_code == 500
         assert "Missing fields" in response.get_json()["error"]
+
+ #-------- Tests for GET a single resource ----------------
+
+def test_get_book_returns_specified_book(client):
+    # Add a book so we have a known ID
+    new_book = {
+        "title": "1984",
+        "synopsis": "Dystopian novel about surveillance and control.",
+        "author": "George Orwell"
+    }
+
+    post_response = client.post("/books", json=new_book)
+    assert post_response.status_code == 201
+
+    # Extract the ID from the response
+    book_data = post_response.get_json()
+    book_id = book_data["id"]
+    print("HELLLOOO", book_id)
+
+    # Test GET request using the book ID
+    get_response = client.get(f"/books/{book_id}")
+    assert get_response.status_code == 200
+    assert get_response.content_type == "application/json"
+    returned_book = get_response.get_json()
+    assert returned_book["id"] == book_id
+    assert returned_book["title"] == "1984"
+
+def test_get_book_not_found_returns_404(client):
+    # Test GET request using invalid book ID
+    response = client.get("/books/12341234")
+    assert response.status_code == 404
+    assert response.content_type == "application/json"
+    assert "Book not found" in response.get_json()["error"]
+
+def test_invalid_urls_return_404(client):
+    # Test invalid URL
+    response = client.get("/books/")
+    assert response.status_code == 404
+    assert response.content_type == "application/json"
+    assert "404 Not Found" in response.get_json()["error"]
+
+def test_book_database_is_initialized_for_specific_book_route(client):
+    with patch("app.books", None):
+        response = client.get("/books/1")
+        assert response.status_code == 500
+        assert "Book collection not initialized" in response.get_json()["error"]
