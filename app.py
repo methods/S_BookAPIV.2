@@ -109,7 +109,7 @@ def get_book(book_id):
         return jsonify({"error": "Book collection not initialized"}), 500
 
     for book in books:
-        if book.get("id") == book_id:
+        if book.get("id") == book_id and book.get("state") != "deleted":
             return jsonify(book), 200
     return jsonify({"error": "Book not found"}), 404
 

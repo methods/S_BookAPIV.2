@@ -105,7 +105,6 @@ def test_get_all_books_returns_all_books(client):
     assert 'total_count' in response_data
     assert 'items' in response_data
 
-
 def test_return_error_404_when_list_is_empty(client):
     with patch("app.books", []):
         response = client.get("/books")
@@ -240,6 +239,14 @@ def test_book_database_is_initialized_for_specific_book_route(client):
         response = client.get("/books/1")
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
+
+
+def test_get_book_returns_404_if_state_equals_deleted(client):
+    book_id = "3"
+    response = client.get(f"/books/{book_id}")
+    assert response.status_code == 404
+    assert response.content_type == "application/json"
+    assert "Book not found" in response.get_json()["error"]
 
 # ------------------------ Tests for DELETE --------------------------------------------
 # Mock book database object
