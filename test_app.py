@@ -140,6 +140,61 @@ def test_missing_fields_in_book_object_returned_by_database(client):
         assert response.status_code == 500
         assert "Missing fields" in response.get_json()["error"]
 
+
+ #-------- Tests for filter GET /books by delete ----------------
+def test_get_books_excludes_deleted_books_and_omits_state_field(client):
+    # Add a book so we have a known ID
+    with patch("app.books", [
+        {
+            "id": "1",
+            "title": "The Great Adventure",
+            "synopsis": "A thrilling adventure through the jungles of South America.",
+            "author": "Jane Doe",
+            "links": {
+                "self": "/books/1",
+                "reservations": "/books/1/reservations",
+                "reviews": "/books/1/reviews"
+            },
+            "state": "deleted"
+        },
+        {
+            "id": "2",
+            "title": "Mystery of the Old Manor",
+            "synopsis": "A detective story set in an old manor with many secrets.",
+            "author": "John Smith",
+            "links": {
+                "self": "/books/2",
+                "reservations": "/books/2/reservations",
+                "reviews": "/books/2/reviews"
+            },
+            "state": "active"
+        },
+        {
+            "id": "3",
+            "title": "The Science of Everything",
+            "synopsis": "An in-depth look at the scientific principles that govern our world.",
+            "author": "Alice Johnson",
+            "links": {
+                "self": "/books/3",
+                "reservations": "/books/3/reservations",
+                "reviews": "/books/3/reviews"
+            }
+        }
+    ]):
+        response = client.get("/books")
+        assert response.status_code == 200
+
+        data = response.get_json()
+        assert "items" in data
+        books = data["items"]
+
+        # Check right object is returned
+        assert len(books) == 2
+        for book in books:
+            assert "state" not in book
+        assert books[0].get("id") == '2'
+        assert books[1].get("title") == "The Science of Everything"
+
  #-------- Tests for GET a single resource ----------------
 
 def test_get_book_returns_specified_book(client):
@@ -156,7 +211,7 @@ def test_get_book_returns_specified_book(client):
     # Extract the ID from the response
     book_data = post_response.get_json()
     book_id = book_data["id"]
-    print("HELLLOOO", book_id)
+
 
     # Test GET request using the book ID
     get_response = client.get(f"/books/{book_id}")

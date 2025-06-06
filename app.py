@@ -65,7 +65,11 @@ def get_all_books():
     all_books = []
 
     for book in books:
-        all_books.append(book)
+        # check if the book has the "deleted" state
+        if book.get("state")!="deleted":
+            # if the book has a state other than "deleted" remove the state field before appending
+            book.pop("state", None)
+            all_books.append(book)
 
     # validation
     required_fields = ["id", "title", "synopsis", "author", "links"]
