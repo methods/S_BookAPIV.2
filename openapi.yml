@@ -257,3 +257,37 @@ paths:
                 $ref: '#/components/schemas/Error' 
               example: 
                 error: "An unexpected error occurred."
+    delete:
+      tags:
+        - Books
+      summary: Delete a book by ID
+      description: Soft deletes a book by setting its state to 'deleted'.
+      operationId: deleteBookById
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          description: The unique identifier of the book to delete.
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      responses:
+        '204':
+          description: Book deleted successfully.
+        '404':
+          description: Book not found. The requested book ID does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Book not found"
+        '500':
+          description: Internal Server Error. An unexpected error occurred on the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "An unexpected error occurred."
