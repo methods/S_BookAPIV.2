@@ -10,6 +10,47 @@ def client_fixture():
     app.config['TESTING'] = True
     return app.test_client()
 
+# Mock book database object
+
+books_database = [
+        {
+            "id": "1",
+            "title": "The Great Adventure",
+            "synopsis": "A thrilling adventure through the jungles of South America.",
+            "author": "Jane Doe",
+            "links": {
+                "self": "/books/1",
+                "reservations": "/books/1/reservations",
+                "reviews": "/books/1/reviews"
+            },
+            "state": "active"
+        },
+        {
+            "id": "2",
+            "title": "Mystery of the Old Manor",
+            "synopsis": "A detective story set in an old manor with many secrets.",
+            "author": "John Smith",
+            "links": {
+                "self": "/books/2",
+                "reservations": "/books/2/reservations",
+                "reviews": "/books/2/reviews"
+            },
+            "state": "active"
+        },
+        {
+            "id": "3",
+            "title": "The Science of Everything",
+            "synopsis": "An in-depth look at the scientific principles that govern our world.",
+            "author": "Alice Johnson",
+            "links": {
+                "self": "/books/3",
+                "reservations": "/books/3/reservations",
+                "reviews": "/books/3/reviews"
+            },
+            "state": "deleted"
+        }
+    ]
+
 # ------------------- Tests for POST ---------------------------------------------
 
 def test_add_book_creates_new_book(client):
@@ -249,46 +290,6 @@ def test_get_book_returns_404_if_state_equals_deleted(client):
     assert "Book not found" in response.get_json()["error"]
 
 # ------------------------ Tests for DELETE --------------------------------------------
-# Mock book database object
-
-books_database = [
-        {
-            "id": "1",
-            "title": "The Great Adventure",
-            "synopsis": "A thrilling adventure through the jungles of South America.",
-            "author": "Jane Doe",
-            "links": {
-                "self": "/books/1",
-                "reservations": "/books/1/reservations",
-                "reviews": "/books/1/reviews"
-            },
-            "state": "active"
-        },
-        {
-            "id": "2",
-            "title": "Mystery of the Old Manor",
-            "synopsis": "A detective story set in an old manor with many secrets.",
-            "author": "John Smith",
-            "links": {
-                "self": "/books/2",
-                "reservations": "/books/2/reservations",
-                "reviews": "/books/2/reviews"
-            },
-            "state": "active"
-        },
-        {
-            "id": "3",
-            "title": "The Science of Everything",
-            "synopsis": "An in-depth look at the scientific principles that govern our world.",
-            "author": "Alice Johnson",
-            "links": {
-                "self": "/books/3",
-                "reservations": "/books/3/reservations",
-                "reviews": "/books/3/reviews"
-            },
-            "state": "deleted"
-        }
-    ]
 
 def test_book_is_soft_deleted_on_delete_request(client):
     with patch("app.books", books_database):
@@ -320,3 +321,99 @@ def test_book_database_is_initialized_for_delete_book_route(client):
         response = client.delete("/books/1")
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
+
+# ------------------------ Tests for PUT --------------------------------------------
+
+def test_update_book_request_returns_correct_status_and_content_type(client):
+    with patch("app.books", books_database):
+
+        test_book = {
+            "title": "Test Book",
+            "author": "AN Other",
+            "synopsis": "Test Synopsis"
+        }
+
+        # send PUT request
+        response = client.put("/books/1", json=test_book)
+
+        # Check response status code and content type
+        assert response.status_code == 200
+        assert response.content_type == "application/json"
+
+def test_update_book_request_returns_required_fields(client):
+    with patch("app.books", books_database):
+        test_book = {
+            "title": "Test Book",
+            "author": "AN Other",
+            "synopsis": "Test Synopsis"
+        }
+
+        # Send PUT request
+        response = client.put("/books/1", json=test_book)
+        response_data = response.get_json()
+
+        # Check that required fields are in the response data
+        required_fields = ["title", "synopsis", "author"]
+        for field in required_fields:
+            assert field in response_data, f"{field} not in response_data"
+
+def test_update_book_request_updates_fields_correctly(client):
+    with patch("app.books", books_database):
+        test_book = {
+            "title": "Test Book",
+            "author": "AN Other",
+            "synopsis": "Test Synopsis"
+        }
+
+        # Send PUT request
+        response = client.put("/books/1", json=test_book)
+        response_data = response.get_json()
+
+        # Check that the synopsis in the response matches the test book's synopsis
+        assert response_data["title"] == test_book["title"]
+        assert response_data["synopsis"] == test_book["synopsis"]
+        assert response_data["author"] == test_book["author"]
+
+def test_book_database_is_initialized_for_update_book_route(client):
+    with patch("app.books", None):
+        test_book = {
+            "title": "Test Book",
+            "author": "AN Other",
+            "synopsis": "Test Synopsis"
+        }
+
+        # Send PUT request
+        response = client.put("/books/1", json=test_book)
+        assert response.status_code == 500
+        assert "Book collection not initialized" in response.get_json()["error"]
+
+def test_update_book_check_request_header_is_json(client):
+
+    response = client.put(
+        "/books/1",
+        data ="This is not a JSON object",
+        headers = {"content-type": "text/plain"}
+    )
+
+    assert response.status_code == 415
+    assert "Request must be JSON" in response.get_json()["error"]
+
+def test_update_book_with_invalid_json_content(client):
+
+    # This should trigger a TypeError
+    response = client.put("/books/1", json ="This is not a JSON object")
+
+    assert response.status_code == 400
+    assert "JSON payload must be a dictionary" in response.get_json()["error"]
+
+def test_update_book_sent_with_missing_required_fields(client):
+    test_book = {
+        "author": "AN Other"
+        # missing 'title' and 'synopsis'
+    }
+    response = client.put("/books/1", json = test_book)
+
+    assert response.status_code == 400
+    response_data = response.get_json()
+    assert 'error' in response_data
+    assert "Missing required fields: title, synopsis" in response.get_json()["error"]

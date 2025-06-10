@@ -257,6 +257,78 @@ paths:
                 $ref: '#/components/schemas/Error' 
               example: 
                 error: "An unexpected error occurred."
+     # --------------------------------------------
+
+    put:
+      tags:
+        - Books
+      summary: Update a book
+      description: Updates an existing book by its unique ID. The entire book object must be provided in the request body.
+      operationId: updateBook
+      parameters:
+        - name: book_id
+          in: path
+          required: true
+          description: The unique identifier of the book to update.
+          schema:
+            type: string
+            format: uuid
+            example: "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+      requestBody:
+        description: Book object that needs to be updated.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookInput'
+      responses:
+        '200':
+          description: Book updated successfully. Returns the full updated book object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookOutput'
+        '400':
+          description: Invalid input, or missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  summary: Example of missing fields error
+                  value:
+                    error: "Missing required fields: title"
+                notADictionary:
+                  summary: Example of payload not being a dictionary
+                  value:
+                    error: "JSON payload must be a dictionary"
+        '404':
+          description: Book not found. The requested book ID does not exist.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Book not found"
+        '415':
+          description: Request payload is not JSON.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Request must be JSON"
+        '500':
+          description: Internal Server Error. An unexpected error occurred on the server.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Book collection not initialized"
+    # --------------------------------------------
+    
     delete:
       tags:
         - Books
