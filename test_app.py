@@ -353,7 +353,7 @@ def test_update_book_request_returns_required_fields(client):
         response_data = response.get_json()
 
         # Check that required fields are in the response data
-        required_fields = ["title", "synopsis", "author"]
+        required_fields = ["title", "synopsis", "author", "links"]
         for field in required_fields:
             assert field in response_data, f"{field} not in response_data"
 
@@ -417,3 +417,48 @@ def test_update_book_sent_with_missing_required_fields(client):
     response_data = response.get_json()
     assert 'error' in response_data
     assert "Missing required fields: title, synopsis" in response.get_json()["error"]
+
+def test_update_book_adds_links_if_missing(client):
+    book_to_be_changed = {
+        "id": "1",
+        "title": "Original Title",
+        "author": "Original Author",
+        "synopsis": "Original Synopsis",
+        "links": {
+                "self": "link to be changed",
+                "reservations": "link to be changed",
+                "reviews": "link to be changed"
+        }
+    }
+    # Patch the books list with just this book (no links)
+    with patch("app.books", [book_to_be_changed]):
+        updated_data = {
+            "title": "Updated Title",
+            "author": "Updated Author",
+            "synopsis": "Updated Synopsis"
+        }
+
+        response = client.put("/books/1", json=updated_data)
+        assert response.status_code == 200
+
+        data = response.get_json()
+        assert "links" in data
+        assert data["links"]["self"] == "/books/1"
+        assert data["links"]["reservations"] == "/books/1/reservations"
+        assert data["links"]["reviews"] == "/books/1/reviews"
+
+        # Verify other fields were updated
+        assert data["title"] == "Updated Title"
+        assert data["author"] == "Updated Author"
+        assert data["synopsis"] == "Updated Synopsis"
+
+def test_update_book_sent_with_invalid_book_id(client):
+    with patch("app.books", books_database):
+        test_book = {
+            "title": "Some title",
+            "author": "Some author",
+            "synopsis": "Some synopsis"
+        }
+        response = client.put("/books/999", json =test_book)
+        assert response.status_code == 404
+        assert "Book not found" in response.get_json()["error"]
