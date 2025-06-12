@@ -59,17 +59,17 @@ components:
       properties:
         self:
           type: string
-          # format: uri 
+          # format: uri
           description: Link to the book resource itself.
-          example: "/books/123e4567-e89b-12d3-a456-426614174000"
+          example: "http://example.com/books/123e4567-e89b-12d3-a456-426614174000"
         reservations:
           type: string
           description: Link to reservations for this book.
-          example: "/books/123e4567-e89b-12d3-a456-426614174000/reservations"
+          example: "http://example.com/books/123e4567-e89b-12d3-a456-426614174000/reservations"
         reviews:
           type: string
           description: Link to reviews for this book.
-          example: "/books/123e4567-e89b-12d3-a456-426614174000/reviews"
+          example: "http://example.com/books/123e4567-e89b-12d3-a456-426614174000/reviews"
       required:
         - self
         - reservations

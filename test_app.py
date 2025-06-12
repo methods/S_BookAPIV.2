@@ -281,7 +281,6 @@ def test_book_database_is_initialized_for_specific_book_route(client):
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
 
-
 def test_get_book_returns_404_if_state_equals_deleted(client):
     book_id = "3"
     response = client.get(f"/books/{book_id}")
@@ -301,7 +300,6 @@ def test_book_is_soft_deleted_on_delete_request(client):
         assert response.data == b''
         # check that the book's state has changed to deleted
         assert books_database[0]['state'] == 'deleted'
-
 
 def test_delete_empty_book_id(client):
     book_id =""
@@ -357,22 +355,50 @@ def test_update_book_request_returns_required_fields(client):
         for field in required_fields:
             assert field in response_data, f"{field} not in response_data"
 
-def test_update_book_request_updates_fields_correctly(client):
-    with patch("app.books", books_database):
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis"
+def test_update_book_replaces_whole_object(client):
+    book_to_be_changed = {
+        "id": "1",
+        "title": "Original Title",
+        "author": "Original Author",
+        "synopsis": "Original Synopsis",
+        "links": {
+                "self": "link to be changed",
+                "reservations": "link to be changed",
+                "reviews": "link to be changed"
+        }
+    }
+    # Patch the books list with just this book (no links)
+    with patch("app.books", [book_to_be_changed]):
+        updated_data = {
+            "title": "Updated Title",
+            "author": "Updated Author",
+            "synopsis": "Updated Synopsis"
         }
 
-        # Send PUT request
-        response = client.put("/books/1", json=test_book)
-        response_data = response.get_json()
+        response = client.put("/books/1", json=updated_data)
+        assert response.status_code == 200
 
-        # Check that the synopsis in the response matches the test book's synopsis
-        assert response_data["title"] == test_book["title"]
-        assert response_data["synopsis"] == test_book["synopsis"]
-        assert response_data["author"] == test_book["author"]
+        data = response.get_json()
+        assert "links" in data
+        assert "/books/1" in data["links"]["self"]
+        assert "/books/1/reservations" in data["links"]["reservations"]
+        assert "/books/1/reviews" in data["links"]["reviews"]
+
+        # Verify other fields were updated
+        assert data["title"] == "Updated Title"
+        assert data["author"] == "Updated Author"
+        assert data["synopsis"] == "Updated Synopsis"
+
+def test_update_book_sent_with_invalid_book_id(client):
+    with patch("app.books", books_database):
+        test_book = {
+            "title": "Some title",
+            "author": "Some author",
+            "synopsis": "Some synopsis"
+        }
+        response = client.put("/books/999", json =test_book)
+        assert response.status_code == 404
+        assert "Book not found" in response.get_json()["error"]
 
 def test_book_database_is_initialized_for_update_book_route(client):
     with patch("app.books", None):
@@ -418,47 +444,115 @@ def test_update_book_sent_with_missing_required_fields(client):
     assert 'error' in response_data
     assert "Missing required fields: title, synopsis" in response.get_json()["error"]
 
-def test_update_book_adds_links_if_missing(client):
-    book_to_be_changed = {
-        "id": "1",
-        "title": "Original Title",
-        "author": "Original Author",
-        "synopsis": "Original Synopsis",
-        "links": {
-                "self": "link to be changed",
-                "reservations": "link to be changed",
-                "reviews": "link to be changed"
-        }
+# ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
+
+def test_append_host_to_links_in_post(client):
+    # 1. Make a POST request
+    test_book = {
+        "title": "Test Book",
+        "author": "AN Other",
+        "synopsis": "Test Synopsis"
     }
-    # Patch the books list with just this book (no links)
-    with patch("app.books", [book_to_be_changed]):
-        updated_data = {
-            "title": "Updated Title",
-            "author": "Updated Author",
-            "synopsis": "Updated Synopsis"
-        }
 
-        response = client.put("/books/1", json=updated_data)
-        assert response.status_code == 200
+    response = client.post("/books", json = test_book)
 
-        data = response.get_json()
-        assert "links" in data
-        assert data["links"]["self"] == "/books/1"
-        assert data["links"]["reservations"] == "/books/1/reservations"
-        assert data["links"]["reviews"] == "/books/1/reviews"
+    assert response.status_code == 201
+    assert response.headers["content-type"] == "application/json"
 
-        # Verify other fields were updated
-        assert data["title"] == "Updated Title"
-        assert data["author"] == "Updated Author"
-        assert data["synopsis"] == "Updated Synopsis"
+    # 2. Get the response data
+    response_data = response.get_json()
+    new_book_id = response_data.get("id")
+    links = response_data.get("links")
 
-def test_update_book_sent_with_invalid_book_id(client):
-    with patch("app.books", books_database):
-        test_book = {
-            "title": "Some title",
-            "author": "Some author",
-            "synopsis": "Some synopsis"
-        }
-        response = client.put("/books/999", json =test_book)
-        assert response.status_code == 404
-        assert "Book not found" in response.get_json()["error"]
+    assert new_book_id is not None, "Response JSON must contain an 'id'"
+    assert links is not None, "Response JSON must contain a 'links' object"
+
+    # 3. Assert the hostname in the generated links
+    print(f"\n[TEST INFO] Links returned from API: {links}")
+    self_link = links.get("self")
+    assert self_link is not None, "'links' object must contain a 'self' link"
+    # Check that the hostname from the simulated request ('localhost') was correctly prepended.
+    expected_link_start = "http://localhost"
+    assert self_link.startswith(expected_link_start), \
+        f"Link should start with the test server's hostname '{expected_link_start}'"
+    # Also check that the path is correct
+    expected_path = f"/books/{new_book_id}"
+    assert self_link.endswith(expected_path), \
+        f"Link should end with the resource path '{expected_path}'"
+
+def test_append_host_to_links_in_get(client):
+    response = client.get("/books")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    # Get the response data
+    response_data = response.get_json()
+    assert isinstance(response_data, dict)
+    assert 'total_count' in response_data
+    assert 'items' in response_data
+
+    # response_data["items"]["links"]["self"]
+    for book in response_data["items"]:
+        new_book_id = book.get("id")
+        assert book["links"]["self"].startswith("http://localhost")
+        assert book["links"]["reservations"].startswith("http://localhost")
+        assert book["links"]["reviews"].startswith("http://localhost")
+        assert book["links"]["self"].endswith(f"books/{new_book_id}")
+
+def test_append_host_to_links_in_get_book(client):
+
+    response = client.get("/books/1")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    # Get the response data, the ID and links
+    response_data = response.get_json()
+    book_id = response_data.get("id")
+    links = response_data.get("links")
+
+    assert book_id is not None, "Response JSON must contain an 'id'"
+    assert links is not None, "Response JSON must contain a 'links' object"
+
+    self_link = links.get("self")
+    assert self_link is not None, "'links' object must contain a 'self' link"
+
+    expected_link_start = "http://localhost"
+    assert self_link.startswith(expected_link_start), \
+        f"Link should start with the test server's hostname '{expected_link_start}'"
+
+    expected_path = f"/books/{book_id}"
+    assert self_link.endswith(expected_path), \
+        f"Link should end with the resource path '{expected_path}'"
+
+def test_append_host_to_links_in_put(client):
+
+    test_book = {
+        "title": "Test Book",
+        "author": "AN Other",
+        "synopsis": "Test Synopsis"
+    }
+    response = client.put("/books/1", json = test_book)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/json"
+
+    # Get the response data, the ID and links
+    response_data = response.get_json()
+    book_id = response_data.get("id")
+    links = response_data.get("links")
+
+    assert book_id is not None, "Response JSON must contain an 'id'"
+    assert links is not None, "Response JSON must contain a 'links' object"
+
+    self_link = links.get("self")
+    assert self_link is not None, "'links' object must contain a 'self' link"
+
+    expected_link_start = "http://localhost"
+    assert self_link.startswith(expected_link_start), \
+        f"Link should start with the test server's hostname '{expected_link_start}'"
+
+    expected_path = f"/books/{book_id}"
+    assert self_link.endswith(expected_path), \
+        f"Link should end with the resource path '{expected_path}'"

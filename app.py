@@ -1,10 +1,22 @@
 """Flask application module for managing a collection of books."""
 import uuid
+import copy
+from urllib.parse import urljoin
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import NotFound
 from data import books
 
 app = Flask(__name__)
+
+def append_hostname(book, host):
+    """Helper function to append the hostname to the links in a book object."""
+    if "links" in book:
+        book["links"] = {
+            key: urljoin(host, path)
+            for key, path in book["links"].items()
+        }
+    return book
+
 
 # ----------- POST section ------------------
 @app.route("/books", methods=["POST"])
@@ -28,10 +40,13 @@ def add_book():
     if missing_fields:
         return {"error": f"Missing required fields: {', '.join(missing_fields)}"}, 400
 
+    # Get the host from the request headers
+    host = request.host_url
+    # Send the host and new book_id to the helper function to generate links
     new_book['links'] = {
-        'self': f'/books/{new_book_id}',
-        'reservations': f'/books/{new_book_id}/reservations',
-        'reviews': f'/books/{new_book_id}/reviews'
+        "self": f"/books/{new_book_id}",
+        "reservations": f"/books/{new_book_id}/reservations",
+        "reviews": f"/books/{new_book_id}/reviews"
     }
 
     # Map field names to their expected types
@@ -48,8 +63,10 @@ def add_book():
             return {"error": f"Field {field} is not of type {expected_type}"}, 400
 
     books.append(new_book)
+    book_copy = copy.deepcopy(books[-1])
+    book_for_response = append_hostname(book_copy, host)
 
-    return jsonify(books[-1]), 201
+    return jsonify(book_for_response), 201
 
 
 # ----------- GET section ------------------
@@ -64,13 +81,17 @@ def get_all_books():
         return jsonify({"error": "No books found"}), 404
 
     all_books = []
+    # extract host from the request
+    host = request.host_url
 
     for book in books:
         # check if the book has the "deleted" state
         if book.get("state")!="deleted":
             # if the book has a state other than "deleted" remove the state field before appending
-            book.pop("state", None)
-            all_books.append(book)
+            book_copy = copy.deepcopy(book)
+            book_copy.pop("state", None)
+            book_with_hostname = append_hostname(book_copy, host)
+            all_books.append(book_with_hostname)
 
     # validation
     required_fields = ["id", "title", "synopsis", "author", "links"]
@@ -108,9 +129,16 @@ def get_book(book_id):
     if not books:
         return jsonify({"error": "Book collection not initialized"}), 500
 
+    # extract host from the request
+    host = request.host_url
+
     for book in books:
         if book.get("id") == book_id and book.get("state") != "deleted":
-            return jsonify(book), 200
+            # copy the book
+            book_copy = copy.deepcopy(book)
+            book_copy.pop("state", None)
+            # Add the hostname to the book_copy object and return it
+            return jsonify(append_hostname(book_copy, host)), 200
     return jsonify({"error": "Book not found"}), 404
 
 
@@ -155,6 +183,8 @@ def update_book(book_id):
     if missing_fields:
         return {"error": f"Missing required fields: {', '.join(missing_fields)}"}, 400
 
+    host = request.host_url
+
     # now that we have a book object that is valid, loop through books
     for book in books:
         if book.get("id") == book_id:
@@ -169,7 +199,10 @@ def update_book(book_id):
                 "reservations": f"/books/{book_id}/reservations",
                 "reviews": f"/books/{book_id}/reviews"
             }
-            return jsonify(book), 200
+            # make a deepcopy of the modified book
+            book_copy = copy.deepcopy(book)
+            book_with_hostname = append_hostname(book_copy, host)
+            return jsonify(book_with_hostname), 200
 
     return jsonify({"error": "Book not found"}), 404
 
