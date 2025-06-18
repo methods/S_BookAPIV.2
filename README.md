@@ -14,7 +14,10 @@ Before you begin, ensure you have the following installed:
 *   **Python 3**: Version 3.7 or newer is recommended. You can download it from [python.org](https://www.python.org/downloads/).
 *   **pip**: Python's package installer. It usually comes with Python installations.
 *   **make**: A build automation tool. Pre-installed on macOS/Linux. Windows users may need to install it (e.g., via Chocolatey or WSL).
-
+* [Docker](https://formulae.brew.sh/formula/docker)
+* [Colima](https://github.com/abiosoft/colima) (for Mac/Linux users)
+* [mongosh](https://www.mongodb.com/try/download/shell) (MongoDB shell client)
+* *(Optional)* [MongoDB Compass](https://www.mongodb.com/try/download/compass) (GUI client)
 
 ## Getting Started
 
@@ -31,6 +34,55 @@ This project uses a `Makefile` to automate setup and common tasks.
     ```bash
     make help
     ```
+
+## MongoDB Setup with Docker and Colima
+
+This project requires MongoDB to be running locally. We recommend using **Docker** and **Colima** for a lightweight, consistent environment.
+
+### Step 1: Start Colima
+
+```bash
+colima start
+```
+
+### Step 2: Pull the MongoDB Docker Image
+
+```bash
+docker pull mongodb/mongodb-community-server:latest
+```
+### Step 3: Run the MongoDB Container
+
+```bash
+docker run --name mongodb \
+  -p 27017:27017 \
+  -d mongodb/mongodb-community-server:latest
+```
+
+### Step 4: Verify MongoDB is Running
+
+```
+docker container ls
+```
+Look for a container named `mongodb` with port `27017` exposed.
+
+### Step 5: Connect via `mongosh`
+
+```
+mongosh
+```
+This opens an interactive shell. You should see a connection string like:
+```
+mongodb://localhost:27017
+```
+
+### Step 6 (Optional): Use MongoDB Compass GUI
+
+Open [MongoDB Compass](https://www.mongodb.com/try/download/compass)
+
+Paste the connection string from `mongosh`:
+`mongodb://localhost:27017`
+
+Use Compass to explore, import JSON/CSV data, and manage your database visually.
 
 ## Common Commands
 

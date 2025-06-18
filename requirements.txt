@@ -2,3 +2,5 @@ flask
 pytest
 pylint
 coverage
+pymongo
+python-dotenv

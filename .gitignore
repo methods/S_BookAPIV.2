@@ -5,6 +5,7 @@ FETCH_HEAD
 .idea/
 __pycharm__/
 __pycache__/
+.env
 
 # coverage.py artifacts
 .coverage

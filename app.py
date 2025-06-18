@@ -1,12 +1,36 @@
 """Flask application module for managing a collection of books."""
 import uuid
 import copy
+import os
 from urllib.parse import urljoin
+from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import NotFound
+from pymongo import MongoClient
+from pymongo.errors import ConnectionFailure
+from mongo_helper import insert_book_to_mongo
 from data import books
 
 app = Flask(__name__)
+
+# Use app.config to set config connection details
+load_dotenv()
+app.config['MONGO_URI'] = os.getenv('MONGO_CONNECTION')
+app.config['DB_NAME'] = os.getenv('PROJECT_DATABASE')
+app.config['COLLECTION_NAME'] = os.getenv('PROJECT_COLLECTION')
+
+def get_book_collection():
+    """Initialize the mongoDB connection"""
+    try:
+        client = MongoClient(app.config['MONGO_URI'], serverSelectionTimeoutMS=5000)
+        # Check the status of the server, will fail if server is down
+        # client.admin.command('ismaster')
+        db = client[app.config['DB_NAME']]
+        books_collection = db[app.config['COLLECTION_NAME']]
+        return books_collection
+    except ConnectionFailure as e:
+        # Handle the connection error and return error information
+        raise ConnectionFailure(f'Could not connect to MongoDB: {str(e)}') from e
 
 def append_hostname(book, host):
     """Helper function to append the hostname to the links in a book object."""
@@ -40,9 +64,6 @@ def add_book():
     if missing_fields:
         return {"error": f"Missing required fields: {', '.join(missing_fields)}"}, 400
 
-    # Get the host from the request headers
-    host = request.host_url
-    # Send the host and new book_id to the helper function to generate links
     new_book['links'] = {
         "self": f"/books/{new_book_id}",
         "reservations": f"/books/{new_book_id}/reservations",
@@ -62,9 +83,18 @@ def add_book():
         if not isinstance(new_book[field], expected_type):
             return {"error": f"Field {field} is not of type {expected_type}"}, 400
 
-    books.append(new_book)
-    book_copy = copy.deepcopy(books[-1])
-    book_for_response = append_hostname(book_copy, host)
+    # use helper function
+    books_collection = get_book_collection()
+    # check if mongoDB connected??
+    insert_book_to_mongo(new_book, books_collection)
+
+    # Get the host from the request headers
+    host = request.host_url
+    # Send the host and new book_id to the helper function to generate links
+    book_for_response = append_hostname(new_book, host)
+    print("book_for_response", book_for_response)
+    # Remove MOngoDB's ObjectID value
+    book_for_response.pop('_id', None)
 
     return jsonify(book_for_response), 201
 

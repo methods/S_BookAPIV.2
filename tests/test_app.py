@@ -1,7 +1,8 @@
 # pylint: disable=missing-docstring
 from unittest.mock import patch
+from pymongo.errors import ServerSelectionTimeoutError
 import pytest
-from app import app
+from app import app, get_book_collection
 
 # Option 1: Rename the fixture to something unique (which I've used)
 # Option 2: Use a linter plugin that understands pytest
@@ -9,6 +10,13 @@ from app import app
 def client_fixture():
     app.config['TESTING'] = True
     return app.test_client()
+
+# Create a stub to mock the insert_book_to_mongo function to avoid inserting to real DB
+@pytest.fixture(name="_insert_book_to_db")
+def stub_insert_book():
+    with patch("app.insert_book_to_mongo") as mock_insert_book:
+        mock_insert_book.return_value.inserted_id = "12345"
+        yield mock_insert_book
 
 # Mock book database object
 
@@ -53,7 +61,7 @@ books_database = [
 
 # ------------------- Tests for POST ---------------------------------------------
 
-def test_add_book_creates_new_book(client):
+def test_add_book_creates_new_book(client, _insert_book_to_db):
 
     test_book = {
         "title": "Test Book",
@@ -238,28 +246,13 @@ def test_get_books_excludes_deleted_books_and_omits_state_field(client):
  #-------- Tests for GET a single resource ----------------
 
 def test_get_book_returns_specified_book(client):
-    # Add a book so we have a known ID
-    new_book = {
-        "title": "1984",
-        "synopsis": "Dystopian novel about surveillance and control.",
-        "author": "George Orwell"
-    }
-
-    post_response = client.post("/books", json=new_book)
-    assert post_response.status_code == 201
-
-    # Extract the ID from the response
-    book_data = post_response.get_json()
-    book_id = book_data["id"]
-
-
     # Test GET request using the book ID
-    get_response = client.get(f"/books/{book_id}")
+    get_response = client.get("/books/1")
     assert get_response.status_code == 200
     assert get_response.content_type == "application/json"
     returned_book = get_response.get_json()
-    assert returned_book["id"] == book_id
-    assert returned_book["title"] == "1984"
+    assert returned_book["id"] == "1"
+    assert returned_book["title"] == "The Great Adventure"
 
 def test_get_book_not_found_returns_404(client):
     # Test GET request using invalid book ID
@@ -446,11 +439,11 @@ def test_update_book_sent_with_missing_required_fields(client):
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
-def test_append_host_to_links_in_post(client):
+def test_append_host_to_links_in_post(client, _insert_book_to_db):
     # 1. Make a POST request
     test_book = {
-        "title": "Test Book",
-        "author": "AN Other",
+        "title": "Append Test Book",
+        "author": "AN Other II",
         "synopsis": "Test Synopsis"
     }
 
@@ -556,3 +549,13 @@ def test_append_host_to_links_in_put(client):
     expected_path = f"/books/{book_id}"
     assert self_link.endswith(expected_path), \
         f"Link should end with the resource path '{expected_path}'"
+
+def test_get_book_collection_handles_connection_failure():
+    with patch("app.MongoClient") as mock_client:
+        # Set the side effect to raise a ServerSelectionTimeoutError
+        mock_client.side_effect = ServerSelectionTimeoutError("Mock Connection Timeout")
+
+        with pytest.raises(Exception) as exc_info:
+            get_book_collection()
+
+        assert "Could not connect to MongoDB: Mock Connection Timeout" in str(exc_info.value)
