@@ -2,13 +2,13 @@
 import uuid
 import copy
 import os
-from urllib.parse import urljoin
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import NotFound
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 from mongo_helper import insert_book_to_mongo
+from utils.helper import append_hostname
 from data import books
 
 app = Flask(__name__)
@@ -32,14 +32,6 @@ def get_book_collection():
         # Handle the connection error and return error information
         raise ConnectionFailure(f'Could not connect to MongoDB: {str(e)}') from e
 
-def append_hostname(book, host):
-    """Helper function to append the hostname to the links in a book object."""
-    if "links" in book:
-        book["links"] = {
-            key: urljoin(host, path)
-            for key, path in book["links"].items()
-        }
-    return book
 
 
 # ----------- POST section ------------------
