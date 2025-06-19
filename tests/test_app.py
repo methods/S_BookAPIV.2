@@ -18,6 +18,7 @@ def stub_insert_book():
         mock_insert_book.return_value.inserted_id = "12345"
         yield mock_insert_book
 
+
 # Mock book database object
 
 books_database = [
@@ -551,11 +552,12 @@ def test_append_host_to_links_in_put(client):
         f"Link should end with the resource path '{expected_path}'"
 
 def test_get_book_collection_handles_connection_failure():
-    with patch("app.MongoClient") as mock_client:
+    with patch("datastore.mongo_db.MongoClient") as mock_client:
         # Set the side effect to raise a ServerSelectionTimeoutError
         mock_client.side_effect = ServerSelectionTimeoutError("Mock Connection Timeout")
 
-        with pytest.raises(Exception) as exc_info:
-            get_book_collection()
+        with app.app_context():   # <-- Push the app context here
+            with pytest.raises(Exception) as exc_info:
+                get_book_collection()
 
         assert "Could not connect to MongoDB: Mock Connection Timeout" in str(exc_info.value)
