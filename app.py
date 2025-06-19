@@ -5,10 +5,9 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import NotFound
-from pymongo import MongoClient
-from pymongo.errors import ConnectionFailure
 from mongo_helper import insert_book_to_mongo
 from utils.helper import append_hostname
+from datastore.mongo_db import get_book_collection
 from data import books
 
 app = Flask(__name__)
@@ -18,20 +17,6 @@ load_dotenv()
 app.config['MONGO_URI'] = os.getenv('MONGO_CONNECTION')
 app.config['DB_NAME'] = os.getenv('PROJECT_DATABASE')
 app.config['COLLECTION_NAME'] = os.getenv('PROJECT_COLLECTION')
-
-def get_book_collection():
-    """Initialize the mongoDB connection"""
-    try:
-        client = MongoClient(app.config['MONGO_URI'], serverSelectionTimeoutMS=5000)
-        # Check the status of the server, will fail if server is down
-        # client.admin.command('ismaster')
-        db = client[app.config['DB_NAME']]
-        books_collection = db[app.config['COLLECTION_NAME']]
-        return books_collection
-    except ConnectionFailure as e:
-        # Handle the connection error and return error information
-        raise ConnectionFailure(f'Could not connect to MongoDB: {str(e)}') from e
-
 
 
 # ----------- POST section ------------------
