@@ -1,3 +1,4 @@
+"""Utility functions to interact with a MongoDB collection"""
 from flask import current_app
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
