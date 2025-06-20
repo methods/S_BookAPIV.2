@@ -1,19 +1,25 @@
 """Flask application module for managing a collection of books."""
 import uuid
 import copy
-# import os
-# from dotenv import load_dotenv
 from flask import request, jsonify
 from werkzeug.exceptions import NotFound
-from datastore.mongo_helper import insert_book_to_mongo
-from utils.helper import append_hostname
 from datastore.mongo_db import get_book_collection
+from datastore.mongo_helper import insert_book_to_mongo
 from data import books
+from utils.helper import append_hostname
+
+
 
 
 
 # ----------- POST section ------------------
-def register_routes(app):
+def register_routes(app): # pylint: disable=too-many-statements
+    """
+    Register all Flask routes with the given app instance.
+
+    Args:
+        app (Flask): The Flask application instance to register routes on.
+    """
     @app.route("/books", methods=["POST"])
     def add_book():
         """Function to add a new book to the collection."""
@@ -88,7 +94,7 @@ def register_routes(app):
         for book in books:
             # check if the book has the "deleted" state
             if book.get("state")!="deleted":
-                # if the book has a state other than "deleted" remove the state field before appending
+                # Remove state unless it's "deleted", then append
                 book_copy = copy.deepcopy(book)
                 book_copy.pop("state", None)
                 book_with_hostname = append_hostname(book_copy, host)
