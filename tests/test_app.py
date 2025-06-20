@@ -2,7 +2,9 @@
 from unittest.mock import patch
 from pymongo.errors import ServerSelectionTimeoutError
 import pytest
-from app import app, get_book_collection
+from datastore.mongo_db import get_book_collection
+from app import app
+
 
 # Option 1: Rename the fixture to something unique (which I've used)
 # Option 2: Use a linter plugin that understands pytest
@@ -14,7 +16,7 @@ def client_fixture():
 # Create a stub to mock the insert_book_to_mongo function to avoid inserting to real DB
 @pytest.fixture(name="_insert_book_to_db")
 def stub_insert_book():
-    with patch("app.insert_book_to_mongo") as mock_insert_book:
+    with patch("app.routes.insert_book_to_mongo") as mock_insert_book:
         mock_insert_book.return_value.inserted_id = "12345"
         yield mock_insert_book
 
@@ -93,7 +95,6 @@ def test_add_book_sent_with_missing_required_fields(client):
     assert 'error' in response_data
     assert "Missing required fields: title, synopsis" in response.get_json()["error"]
 
-
 def test_add_book_sent_with_wrong_types(client):
     test_book = {
         "title": 1234567,
@@ -156,19 +157,19 @@ def test_get_all_books_returns_all_books(client):
     assert 'items' in response_data
 
 def test_return_error_404_when_list_is_empty(client):
-    with patch("app.books", []):
+    with patch("app.routes.books", []):
         response = client.get("/books")
         assert response.status_code == 404
         assert "No books found" in response.get_json()["error"]
 
 def test_get_books_returns_404_when_books_is_none(client):
-    with patch("app.books", None):
+    with patch("app.routes.books", None):
         response = client.get("/books")
         assert response.status_code == 404
         assert "No books found" in response.get_json()["error"]
 
 def test_missing_fields_in_book_object_returned_by_database(client):
-    with patch("app.books", [
+    with patch("app.routes.books", [
         {
             "id": "1",
             "title": "The Great Adventure",
@@ -191,9 +192,10 @@ def test_missing_fields_in_book_object_returned_by_database(client):
 
 
  #-------- Tests for filter GET /books by delete ----------------
+
 def test_get_books_excludes_deleted_books_and_omits_state_field(client):
     # Add a book so we have a known ID
-    with patch("app.books", [
+    with patch("app.routes.books", [
         {
             "id": "1",
             "title": "The Great Adventure",
@@ -270,7 +272,7 @@ def test_invalid_urls_return_404(client):
     assert "404 Not Found" in response.get_json()["error"]
 
 def test_book_database_is_initialized_for_specific_book_route(client):
-    with patch("app.books", None):
+    with patch("app.routes.books", None):
         response = client.get("/books/1")
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
@@ -285,7 +287,7 @@ def test_get_book_returns_404_if_state_equals_deleted(client):
 # ------------------------ Tests for DELETE --------------------------------------------
 
 def test_book_is_soft_deleted_on_delete_request(client):
-    with patch("app.books", books_database):
+    with patch("app.routes.books", books_database):
         # Send DELETE request
         book_id = '1'
         response = client.delete(f"/books/{book_id}")
@@ -309,7 +311,7 @@ def test_delete_invalid_book_id(client):
     assert "Book not found" in response.get_json()["error"]
 
 def test_book_database_is_initialized_for_delete_book_route(client):
-    with patch("app.books", None):
+    with patch("app.routes.books", None):
         response = client.delete("/books/1")
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
@@ -317,7 +319,7 @@ def test_book_database_is_initialized_for_delete_book_route(client):
 # ------------------------ Tests for PUT --------------------------------------------
 
 def test_update_book_request_returns_correct_status_and_content_type(client):
-    with patch("app.books", books_database):
+    with patch("app.routes.books", books_database):
 
         test_book = {
             "title": "Test Book",
@@ -333,7 +335,7 @@ def test_update_book_request_returns_correct_status_and_content_type(client):
         assert response.content_type == "application/json"
 
 def test_update_book_request_returns_required_fields(client):
-    with patch("app.books", books_database):
+    with patch("app.routes.books", books_database):
         test_book = {
             "title": "Test Book",
             "author": "AN Other",
@@ -362,7 +364,7 @@ def test_update_book_replaces_whole_object(client):
         }
     }
     # Patch the books list with just this book (no links)
-    with patch("app.books", [book_to_be_changed]):
+    with patch("app.routes.books", [book_to_be_changed]):
         updated_data = {
             "title": "Updated Title",
             "author": "Updated Author",
@@ -384,7 +386,7 @@ def test_update_book_replaces_whole_object(client):
         assert data["synopsis"] == "Updated Synopsis"
 
 def test_update_book_sent_with_invalid_book_id(client):
-    with patch("app.books", books_database):
+    with patch("app.routes.books", books_database):
         test_book = {
             "title": "Some title",
             "author": "Some author",
@@ -395,7 +397,7 @@ def test_update_book_sent_with_invalid_book_id(client):
         assert "Book not found" in response.get_json()["error"]
 
 def test_book_database_is_initialized_for_update_book_route(client):
-    with patch("app.books", None):
+    with patch("app.routes.books", None):
         test_book = {
             "title": "Test Book",
             "author": "AN Other",
