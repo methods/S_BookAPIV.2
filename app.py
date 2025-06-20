@@ -5,7 +5,7 @@ import os
 from dotenv import load_dotenv
 from flask import Flask, request, jsonify
 from werkzeug.exceptions import NotFound
-from mongo_helper import insert_book_to_mongo
+from datastore.mongo_helper import insert_book_to_mongo
 from utils.helper import append_hostname
 from datastore.mongo_db import get_book_collection
 from data import books
