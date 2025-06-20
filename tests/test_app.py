@@ -1,8 +1,11 @@
 # pylint: disable=missing-docstring
+
+# Filepath is this: /Users/Shanti.Rai@methods.co.uk/Documents/S_BookAPIV.2/tests/test_app.py
+
 from unittest.mock import patch
 from pymongo.errors import ServerSelectionTimeoutError
 import pytest
-from datastore.mongo_db import get_book_collection
+from app.datastore.mongo_db import get_book_collection
 from app import app
 
 
@@ -554,7 +557,7 @@ def test_append_host_to_links_in_put(client):
         f"Link should end with the resource path '{expected_path}'"
 
 def test_get_book_collection_handles_connection_failure():
-    with patch("datastore.mongo_db.MongoClient") as mock_client:
+    with patch("app.datastore.mongo_db.MongoClient") as mock_client:
         # Set the side effect to raise a ServerSelectionTimeoutError
         mock_client.side_effect = ServerSelectionTimeoutError("Mock Connection Timeout")
 
