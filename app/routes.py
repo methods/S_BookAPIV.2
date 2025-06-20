@@ -3,12 +3,10 @@ import uuid
 import copy
 from flask import request, jsonify
 from werkzeug.exceptions import NotFound
-from datastore.mongo_db import get_book_collection
-from datastore.mongo_helper import insert_book_to_mongo
+from app.datastore.mongo_db import get_book_collection
+from app.datastore.mongo_helper import insert_book_to_mongo
+from app.utils.helper import append_hostname
 from data import books
-from utils.helper import append_hostname
-
-
 
 
 

@@ -1,6 +1,8 @@
 # pylint: disable=missing-docstring
+
+# Filepath: #/Users/Shanti.Rai@methods.co.uk/Documents/S_BookAPIV.2/app/datastore/mongo_helper.p
 from unittest.mock import MagicMock
-from datastore.mongo_helper import insert_book_to_mongo
+from app.datastore.mongo_helper import insert_book_to_mongo
 
 # @patch('mongo_helper.books_collection')
 def test_insert_book_to_mongo():
