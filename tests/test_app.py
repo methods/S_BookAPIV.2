@@ -6,13 +6,14 @@ from unittest.mock import patch
 from pymongo.errors import ServerSelectionTimeoutError
 import pytest
 from app.datastore.mongo_db import get_book_collection
-from app import app
+from app import create_app
 
 
 # Option 1: Rename the fixture to something unique (which I've used)
 # Option 2: Use a linter plugin that understands pytest
 @pytest.fixture(name="client")
 def client_fixture():
+    app = create_app()
     app.config['TESTING'] = True
     return app.test_client()
 
@@ -561,6 +562,7 @@ def test_get_book_collection_handles_connection_failure():
         # Set the side effect to raise a ServerSelectionTimeoutError
         mock_client.side_effect = ServerSelectionTimeoutError("Mock Connection Timeout")
 
+        app = create_app()
         with app.app_context():   # <-- Push the app context here
             with pytest.raises(Exception) as exc_info:
                 get_book_collection()

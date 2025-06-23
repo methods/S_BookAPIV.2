@@ -1,12 +1,13 @@
 # pylint: disable=missing-docstring
 import pytest
 from pymongo import MongoClient
-from app import app
+from app import create_app
 
 
 @pytest.fixture(name="client")
 def client_fixture():
     """Provides a test client for making requests to our Flask app."""
+    app = create_app()
     app.config['TESTING'] = True
     app.config['MONGO_URI'] = 'mongodb://localhost:27017/'
     app.config['DB_NAME'] = 'test_database'
