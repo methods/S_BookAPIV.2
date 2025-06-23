@@ -68,6 +68,7 @@ def register_routes(app): # pylint: disable=too-many-statements
         # Send the host and new book_id to the helper function to generate links
         book_for_response = append_hostname(new_book, host)
         print("book_for_response", book_for_response)
+
         # Remove MongoDB's ObjectID value
         book_for_response.pop('_id', None)
 
