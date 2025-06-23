@@ -1,7 +1,5 @@
 # pylint: disable=missing-docstring
 
-# Filepath is this: /Users/Shanti.Rai@methods.co.uk/Documents/S_BookAPIV.2/tests/test_app.py
-
 from unittest.mock import patch
 from pymongo.errors import ServerSelectionTimeoutError
 import pytest

@@ -1,4 +1,4 @@
-""" Collection of helper fucntions """
+""" Collection of helper functions """
 
 from urllib.parse import urljoin
 
