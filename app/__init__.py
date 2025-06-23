@@ -20,6 +20,3 @@ def create_app():
     register_routes(app)
 
     return app
-
-# # Expose `app` for importing
-# __all__ = ["app"]
