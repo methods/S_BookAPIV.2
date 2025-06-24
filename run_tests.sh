@@ -2,7 +2,7 @@
 
 # Run pytest with coverage
 echo "Running tests with coverage..."
-coverage run -m pytest tests/test_app.py tests/test_mongo_helper.py tests/test_integration.py
+coverage run -m pytest tests/
 # Check if the tests passed
 if [ $? -eq 0 ]; then
     echo "✅ Tests passed."
