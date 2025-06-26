@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring,line-too-long
 import mongomock
 import pytest
+from scripts.create_books import populate_books
 
 @pytest.fixture(name="mock_books_collection")
 def mock_books_collection_fixture():
@@ -46,8 +47,8 @@ def test_populate_books_inserts_data_to_db(mock_books_collection):
     result = populate_books(mock_books_collection, test_books)
 
     # 1. Assert - function's return value for immediate feedback
-    assert result.upserted_count == expected_book_count
-    assert result.matched_count == 0
+    assert isinstance(result, list)
+    assert len(result) == expected_book_count
 
     # Assert - final state of the db
     assert mock_books_collection.count_documents({}) == expected_book_count
