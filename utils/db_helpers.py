@@ -9,7 +9,8 @@ def load_books_json():
     """
     Load and return sample book data from scripts/test_data/sample_books.json.
     Returns:
-        list: List of book dictionaries."""
+        list: List of book dictionaries.
+    """
     # Get the absolute path from this file to the project root
     root_dir = os.path.dirname(os.path.dirname(__file__))
     print('rootDIR', root_dir)
@@ -21,5 +22,5 @@ def load_books_json():
     # Load and return the JSON data
     with open(json_path, 'r', encoding='utf-8') as file:
         books = json.load(file)
-        print(books)
+        print("load_books_json()", books)
     return books

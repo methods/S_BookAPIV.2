@@ -25,7 +25,6 @@ def run_create_books_script_cleanup():
     sys.modules.pop("scripts.create_books", None)
     runpy.run_module("scripts.create_books", run_name="__main__")
 
-
 def test_populate_books_inserts_data_to_db(mock_books_collection):
 
     # Arrange
@@ -75,15 +74,22 @@ def test_populate_books_inserts_data_to_db(mock_books_collection):
 
 # Use patch to replace real functions with mock objects
 # Note: They are applied bottom-up - the last decorater is the first argument
+@patch("scripts.create_books.create_app")
 @patch("scripts.create_books.populate_books")
 @patch("scripts.create_books.load_books_json")
 @patch("scripts.create_books.get_book_collection")
-def test_main_orchestrates_book_creation_and_prints_summary(
+def test_main_creates_app_context_and_orchestrates_book_creation(
     mock_get_collection,
     mock_load_books,
     mock_populate_books,
+    mock_create_app,
     capsys):
+
     # Arrange
+    # Mock Flask app object that has a working app_context manager
+    mock_app = MagicMock()
+    mock_create_app.return_value = mock_app
+
     test_books = [
             {
             "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -112,12 +118,13 @@ def test_main_orchestrates_book_creation_and_prints_summary(
     ]
 
     # Arrange: configure the return values of the MOCKS
+    # Create mock mongodb collection
     mock_collection = MagicMock()
 
-    # When get_book_collection is called, it will return our fake collection
+    # When get_book_collection is called, it will return our mocked collection
     mock_get_collection.return_value = mock_collection
 
-    # When load_books_json is called, it will return our fake book data
+    # When load_books_json is called, it will return our test_books data
     mock_load_books.return_value = test_books
 
     # When populate_books is called, we'll pretend it inserted 2 books
@@ -130,11 +137,16 @@ def test_main_orchestrates_book_creation_and_prints_summary(
     main()
     # Capture everything printed to the console
     captured = capsys.readouterr()
+
+    # Assert
     assert captured.out == expected_output
     # Good practice to ensure no errors were printed
     assert captured.err == ""
 
-    # Did it call our dependencies as epxected?
+    # Did it call our dependencies as expected?
+    mock_create_app.assert_called_once()
+    # Asserts the 'with' statement's '__enter__' method is called once
+    mock_app.app_context.return_value.__enter__.assert_called_once()
     mock_get_collection.assert_called_once()
     mock_load_books.assert_called_once()
     mock_populate_books.assert_called_once()
