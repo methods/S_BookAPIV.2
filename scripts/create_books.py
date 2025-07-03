@@ -6,7 +6,7 @@ from app.datastore.mongo_helper import insert_book_to_mongo
 from app.datastore.mongo_db import get_book_collection
 from utils.db_helpers import load_books_json
 
-# ---------------------------- Helper function ---------------------------
+# ---------------------- Helper function ---------------------------
 def populate_books(collection, data):
     """
     Upserts a list of books into a collection using a bulk write operation.
