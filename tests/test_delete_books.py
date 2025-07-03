@@ -66,7 +66,7 @@ def test_delete_database_empties_database(mock_books_collection, initial_book_da
 @patch("scripts.delete_books.MongoClient")
 @patch("scripts.delete_books.delete_all_books")
 def test_main_creates_app_context_and_orchestrates_book_creation(
-    mock_delete_all_books, 
+    mock_delete_all_books,
     mock_mongo_client,
     mock_create_app,
     capsys):
