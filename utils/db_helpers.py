@@ -17,10 +17,17 @@ def load_books_json():
 
     # Build absolute path to the books.json file
     json_path = os.path.join(root_dir, 'scripts', 'test_data', 'sample_books.json')
-    print('json_PATH', json_path)
 
-    # Load and return the JSON data
-    with open(json_path, 'r', encoding='utf-8') as file:
-        books = json.load(file)
-        print("load_books_json()", books)
-    return books
+    try:
+        # Load and return the JSON data
+        with open(json_path, 'r', encoding='utf-8') as file:
+            books = json.load(file)
+
+        return books
+    except FileNotFoundError as e:
+        # Catch the specific error and re-raise it
+        print(f"Error: The file at {json_path} was not found")
+        raise e
+    except json.JSONDecodeError as e:
+        print(f"Error: Failed to decode JSON from {json_path}. The file may be corrupt.")
+        raise e
