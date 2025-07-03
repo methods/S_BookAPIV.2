@@ -1,49 +1,10 @@
-# pylint: disable=missing-docstring,line-too-long
+# pylint: disable=missing-docstring,line-too-long, too-many-arguments, too-many-positional-arguments
 from unittest.mock import patch, MagicMock
 import sys
 import runpy
-import mongomock
-import pytest
 from scripts.create_books import main, populate_books
 
-# -------------------- PyFixtures ---------------------------------
-@pytest.fixture(name="mock_books_collection")
-def mock_books_collection_fixture():
-    """Provides an in-memory, empty 'books' collection for each test."""
-    # mongomock.MongoClient() creates a fake client.
-    client = mongomock.MongoClient()
-    db = client['test_database']
-    return db["test_books_collection"]
-
 # --------------------- Helper functions ------------------------------
-def sample_book_data():
-    return [
-            {
-            "id": "550e8400-e29b-41d4-a716-446655440000",
-            "title": "To Kill a Mockingbird",
-            "synopsis": "The story of racial injustice and the loss of innocence in the American South.",
-            "author": "Harper Lee",
-            "links": {
-                "self": "/books/550e8400-e29b-41d4-a716-446655440000",
-                "reservations": "/books/550e8400-e29b-41d4-a716-446655440000/reservations",
-                "reviews": "/books/550e8400-e29b-41d4-a716-446655440000/reviews"
-                },
-            "state": "active"
-        },
-        {
-            "id": "550e8400-e29b-41d4-a716-446655440001",
-            "title": "1984",
-            "synopsis": "A dystopian novel about totalitarianism and surveillance.",
-            "author": "George Orwell",
-            "links": {
-                "self": "/books/550e8400-e29b-41d4-a716-446655440001",
-                "reservations": "/books/550e8400-e29b-41d4-a716-446655440001/reservations",
-                "reviews": "/books/550e8400-e29b-41d4-a716-446655440001/reviews"
-                },
-            "state": "active"
-        }
-    ]
-
 def run_create_books_script_cleanup():
     """
     Safely re-runs the 'scripts.create_books' module as a script.
@@ -57,10 +18,10 @@ def run_create_books_script_cleanup():
 # ------------------------- Test Suite -------------------------------
 
 
-def test_populate_books_inserts_data_to_db(mock_books_collection):
+def test_populate_books_inserts_data_to_db(mock_books_collection, sample_book_data):
 
     # Arrange
-    test_books = sample_book_data()
+    test_books = sample_book_data
     expected_book_count = len(test_books)
 
     # Act
@@ -90,6 +51,7 @@ def test_main_creates_app_context_and_orchestrates_book_creation(
     mock_load_books,
     mock_populate_books,
     mock_create_app,
+    sample_book_data,
     capsys):
 
     # Arrange
@@ -97,7 +59,7 @@ def test_main_creates_app_context_and_orchestrates_book_creation(
     mock_app = MagicMock()
     mock_create_app.return_value = mock_app
 
-    test_books = sample_book_data()
+    test_books = sample_book_data
 
     # Arrange: configure the return values of the MOCKS
     # Create mock mongodb collection
@@ -140,10 +102,11 @@ def test_main_creates_app_context_and_orchestrates_book_creation(
 def test_script_entry_point_calls_main(
     mock_get_collection,
     mock_load_json,
-    mock_insert_book
+    mock_insert_book,
+    sample_book_data
     ):
     # Arrange test_book sample and return values of MOCKS
-    test_books = sample_book_data()
+    test_books = sample_book_data
 
     mock_load_json.return_value = test_books
     # Mock mongodb collection object
