@@ -23,8 +23,8 @@ def delete_all_books(collection):
 # Its job is to connect the Flask app's config to the pure logic.
 def main():
     """
-    Starts the Flask app context and deletes all documents from MongoDB.
-    Serves as the entry point for the cleanup operation.
+    Starts the Flask app context, connects to MongoDB, and deletes all 
+    documents in the books collection, reporting the result.
     """
 
     app = create_app()
@@ -42,4 +42,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    # A confirmation step is crucial for destructive scripts.
+    confirm = input("⚠️  This will delete ALL books from the database. Are you sure? (y/N) ")
+    if confirm.lower() == 'y':
+        main()
+    else:
+        print("Operation cancelled.")

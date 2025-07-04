@@ -39,7 +39,7 @@ def test_main_orchestrates_book_deletion_and_reports_success(
 
     # 3. Check that the correct output was printed
     captured = capsys.readouterr()
-    assert "✅ Success: Dropped 2 existing document(s)." in captured.out
+    assert "✅ Success: Removed 2 existing document(s)." in captured.out
 
 
 @patch("scripts.delete_books.create_app")
