@@ -2,7 +2,7 @@
 from unittest.mock import patch, MagicMock
 import sys
 import runpy
-from scripts.create_books import main, populate_books
+from scripts.create_books import main, populate_books, run_population
 
 # --------------------- Helper functions ------------------------------
 def run_create_books_script_cleanup():
@@ -42,58 +42,65 @@ def test_populate_books_inserts_data_to_db(mock_books_collection, sample_book_da
 
 # Use patch to replace real functions with mock objects
 # Note: They are applied bottom-up - the last decorater is the first argument
-@patch("scripts.create_books.create_app")
 @patch("scripts.create_books.populate_books")
 @patch("scripts.create_books.load_books_json")
 @patch("scripts.create_books.get_book_collection")
-def test_main_creates_app_context_and_orchestrates_book_creation(
+def test_run_population_orchestrates_logic(
     mock_get_collection,
     mock_load_books,
     mock_populate_books,
+    sample_book_data):
+    """
+    Tests that run_population correctly calls its dependencies
+    and returns the right status message.
+    """
+    # Arrange
+    test_books = sample_book_data
+    mock_collection = MagicMock()
+    mock_get_collection.return_value = mock_collection
+    mock_load_books.return_value = test_books
+    mock_populate_books.return_value = test_books # Simulate 2 books inserted
+
+    expected_message = f"Inserted {len(test_books)} books"
+
+    # Act
+    result_message = run_population()
+
+    # Assert
+    assert result_message == expected_message
+    mock_get_collection.assert_called_once()
+    mock_load_books.assert_called_once()
+    mock_populate_books.assert_called_once_with(mock_collection, test_books)
+
+
+@patch("scripts.create_books.create_app")
+@patch("scripts.create_books.run_population")
+def test_main_creates_app_context_and_calls_run_population(
+    mock_run_population,
     mock_create_app,
-    sample_book_data,
     capsys):
 
     # Arrange
     # Mock Flask app object that has a working app_context manager
     mock_app = MagicMock()
     mock_create_app.return_value = mock_app
+    mock_run_population.return_value = "Success from mock"
+    expected_output = "Success from mock\n"
 
-    test_books = sample_book_data
-
-    # Arrange: configure the return values of the MOCKS
-    # Create mock mongodb collection
-    mock_collection = MagicMock()
-
-    # When get_book_collection is called, it will return our mocked collection
-    mock_get_collection.return_value = mock_collection
-
-    # When load_books_json is called, it will return our test_books data
-    mock_load_books.return_value = test_books
-
-    # When populate_books is called, we'll pretend it inserted 2 books
-    mock_populate_books.return_value = test_books
-
-    expected_output = f"Inserted {len(test_books)} books\n"
-
-
-    # Act: Call the main function. It will use our mocks instead of the real functions.
+    # Act
     main()
-    # Capture everything printed to the console
     captured = capsys.readouterr()
 
     # Assert
-    assert captured.out == expected_output
-    # Good practice to ensure no errors were printed
-    assert captured.err == ""
-
-    # Did it call our dependencies as expected?
+    # 1. Did we set up the environment correctly?
     mock_create_app.assert_called_once()
-    # Asserts the 'with' statement's '__enter__' method is called once
     mock_app.app_context.return_value.__enter__.assert_called_once()
-    mock_get_collection.assert_called_once()
-    mock_load_books.assert_called_once()
-    mock_populate_books.assert_called_once()
+
+    # 2. Did we call the core logic?
+    mock_run_population.assert_called_once()
+
+    # 3. Did we print the result?
+    assert captured.out == expected_output
 
 
 @patch("app.datastore.mongo_helper.insert_book_to_mongo")
