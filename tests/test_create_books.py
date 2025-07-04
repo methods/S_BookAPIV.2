@@ -73,6 +73,45 @@ def test_run_population_orchestrates_logic(
     mock_populate_books.assert_called_once_with(mock_collection, test_books)
 
 
+@patch("scripts.create_books.get_book_collection")
+def test_run_population_handles_no_collection(mock_get_collection):
+    """
+    Tests the failure path where the database collection is not available.
+    """
+    # Arrange
+    mock_get_collection.return_value = None
+    expected_message = "Error: no books_collection object found"
+
+    # Act
+    result_message = run_population()
+
+    # Assert
+    assert result_message == expected_message
+
+
+@patch("scripts.create_books.get_book_collection")
+@patch("scripts.create_books.load_books_json")
+def test_run_population_handles_no_books_json(
+    mock_load_books_json,
+    mock_get_book_collection
+    ):
+    """
+    Tests the failure path where the database collection is not available.
+    """
+    # Arrange
+    mock_get_book_collection.return_value = MagicMock()
+    mock_load_books_json.return_value = None
+    expected_message = "Error: no books_data JSON found"
+
+    # Act
+    result_message = run_population()
+
+    # Assert
+    assert result_message == expected_message
+    mock_get_book_collection.assert_called_once()
+    mock_load_books_json.assert_called_once()
+
+
 @patch("scripts.create_books.create_app")
 @patch("scripts.create_books.run_population")
 def test_main_creates_app_context_and_calls_run_population(

@@ -40,6 +40,8 @@ def run_population():
 
     # Load book data from JSON file
     books_data = load_books_json()
+    if books_data is None:
+        return "Error: no books_data JSON found"
 
     # populate the DB with books_collection and books_data values
     inserted = populate_books(books_collection, books_data)
