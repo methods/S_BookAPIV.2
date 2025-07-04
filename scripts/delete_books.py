@@ -2,9 +2,9 @@
 This script completely clears all books from the configured MongoDB collection.
 It is a destructive and irreversible operation.
 """
-from pymongo import MongoClient
-from app import create_app
 
+from app import create_app
+from app.datastore.mongo_db import get_book_collection
 
 def delete_all_books(collection):
     """Deletes all documents from the given collection."""
@@ -29,15 +29,7 @@ def main():
 
     # The app_context makes app.config available.
     with app.app_context():
-        # get config values from app and save to variables
-        mongo_connection_uri = app.config['MONGO_URI']
-        db_name = app.config['DB_NAME']
-        collection_name = app.config['COLLECTION_NAME']
-
-        print(f"Connecting to database '{db_name}'...")
-        client = MongoClient(mongo_connection_uri)
-        db = client[db_name]
-        collection = db[collection_name]
+        collection = get_book_collection()
 
         num_deleted = delete_all_books(collection)
 

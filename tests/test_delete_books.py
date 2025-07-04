@@ -9,7 +9,7 @@ def test_delete_database_empties_database(mock_books_collection, sample_book_dat
     # Arrange - integration test = MongoMock
     # Insert the data from mock_DB_state into the empty mock_books_collection
     mock_books_collection.insert_many(sample_book_data)
-    # Sanity check: 
+    # Sanity check:
     assert mock_books_collection.count_documents({}) == len(sample_book_data)
 
     # Act
@@ -19,52 +19,51 @@ def test_delete_database_empties_database(mock_books_collection, sample_book_dat
     assert deleted_count == len(sample_book_data)
     assert mock_books_collection.count_documents({}) == 0
 
-
 @patch("scripts.delete_books.create_app")
-@patch("scripts.delete_books.MongoClient")
+@patch("scripts.delete_books.get_book_collection")
 @patch("scripts.delete_books.delete_all_books")
 def test_main_orchestrates_book_creation_and_reports_success_when_books_are_deleted(
     mock_delete_all_books,
-    mock_mongo_client,
+    mock_get_book_collection,
     mock_create_app,
-    capsys):
-
-    # Arrange: create Flask app object with working app_context manager
+    capsys
+):
+    # Arrange:
+    # 1. Mock the Flask app object and its config
     mock_app = MagicMock()
-    fake_db_name = 'fake_db'
-    mock_app.config = {
-        'MONGO_URI': 'mongodb://fake_uri:27017',
-        'DB_NAME': 'fake_db',
-        'COLLECTION_NAME': 'fake_collection'
-    }
     mock_create_app.return_value = mock_app
 
-    # Configure the mock for MongoClient()
-    mock_client_instance = mock_mongo_client.return_value
-    mock_db = mock_client_instance['fake_db']
-    mock_collection = mock_db['fake_collection']
+    # 2. Mock the collection object that our helper will "return"
+    mock_collection = MagicMock(name="mock_collection")
+    mock_get_book_collection.return_value = mock_collection
+
+    # 3. Configure the mock for delete_all_books
     mock_delete_all_books.return_value = 2
 
     # Act: run the function we are testing
     # It will use our MOCKS instead of real functions
     main()
-    
-    # Assert
-    captured = capsys.readouterr()
-    assert "Connecting to database 'fake_db'..." in captured.out
-    assert f"✅ Success: Dropped {mock_delete_all_books.return_value} existing document(s)." in captured.out
-    # Good practice to ensure no errors were printed
-    assert captured.err == ""
 
-    # Assert
-    mock_create_app.assert_called_once()
-    mock_mongo_client.assert_called_once_with('mongodb://fake_uri:27017')
+    # Assert:
+    # 1. Check that our helper was called correctly
+    mock_get_book_collection.assert_called_once()
+
+    # 2. Check that delete_all_books was called with the collection from the helper
     mock_delete_all_books.assert_called_once_with(mock_collection)
 
+    # 3. Check that the correct output was printed
+    captured = capsys.readouterr()
+    assert "✅ Success: Dropped 2 existing document(s)." in captured.out
+
+
 @patch("scripts.delete_books.create_app")
+@patch("scripts.delete_books.get_book_collection")
 @patch("scripts.delete_books.delete_all_books")
 def test_main_reports_info_when_collection_is_empty(
-    mock_delete_all_books, mock_create_app, capsys
+    mock_delete_all_books,
+    mock_get_book_collection,
+    mock_create_app,
+    capsys
 ):
     """
     Unit Test: Verifies `main`'s logic for the "already empty" path.
@@ -74,11 +73,11 @@ def test_main_reports_info_when_collection_is_empty(
     """
     # ARRANGE
     mock_app = MagicMock()
-    mock_app.config = {
-        'MONGO_URI': 'x', 
-        'DB_NAME': 'db', 
-        'COLLECTION_NAME': 'col'}
     mock_create_app.return_value = mock_app
+
+     # 2. Mock the collection object that our helper will "return"
+    mock_collection = MagicMock(name="mock_collection")
+    mock_get_book_collection.return_value = mock_collection
 
     # Simulate that the delete function found nothing to remove
     mock_delete_all_books.return_value = 0
@@ -87,9 +86,13 @@ def test_main_reports_info_when_collection_is_empty(
     main()
 
     # ASSERT
+    # Check that our mocks were called as expected
+    mock_get_book_collection.assert_called_once()
+    mock_delete_all_books.assert_called_once_with(mock_collection)
+
+    # Check that the correct output was printed
     captured = capsys.readouterr()
     assert "ℹ️ Info: The collection was already empty." in captured.out
-    mock_delete_all_books.assert_called_once()
 
 
 # CATEGORY 2: INTEGRATION TEST for the `delete_all_books` function
