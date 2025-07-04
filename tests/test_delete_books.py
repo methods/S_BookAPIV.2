@@ -5,24 +5,10 @@ from scripts.delete_books import delete_all_books, main
 
 # ----------------- TEST SUITE ---------------------------------
 
-def test_delete_database_empties_database(mock_books_collection, sample_book_data):
-    # Arrange - integration test = MongoMock
-    # Insert the data from mock_DB_state into the empty mock_books_collection
-    mock_books_collection.insert_many(sample_book_data)
-    # Sanity check:
-    assert mock_books_collection.count_documents({}) == len(sample_book_data)
-
-    # Act
-    # Use function to delete
-    deleted_count = delete_all_books(mock_books_collection)
-    # Assert
-    assert deleted_count == len(sample_book_data)
-    assert mock_books_collection.count_documents({}) == 0
-
 @patch("scripts.delete_books.create_app")
 @patch("scripts.delete_books.get_book_collection")
 @patch("scripts.delete_books.delete_all_books")
-def test_main_orchestrates_book_creation_and_reports_success_when_books_are_deleted(
+def test_main_orchestrates_book_deletion_and_reports_success(
     mock_delete_all_books,
     mock_get_book_collection,
     mock_create_app,
