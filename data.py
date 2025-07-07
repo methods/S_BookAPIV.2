@@ -10,9 +10,9 @@ books = [
         "links": {
             "self": "/books/1",
             "reservations": "/books/1/reservations",
-            "reviews": "/books/1/reviews"
+            "reviews": "/books/1/reviews",
         },
-        "state": "active"
+        "state": "active",
     },
     {
         "id": "2",
@@ -22,10 +22,10 @@ books = [
         "links": {
             "self": "/books/2",
             "reservations": "/books/2/reservations",
-            "reviews": "/books/2/reviews"
-        }
+            "reviews": "/books/2/reviews",
+        },
     },
-        {
+    {
         "id": "3",
         "title": "The Science of Everything",
         "synopsis": "An in-depth look at the scientific principles that govern our world.",
@@ -33,8 +33,8 @@ books = [
         "links": {
             "self": "/books/3",
             "reservations": "/books/3/reservations",
-            "reviews": "/books/3/reviews"
+            "reviews": "/books/3/reviews",
         },
-        "state": "deleted"
-    }
+        "state": "deleted",
+    },
 ]

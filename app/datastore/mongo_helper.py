@@ -1,19 +1,20 @@
 """Module containing pymongo helper functions."""
 
+
 def insert_book_to_mongo(book_data, collection):
     """
     Inserts a new book or replaces an existing one based on its 'id'.
     This is an "upsert" (update/insert) operation.
-    
+
     Args:
         book_data (dict): The book document to be upserted.
         collection: The Pymongo collection object.
-    
+
     Returns:
         The result of the database operation.
     """
 
-    query_filter = {'id': book_data['id']}
+    query_filter = {"id": book_data["id"]}
 
     # Use replace_one() with upsert=True.
     #    - Parameter 1: The filter to find the document to replace.

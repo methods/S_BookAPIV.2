@@ -1,18 +1,16 @@
 # pylint: disable=missing-docstring,line-too-long
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from scripts.delete_books import delete_all_books, main
 
-
 # ----------------- TEST SUITE ---------------------------------
+
 
 @patch("scripts.delete_books.create_app")
 @patch("scripts.delete_books.get_book_collection")
 @patch("scripts.delete_books.delete_all_books")
 def test_main_orchestrates_book_deletion_and_reports_success(
-    mock_delete_all_books,
-    mock_get_book_collection,
-    mock_create_app,
-    capsys
+    mock_delete_all_books, mock_get_book_collection, mock_create_app, capsys
 ):
     # Arrange:
     # 1. Mock the Flask app object and its config
@@ -46,10 +44,7 @@ def test_main_orchestrates_book_deletion_and_reports_success(
 @patch("scripts.delete_books.get_book_collection")
 @patch("scripts.delete_books.delete_all_books")
 def test_main_reports_info_when_collection_is_empty(
-    mock_delete_all_books,
-    mock_get_book_collection,
-    mock_create_app,
-    capsys
+    mock_delete_all_books, mock_get_book_collection, mock_create_app, capsys
 ):
     """
     Unit Test: Verifies `main`'s logic for the "already empty" path.
@@ -61,7 +56,7 @@ def test_main_reports_info_when_collection_is_empty(
     mock_app = MagicMock()
     mock_create_app.return_value = mock_app
 
-     # 2. Mock the collection object that our helper will "return"
+    # 2. Mock the collection object that our helper will "return"
     mock_collection = MagicMock(name="mock_collection")
     mock_get_book_collection.return_value = mock_collection
 
@@ -81,11 +76,9 @@ def test_main_reports_info_when_collection_is_empty(
     assert "ℹ️ Info: The collection was already empty." in captured.out
 
 
-
 # INTEGRATION TEST for the `delete_all_books` function
 def test_delete_all_books_clears_collection_and_returns_count(
-    mock_books_collection,
-    sample_book_data
+    mock_books_collection, sample_book_data
 ):
     """
     Integration Test: Verifies the `delete_all_books` function itself.

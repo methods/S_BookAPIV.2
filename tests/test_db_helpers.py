@@ -1,13 +1,16 @@
 # pylint: disable=missing-docstring
-from unittest.mock import patch, mock_open
 import json
+from unittest.mock import mock_open, patch
+
 import pytest
+
 from utils.db_helpers import load_books_json
+
 
 def test_load_books_json_successfully():
 
     # Arrange
-    test_books_data = '''[
+    test_books_data = """[
         {
             "id": "550e8400-e29b-41d4-a716-446655440073",
             "title": "Pride and Prejudice",
@@ -32,7 +35,7 @@ def test_load_books_json_successfully():
             },
             "state": "active"
         }
-    ]'''
+    ]"""
     # use mock_open to simulate reading this valid content
     mocked_file = mock_open(read_data=test_books_data)
 
@@ -47,25 +50,27 @@ def test_load_books_json_successfully():
         assert books[0]["title"] == "Pride and Prejudice"
         assert books[-1]["title"] == "The Catcher in the Rye"
 
+
 def test_load_books_raises_error_if_file_not_found():
     # Arrange:
     with patch("builtins.open") as mock_file:
         mock_file.side_effect = FileNotFoundError("File not found at path")
 
-    # Act and Assert:
-    # Use 'pytest.raises' as a context manager to check that the
-    # expected expectation is raised inside the 'with' block
+        # Act and Assert:
+        # Use 'pytest.raises' as a context manager to check that the
+        # expected expectation is raised inside the 'with' block
         with pytest.raises(FileNotFoundError) as excinfo:
             load_books_json()
 
         assert "File not found" in str(excinfo.value)
 
+
 def test_load_books_raises_decodeerror_for_invalid_json(capsys):
     # Arrange:
     # A string representing a broken JSON file (missing closing brace)
-    mock_file_content = '''{
+    mock_file_content = """{
         "id": "550e8400-e29b-41d4-a716-446655440000"
-    '''
+    """
 
     # Use mock_open to simulate reading our broken JSON string
     m = mock_open(read_data=mock_file_content)

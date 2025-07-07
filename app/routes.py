@@ -1,23 +1,26 @@
 """Flask application module for managing a collection of books."""
-import uuid
+
 import copy
-from flask import request, jsonify
+import uuid
+
+from flask import jsonify, request
 from werkzeug.exceptions import NotFound
+
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
 from app.utils.helper import append_hostname
 from data import books
 
 
-
 # ----------- POST section ------------------
-def register_routes(app): # pylint: disable=too-many-statements
+def register_routes(app):  # pylint: disable=too-many-statements
     """
     Register all Flask routes with the given app instance.
 
     Args:
         app (Flask): The Flask application instance to register routes on.
     """
+
     @app.route("/books", methods=["POST"])
     def add_book():
         """Function to add a new book to the collection."""
@@ -37,12 +40,14 @@ def register_routes(app): # pylint: disable=too-many-statements
         required_fields = ["title", "synopsis", "author"]
         missing_fields = [field for field in required_fields if field not in new_book]
         if missing_fields:
-            return {"error": f"Missing required fields: {', '.join(missing_fields)}"}, 400
+            return {
+                "error": f"Missing required fields: {', '.join(missing_fields)}"
+            }, 400
 
-        new_book['links'] = {
+        new_book["links"] = {
             "self": f"/books/{new_book_id}",
             "reservations": f"/books/{new_book_id}/reservations",
-            "reviews": f"/books/{new_book_id}/reviews"
+            "reviews": f"/books/{new_book_id}/reviews",
         }
 
         # Map field names to their expected types
@@ -51,7 +56,7 @@ def register_routes(app): # pylint: disable=too-many-statements
             "title": str,
             "synopsis": str,
             "author": str,
-            "links": dict
+            "links": dict,
         }
 
         for field, expected_type in field_types.items():
@@ -70,10 +75,9 @@ def register_routes(app): # pylint: disable=too-many-statements
         print("book_for_response", book_for_response)
 
         # Remove MongoDB's ObjectID value
-        book_for_response.pop('_id', None)
+        book_for_response.pop("_id", None)
 
         return jsonify(book_for_response), 201
-
 
     # ----------- GET section ------------------
     @app.route("/books", methods=["GET"])
@@ -92,7 +96,7 @@ def register_routes(app): # pylint: disable=too-many-statements
 
         for book in books:
             # check if the book has the "deleted" state
-            if book.get("state")!="deleted":
+            if book.get("state") != "deleted":
                 # Remove state unless it's "deleted", then append
                 book_copy = copy.deepcopy(book)
                 book_copy.pop("state", None)
@@ -106,24 +110,20 @@ def register_routes(app): # pylint: disable=too-many-statements
         for book in all_books:
             missing_fields = [field for field in required_fields if field not in book]
             if missing_fields:
-                missing_fields_info.append({
-                    "book": book,
-                    "missing_fields": missing_fields
-                })
+                missing_fields_info.append(
+                    {"book": book, "missing_fields": missing_fields}
+                )
 
         if missing_fields_info:
             error_message = "Missing required fields:\n"
             for info in missing_fields_info:
-                error_message += f"Missing fields: {', '.join(info['missing_fields'])} in {info['book']}. \n" # pylint: disable=line-too-long
+                error_message += f"Missing fields: {', '.join(info['missing_fields'])} in {info['book']}. \n"  # pylint: disable=line-too-long
 
             print(error_message)
             return jsonify({"error": error_message}), 500
 
         count_books = len(all_books)
-        response_data = {
-            "total_count" : count_books,
-            "items" : all_books
-        }
+        response_data = {"total_count": count_books, "items": all_books}
 
         return jsonify(response_data), 200
 
@@ -146,7 +146,6 @@ def register_routes(app): # pylint: disable=too-many-statements
                 # Add the hostname to the book_copy object and return it
                 return jsonify(append_hostname(book_copy, host)), 200
         return jsonify({"error": "Book not found"}), 404
-
 
     # ----------- DELETE section ------------------
     @app.route("/books/<string:book_id>", methods=["DELETE"])
@@ -185,9 +184,13 @@ def register_routes(app): # pylint: disable=too-many-statements
 
         # check request body contains required fields
         required_fields = ["title", "synopsis", "author"]
-        missing_fields = [field for field in required_fields if field not in request_body]
+        missing_fields = [
+            field for field in required_fields if field not in request_body
+        ]
         if missing_fields:
-            return {"error": f"Missing required fields: {', '.join(missing_fields)}"}, 400
+            return {
+                "error": f"Missing required fields: {', '.join(missing_fields)}"
+            }, 400
 
         host = request.host_url
 
@@ -203,7 +206,7 @@ def register_routes(app): # pylint: disable=too-many-statements
                 book["links"] = {
                     "self": f"/books/{book_id}",
                     "reservations": f"/books/{book_id}/reservations",
-                    "reviews": f"/books/{book_id}/reviews"
+                    "reviews": f"/books/{book_id}/reviews",
                 }
                 # make a deepcopy of the modified book
                 book_copy = copy.deepcopy(book)

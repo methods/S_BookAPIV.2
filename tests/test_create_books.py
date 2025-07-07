@@ -1,9 +1,11 @@
 # pylint: disable=missing-docstring,line-too-long, too-many-arguments, too-many-positional-arguments
-from unittest.mock import patch, MagicMock
-import sys
 import runpy
+import sys
+from unittest.mock import MagicMock, patch
+
 from app.datastore.mongo_helper import insert_book_to_mongo
 from scripts.create_books import main, populate_books, run_population
+
 
 # --------------------- Helper functions ------------------------------
 def run_create_books_script_cleanup():
@@ -15,6 +17,7 @@ def run_create_books_script_cleanup():
     """
     sys.modules.pop("scripts.create_books", None)
     runpy.run_module("scripts.create_books", run_name="__main__")
+
 
 # ------------------------- Test Suite -------------------------------
 
@@ -48,10 +51,8 @@ def test_populate_books_inserts_data_to_db(mock_books_collection, sample_book_da
 @patch("scripts.create_books.load_books_json")
 @patch("scripts.create_books.get_book_collection")
 def test_run_population_orchestrates_logic(
-    mock_get_collection,
-    mock_load_books,
-    mock_populate_books,
-    sample_book_data):
+    mock_get_collection, mock_load_books, mock_populate_books, sample_book_data
+):
     """
     Tests that run_population correctly calls its dependencies
     and returns the right status message.
@@ -61,7 +62,7 @@ def test_run_population_orchestrates_logic(
     mock_collection = MagicMock()
     mock_get_collection.return_value = mock_collection
     mock_load_books.return_value = test_books
-    mock_populate_books.return_value = test_books # Simulate 2 books inserted
+    mock_populate_books.return_value = test_books  # Simulate 2 books inserted
 
     expected_message = f"Inserted {len(test_books)} books"
 
@@ -94,9 +95,8 @@ def test_run_population_handles_no_collection(mock_get_collection):
 @patch("scripts.create_books.get_book_collection")
 @patch("scripts.create_books.load_books_json")
 def test_run_population_handles_no_books_json(
-    mock_load_books_json,
-    mock_get_book_collection
-    ):
+    mock_load_books_json, mock_get_book_collection
+):
     # Arrange
     mock_get_book_collection.return_value = MagicMock()
     mock_load_books_json.return_value = None
@@ -118,8 +118,8 @@ def test_run_population_handles_no_inserted_list_books(
     mock_populate_books,
     mock_load_books_json,
     mock_get_book_collection,
-    sample_book_data
-    ):
+    sample_book_data,
+):
     # Arrange
     mock_get_book_collection.return_value = MagicMock()
     mock_load_books_json.return_value = sample_book_data
@@ -133,15 +133,16 @@ def test_run_population_handles_no_inserted_list_books(
     assert result_message == expected_message
     mock_get_book_collection.assert_called_once()
     mock_load_books_json.assert_called_once()
-    mock_populate_books.assert_called_once_with(mock_get_book_collection.return_value, sample_book_data)
+    mock_populate_books.assert_called_once_with(
+        mock_get_book_collection.return_value, sample_book_data
+    )
 
 
 @patch("scripts.create_books.create_app")
 @patch("scripts.create_books.run_population")
 def test_main_creates_app_context_and_calls_run_population(
-    mock_run_population,
-    mock_create_app,
-    capsys):
+    mock_run_population, mock_create_app, capsys
+):
 
     # Arrange
     # Mock Flask app object that has a working app_context manager
@@ -167,14 +168,11 @@ def test_main_creates_app_context_and_calls_run_population(
 
 
 @patch("app.datastore.mongo_helper.insert_book_to_mongo")
-@patch("utils.db_helpers.load_books_json")     # PATCHING AT THE SOURCE
-@patch("app.datastore.mongo_db.get_book_collection") # PATCHING AT THE SOURCE
+@patch("utils.db_helpers.load_books_json")  # PATCHING AT THE SOURCE
+@patch("app.datastore.mongo_db.get_book_collection")  # PATCHING AT THE SOURCE
 def test_script_entry_point_calls_main(
-    mock_get_collection,
-    mock_load_json,
-    mock_insert_book,
-    sample_book_data
-    ):
+    mock_get_collection, mock_load_json, mock_insert_book, sample_book_data
+):
     # Arrange test_book sample and return values of MOCKS
     test_books = sample_book_data
 
@@ -196,16 +194,16 @@ def test_script_entry_point_calls_main(
 
 
 def test_run_population_should_insert_new_book_when_id_does_not_exist(
-    monkeypatch,
-    mock_books_collection,
-    sample_book_data
-    ):
+    monkeypatch, mock_books_collection, sample_book_data
+):
     # Arrange
     mock_db_collection_func = MagicMock(return_value=mock_books_collection)
-    monkeypatch.setattr('scripts.create_books.get_book_collection', mock_db_collection_func)
+    monkeypatch.setattr(
+        "scripts.create_books.get_book_collection", mock_db_collection_func
+    )
 
     mock_load_data = MagicMock(return_value=sample_book_data)
-    monkeypatch.setattr('scripts.create_books.load_books_json', mock_load_data)
+    monkeypatch.setattr("scripts.create_books.load_books_json", mock_load_data)
 
     assert mock_books_collection.count_documents({}) == 0
 
@@ -218,16 +216,18 @@ def test_run_population_should_insert_new_book_when_id_does_not_exist(
     mock_load_data.assert_called_once()
 
     # Check for specific book to be sure the data is right
-    book_a_from_db = mock_books_collection.find_one({"id": "550e8400-e29b-41d4-a716-446655440000"})
+    book_a_from_db = mock_books_collection.find_one(
+        {"id": "550e8400-e29b-41d4-a716-446655440000"}
+    )
     assert book_a_from_db is not None
-    assert book_a_from_db['title'] == "To Kill a Mockingbird"
+    assert book_a_from_db["title"] == "To Kill a Mockingbird"
 
     # Verify that the function returned the correct status message
     assert result_message == "Inserted 2 books"
 
+
 def test_run_population_correctly_upserts_a_batch_of_books(
-    mock_books_collection,
-    monkeypatch
+    mock_books_collection, monkeypatch
 ):
     """
     BEHAVIORAL TEST: Verifies that run_population correctly handles a mix
@@ -246,9 +246,9 @@ def test_run_population_correctly_upserts_a_batch_of_books(
         "links": {
             "self": "/books/550e8400-e29b-41d4-a716-446655440003",
             "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
+            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
         },
-        "state": "active"
+        "state": "active",
     }
     mock_books_collection.insert_one(old_book_version)
 
@@ -263,9 +263,9 @@ def test_run_population_correctly_upserts_a_batch_of_books(
             "links": {
                 "self": "/books/550e8400-e29b-41d4-a716-446655440003",
                 "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-                "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
+                "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
             },
-            "state": "active"
+            "state": "active",
         },
         {
             "id": "550e8400-e29b-41d4-a716-446655440002",
@@ -275,17 +275,21 @@ def test_run_population_correctly_upserts_a_batch_of_books(
             "links": {
                 "self": "/books/550e8400-e29b-41d4-a716-446655440002",
                 "reservations": "/books/550e8400-e29b-41d4-a716-446655440002/reservations",
-                "reviews": "/books/550e8400-e29b-41d4-a716-446655440002/reviews"
+                "reviews": "/books/550e8400-e29b-41d4-a716-446655440002/reviews",
             },
-            "state": "active"
-        }
+            "state": "active",
+        },
     ]
 
     # Monkeypatch the helper functions to isolate test
     # - make get_book_collection return our mockDB
     # - make load_books_json return our hard-coded new data
-    monkeypatch.setattr("scripts.create_books.get_book_collection", lambda: mock_books_collection)
-    monkeypatch.setattr("scripts.create_books.load_books_json", lambda: new_book_data_from_json)
+    monkeypatch.setattr(
+        "scripts.create_books.get_book_collection", lambda: mock_books_collection
+    )
+    monkeypatch.setattr(
+        "scripts.create_books.load_books_json", lambda: new_book_data_from_json
+    )
 
     # Sanity check: confim the database starts with exactly one document
     assert mock_books_collection.count_documents({}) == 1
@@ -295,7 +299,9 @@ def test_run_population_correctly_upserts_a_batch_of_books(
 
     # Assert
     # Check final state of database, total count == 2
-    assert mock_books_collection.count_documents({}) == 2, "The total document count should be 2"
+    assert (
+        mock_books_collection.count_documents({}) == 2
+    ), "The total document count should be 2"
 
     # Retrieve the book we expected to be replaced and verify its contents
     updated_book = mock_books_collection.find_one({"id": common_id})
@@ -324,26 +330,26 @@ def test_insert_book_to_mongo_replaces_document_when_id_exists(mock_books_collec
         "links": {
             "self": "/books/550e8400-e29b-41d4-a716-446655440003",
             "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
+            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
         },
-        "state": "active"
+        "state": "active",
     }
     mock_books_collection.insert_one(old_book_version)
     assert mock_books_collection.count_documents({}) == 1
 
     # Define new version of book
     new_book = {
-            "id": common_id,
-            "title": "The Age of Surveillance Capitalism",
-            "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
-            "author": "Shoshana Zuboff",
-            "links": {
-                "self": "/books/550e8400-e29b-41d4-a716-446655440003",
-                "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-                "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
-            },
-            "state": "active"
-        }
+        "id": common_id,
+        "title": "The Age of Surveillance Capitalism",
+        "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
+        "author": "Shoshana Zuboff",
+        "links": {
+            "self": "/books/550e8400-e29b-41d4-a716-446655440003",
+            "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
+            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
+        },
+        "state": "active",
+    }
 
     # ACT: Call the function under test directly
     insert_book_to_mongo(new_book, mock_books_collection)

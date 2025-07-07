@@ -6,6 +6,7 @@ It is a destructive and irreversible operation.
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
 
+
 def delete_all_books(collection):
     """Deletes all documents from the given collection."""
 
@@ -14,16 +15,19 @@ def delete_all_books(collection):
     # The delete_many({}) operation finds all documents and deletes them.
     # It returns a DeleteResult object, which contains useful information.
     delete_result = collection.delete_many({})
-    print(f"Delete operation completed. Documents affected: {delete_result.deleted_count}.")
+    print(
+        f"Delete operation completed. Documents affected: {delete_result.deleted_count}."
+    )
 
     # Return the count of deleted documents.
     return delete_result.deleted_count
+
 
 # The "manager" or "runner" function.
 # Its job is to connect the Flask app's config to the pure logic.
 def main():
     """
-    Starts the Flask app context, connects to MongoDB, and deletes all 
+    Starts the Flask app context, connects to MongoDB, and deletes all
     documents in the books collection, reporting the result.
     """
 
@@ -38,13 +42,17 @@ def main():
         if num_deleted > 0:
             print(f"✅ Success: Removed {num_deleted} existing document(s).")
         else:
-            print("ℹ️ Info: The collection was already empty. No documents were deleted.")
+            print(
+                "ℹ️ Info: The collection was already empty. No documents were deleted."
+            )
 
 
 if __name__ == "__main__":
     # A confirmation step is crucial for destructive scripts.
-    confirm = input("⚠️  This will delete ALL books from the database. Are you sure? (y/N) ")
-    if confirm.lower() == 'y':
+    confirm = input(
+        "⚠️  This will delete ALL books from the database. Are you sure? (y/N) "
+    )
+    if confirm.lower() == "y":
         main()
     else:
         print("Operation cancelled.")

@@ -1,10 +1,12 @@
 """
-Script for populating resouces to a database 
+Script for populating resouces to a database
 """
+
 from app import create_app
-from app.datastore.mongo_helper import insert_book_to_mongo
 from app.datastore.mongo_db import get_book_collection
+from app.datastore.mongo_helper import insert_book_to_mongo
 from utils.db_helpers import load_books_json
+
 
 # ---------------------- Book upsert helper ---------------------------
 def populate_books(collection, data):
@@ -24,12 +26,13 @@ def populate_books(collection, data):
 
     return inserted_books_list
 
+
 # ----------------------- Core population logic -----------
 def run_population():
     """
     Orchestrates the process of loading and populating books.
     This function contains the core logic and is easy to test.
-    
+
     Returns:
         str: A status message indicating success or failure.
     """
@@ -51,7 +54,6 @@ def run_population():
     return f"Inserted {len(inserted)} books"
 
 
-
 # ----------------------- Entry point (runs with Flask context) -----------
 def main():
     """
@@ -62,6 +64,7 @@ def main():
     with app.app_context():
         result_message = run_population()
         print(result_message)
+
 
 # Guard clause
 if __name__ == "__main__":
