@@ -1,7 +1,5 @@
 # pylint: disable=missing-docstring,line-too-long
 from unittest.mock import patch, MagicMock
-import pytest
-from pymongo.errors import ConnectionFailure
 from scripts.delete_books import delete_all_books, main
 
 

@@ -9,14 +9,14 @@ def test_load_books_json_successfully():
     # Arrange
     test_books_data = '''[
         {
-            "id": "550e8400-e29b-41d4-a716-446655440003",
+            "id": "550e8400-e29b-41d4-a716-446655440073",
             "title": "Pride and Prejudice",
             "synopsis": "A romantic novel about the relationship between Elizabeth Bennet and Mr. Darcy.",
             "author": "Jane Austen",
             "links": {
-            "self": "/books/550e8400-e29b-41d4-a716-446655440003",
-            "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
+            "self": "/books/550e8400-e29b-41d4-a716-446655440073",
+            "reservations": "/books/550e8400-e29b-41d4-a716-446655440073/reservations",
+            "reviews": "/books/550e8400-e29b-41d4-a716-446655440073/reviews"
             },
             "state": "active"
         },

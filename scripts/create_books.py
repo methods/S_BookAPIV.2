@@ -47,7 +47,7 @@ def run_population():
     inserted = populate_books(books_collection, books_data)
     if inserted is None:
         return "Error: Population step failed and returned no data."
-        
+
     return f"Inserted {len(inserted)} books"
 
 

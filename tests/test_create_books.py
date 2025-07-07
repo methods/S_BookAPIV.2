@@ -251,7 +251,7 @@ def test_run_population_correctly_upserts_a_batch_of_books(
         "state": "active"
     }
     mock_books_collection.insert_one(old_book_version)
-    
+
     # Define the "new book" data that the script will load
     # This list contains the updated book and a brand new one
     new_book_data_from_json = [
