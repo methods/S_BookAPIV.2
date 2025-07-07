@@ -1,5 +1,7 @@
 # pylint: disable=missing-docstring,line-too-long
 from unittest.mock import patch, MagicMock
+import pytest
+from pymongo.errors import ConnectionFailure
 from scripts.delete_books import delete_all_books, main
 
 
@@ -81,9 +83,11 @@ def test_main_reports_info_when_collection_is_empty(
     assert "ℹ️ Info: The collection was already empty." in captured.out
 
 
-# CATEGORY 2: INTEGRATION TEST for the `delete_all_books` function
+
+# INTEGRATION TEST for the `delete_all_books` function
 def test_delete_all_books_clears_collection_and_returns_count(
-    mock_books_collection, sample_book_data
+    mock_books_collection,
+    sample_book_data
 ):
     """
     Integration Test: Verifies the `delete_all_books` function itself.
