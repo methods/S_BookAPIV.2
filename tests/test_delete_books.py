@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring,line-too-long
 from unittest.mock import MagicMock, patch
-
+from pymongo.errors import ConnectionFailure
 from scripts.delete_books import delete_all_books, main
 
 # ----------------- TEST SUITE ---------------------------------
@@ -76,7 +76,6 @@ def test_main_reports_info_when_collection_is_empty(
     assert "ℹ️ Info: The collection was already empty." in captured.out
 
 
-# INTEGRATION TEST for the `delete_all_books` function
 def test_delete_all_books_clears_collection_and_returns_count(
     mock_books_collection, sample_book_data
 ):
@@ -97,3 +96,22 @@ def test_delete_all_books_clears_collection_and_returns_count(
     # ASSERT: Check the return value and the final state of the DB
     assert deleted_count == initial_count
     assert mock_books_collection.count_documents({}) == 0
+
+
+@patch('scripts.delete_books.get_book_collection',
+side_effect=ConnectionFailure("Mock DB connection error"))
+def test_main_handles_connection_failure_gracefully(mock_get_book_collection, capsys):
+    # ACT
+    exit_code = main()
+
+    # ASSERT
+    assert exit_code == 1
+    mock_get_book_collection.assert_called_once()
+
+    captured = capsys.readouterr()
+    # Assert that the normal output (stdout) is empty.
+    assert captured.out == ""
+    # We assert that our specific error messages were printed to stderr.
+    assert "❌ ERROR: Could not connect to MongoDB." in captured.err
+    assert "Please ensure the database is running and accessible." in captured.err
+    assert "Mock DB connection error" in captured.err
