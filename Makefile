@@ -10,9 +10,11 @@ PIP = $(VENV_DIR)/bin/pip
 .DEFAULT_GOAL := help
 
 # Phony Targets 
-.PHONY: run clean test help lint
+.PHONY: run clean test help lint db-seed db-clean db-setup
 
-# CORE COMMANDS
+# ==============================================================================
+# CORE COMMANDS - For everyday development
+# ==============================================================================
 
 help: ## Show help
 	@echo ""
@@ -24,11 +26,15 @@ help: ## Show help
 	@echo "  make format    Auto-format the code using black and isort."
 	@echo "  make clean     Remove virtual environment and temporary files."
 	@echo ""
+	@echo "Database Commands:"
+	@echo "  make db-setup     Reset the database to a clean, seeded state. (Runs db-clean then db-seed)"
+	@echo "  make db-seed   Populate the database with initial data."
+	@echo "  make db-clean  Delete all book data from the database."
 
 install: $(PIP)
 
 $(PIP): requirements.txt
-	@echo "Creating virtual environment and installing dependencies..."
+	@echo "--> Creating virtual environment and installing dependencies..."
 	python3 -m venv $(VENV_DIR)
 	$(PIP) install --upgrade pip
 	## pip is idempotent. It will only install what's necessary.
@@ -36,30 +42,47 @@ $(PIP): requirements.txt
 	@echo "Installation complete."
 
 run: $(PIP)
-	@echo "Starting Flask development server..."
+	@echo "--> Starting Flask development server..."
 	# We call python directly from the venv. No activation needed.
 	$(PYTHON) -m flask --debug run
 
 test: $(PIP)
-	@echo "Running tests via run_tests.sh script..."
-	# The '$$' is needed to escape the '$' for make.
+	@echo "--> Running tests via run_tests.sh script..."
 	PATH=$(VENV_DIR)/bin:$$PATH ./run_tests.sh
 
 lint: $(PIP)
-	@echo "Running linter..."
+	@echo "--> Running linter..."
 	PATH=$(VENV_DIR)/bin:$$PATH ./run_pylint.sh
 
 format: $(PIP)
-	@echo "Formatting code..."
+	@echo "--> Formatting code..."
 	$(PYTHON) -m black .
 	$(PYTHON) -m isort .
 
-venv/bin/activate: requirements.txt
-	python3 -m venv $(VENV_DIR)
-	${PIP} install -r requirements.txt || true
-	$(PIP) list --format=freeze | diff - requirements.txt || $(PIP) install -r requirements.txt
-
-clean: ## Clean up pyc files, caches, and venv
-	rm -rf __pycache__
+clean:
+	@echo "--> Cleaning up local project directory..."
 	rm -rf $(VENV_DIR)
-	@echo "Cleaned up the project."
+	rm -rf `find . -name __pycache__`
+	rm -f .coverage
+	rm -rf .pytest_cache
+	rm -rf htmlcov
+	@echo "--> Cleanup complete."
+
+# ==============================================================================
+# DATABASE COMMANDS 
+# ==============================================================================
+db-setup:
+	@echo ""
+	@echo "⚠️  WARNING: Full Database Reset in Progress"
+	@echo ""
+	$(MAKE) db-clean
+	$(MAKE) db-seed
+	@echo "✅ Setup complete. Database has been reset and seeded."
+
+db-seed: install
+	@echo "Populating Database with books..."
+	PATH=$(VENV_DIR)/bin:$$PATH PYTHONPATH=. $(PYTHON) -m scripts.create_books
+
+db-clean: install
+	@echo "--> ⚠️  Deleting all books from the database..."
+	PATH=$(VENV_DIR)/bin:$$PATH PYTHONPATH=. $(PYTHON) -m scripts.delete_books
