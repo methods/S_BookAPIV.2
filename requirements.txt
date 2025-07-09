@@ -1,6 +1,10 @@
 flask
 pytest
+pytest-cov
 pylint
 coverage
 pymongo
 python-dotenv
+mongomock
+black
+isort

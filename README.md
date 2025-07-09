@@ -1,4 +1,4 @@
-# NandS_BookAPIV.2
+# S_BookAPIV.2
 
 ## Project Overview
 
@@ -19,14 +19,15 @@ Before you begin, ensure you have the following installed:
 * [mongosh](https://www.mongodb.com/try/download/shell) (MongoDB shell client)
 * *(Optional)* [MongoDB Compass](https://www.mongodb.com/try/download/compass) (GUI client)
 
-## Getting Started
+## Getting Started: A Step-by-Step Guide
 
+### Step 1: Clone the Repository
 This project uses a `Makefile` to automate setup and common tasks.
 
 1.  **Clone the repository:**
     ```bash
-    git clone git@github.com:methods/NandS_BookAPIV.2.git
-    cd NandS_BookAPIV.2
+    git clone git@github.com:methods/S_BookAPIV.2.git
+    cd S_BookAPIV.2
     ```
 
 2.  **View available commands:**
@@ -35,81 +36,78 @@ This project uses a `Makefile` to automate setup and common tasks.
     make help
     ```
 
-## MongoDB Setup with Docker and Colima
+### Step 2: Set Up and Run MongoDB
 
 This project requires MongoDB to be running locally. We recommend using **Docker** and **Colima** for a lightweight, consistent environment.
 
-### Step 1: Start Colima
+#### 1: Start Colima
 
 ```bash
 colima start
 ```
 
-### Step 2: Pull the MongoDB Docker Image
+#### 2: Run the MongoDB Container: (This will pull the image if it's not already local)
 
 ```bash
-docker pull mongodb/mongodb-community-server:latest
+docker run --name mongodb -p 27017:27017 -d mongodb/mongodb-community-server:latest
 ```
-### Step 3: Run the MongoDB Container
+
+#### 3: Verify MongoDB is Running
+
+```
+docker ps
+docker ps -a
+```
+
+Look for a container named mongodb with port 27017 exposed. You can also connect via mongosh or MongoDB Compass to confirm.
+
+
+
+### Step 3: Install Project Dependencies
+
+The `Makefile` will create a local virtual environment (venv) and install all required Python packages. You only need to run this once.
 
 ```bash
-docker run --name mongodb \
-  -p 27017:27017 \
-  -d mongodb/mongodb-community-server:latest
+make install
 ```
 
-### Step 4: Verify MongoDB is Running
+### Step 4: Set Up the Database
 
+See [Scripts Documentation](scripts/README.md)
+
+To use the API, you first need to populate the database with some initial data.
+
+| Command        | Description                                                                 |
+|----------------|-----------------------------------------------------------------------------|
+| `make db-setup`| **(Recommended)** Resets the database. Runs `db-clean` and then `db-seed`. |
+| `make db-seed` | Populates the database with the contents of `scripts/books.json`.           |
+| `make db-clean`| Deletes all documents from the 'books' collection. Useful for starting fresh. |
+
+To perform a full database reset, run:
+```bash
+make db-setup
 ```
-docker container ls
-```
-Look for a container named `mongodb` with port `27017` exposed.
 
-### Step 5: Connect via `mongosh`
+### Step 5: Run the API
 
-```
-mongosh
-```
-This opens an interactive shell. You should see a connection string like:
-```
-mongodb://localhost:27017
-```
+With the database seeded, you can now run the Flask application.
 
-### Step 6 (Optional): Use MongoDB Compass GUI
-
-Open [MongoDB Compass](https://www.mongodb.com/try/download/compass)
-
-Paste the connection string from `mongosh`:
-`mongodb://localhost:27017`
-
-Use Compass to explore, import JSON/CSV data, and manage your database visually.
-
-## Common Commands
-
-The `Makefile` will automatically create a virtual environment (`venv`) and install dependencies the first time you run a command.
-
-## How to Run the API
-
-To run the Flask application in debug mode:
 ```bash
 make run
 ```
 The API will be available at http://127.0.0.1:5000.
 
-## How to Run Linting
-This project uses **Pylint** to check code quality and style.
+--- 
 
-To run the linter, run the following command:
+## Development Tasks
 
-```bash
-make lint
-```
+Here are other common commands for development, testing, and maintenance.
 
+### Testing and Coverage
 
-## How to Run Tests and Check Coverage
-This project uses **coverage.py** to measure code coverage.
-
+This project uses pytest to run tests and coverage.py to measure code coverage.
 To run the test suite and see the coverage report:
+
 ```bash
 make test
 ```
@@ -120,9 +118,22 @@ coverage erase
 ```
 command to clean out the old data.
 
-## Clean the Project
 
-To remove the virtual environment and Python cache files:
+### Code Quality (Linting)
+
+This project uses Pylint to check code quality and style.
+
+To run the linter
+
+```bash
+make lint
+```
+
+
+### Clean the Project
+
+To remove the virtual environment and all Python cache files (__pycache__, .coverage, etc.):
+
 ```bash
 make clean
 ```

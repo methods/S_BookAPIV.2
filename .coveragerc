@@ -1,0 +1,11 @@
+[report]
+# Exclude lines from coverage report
+exclude_lines =
+    # A standard pragma for lines you want to skip
+    pragma: no cover
+
+    # Don't complain about missing branches for this common idiom
+    if __name__ == .__main__.:
+
+    # Don't complain if tests don't hit abstract methods
+    raise NotImplementedError

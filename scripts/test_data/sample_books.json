@@ -1,0 +1,242 @@
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "title": "To Kill a Mockingbird",
+    "synopsis": "The story of racial injustice and the loss of innocence in the American South.",
+    "author": "Harper Lee",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440000",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440000/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440000/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440001",
+    "title": "1984",
+    "synopsis": "A dystopian novel about totalitarianism and surveillance.",
+    "author": "George Orwell",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440001",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440001/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440001/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440002",
+    "title": "The Great Gatsby",
+    "synopsis": "A story of wealth, love, and the American Dream in the 1920s.",
+    "author": "F. Scott Fitzgerald",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440002",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440002/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440002/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440003",
+    "title": "Pride and Prejudice",
+    "synopsis": "A romantic novel about the relationship between Elizabeth Bennet and Mr. Darcy.",
+    "author": "Jane Austen",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440003",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440004",
+    "title": "The Catcher in the Rye",
+    "synopsis": "A story about teenage rebellion and alienation.",
+    "author": "J.D. Salinger",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440004",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440004/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440004/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440005",
+    "title": "The Hobbit",
+    "synopsis": "A fantasy novel about the adventures of Bilbo Baggins.",
+    "author": "J.R.R. Tolkien",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440005",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440005/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440005/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440006",
+    "title": "Brave New World",
+    "synopsis": "A dystopian novel about a futuristic society driven by technological advancements.",
+    "author": "Aldous Huxley",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440006",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440006/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440006/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440007",
+    "title": "Moby Dick",
+    "synopsis": "An epic tale of obsession and revenge, centered around the hunt for a white whale.",
+    "author": "Herman Melville",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440007",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440007/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440007/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440008",
+    "title": "War and Peace",
+    "synopsis": "A historical novel that chronicles the French invasion of Russia and its impact on several families.",
+    "author": "Leo Tolstoy",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440008",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440008/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440008/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440009",
+    "title": "The Odyssey",
+    "synopsis": "An epic poem about the Greek hero Odysseus and his journey home after the Trojan War.",
+    "author": "Homer",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440009",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440009/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440009/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000a",
+    "title": "The Brothers Karamazov",
+    "synopsis": "A philosophical novel exploring faith, doubt, and reason.",
+    "author": "Fyodor Dostoevsky",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000a",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000a/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000a/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000b",
+    "title": "Crime and Punishment",
+    "synopsis": "The mental anguish of a young man who plans a crime.",
+    "author": "Fyodor Dostoevsky",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000b",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000b/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000b/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000c",
+    "title": "Jane Eyre",
+    "synopsis": "A novel about a governess and her moral growth and love story.",
+    "author": "Charlotte Brontë",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000c",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000c/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000c/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000d",
+    "title": "Wuthering Heights",
+    "synopsis": "A tragic love story set on the Yorkshire moors.",
+    "author": "Emily Brontë",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000d",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000d/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000d/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000e",
+    "title": "The Divine Comedy",
+    "synopsis": "An epic poem describing the journey through Hell, Purgatory, and Paradise.",
+    "author": "Dante Alighieri",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000e",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000e/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000e/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544000f",
+    "title": "Les Misérables",
+    "synopsis": "A sweeping epic of social injustice and redemption in 19th-century France.",
+    "author": "Victor Hugo",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544000f",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544000f/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544000f/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440010",
+    "title": "Anna Karenina",
+    "synopsis": "A tragic romance exploring the complexities of love and society.",
+    "author": "Leo Tolstoy",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440010",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440010/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440010/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440011",
+    "title": "Dracula",
+    "synopsis": "A Gothic horror novel about the vampire Count Dracula.",
+    "author": "Bram Stoker",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440011",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440011/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440011/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440012",
+    "title": "The Picture of Dorian Gray",
+    "synopsis": "A novel about vanity, moral corruption, and eternal youth.",
+    "author": "Oscar Wilde",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440012",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440012/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440012/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440013",
+    "title": "Frankenstein",
+    "synopsis": "A scientist creates a monster that becomes uncontrollable.",
+    "author": "Mary Shelley",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440013",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440013/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440013/reviews"
+    },
+    "state": "active"
+  }
+]

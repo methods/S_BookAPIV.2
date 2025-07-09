@@ -1,28 +1,31 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import MagicMock
+
 from app.datastore.mongo_helper import insert_book_to_mongo
 
-# @patch('mongo_helper.books_collection')
-def test_insert_book_to_mongo():
-    #Setup the mock
-    mock_result = MagicMock()
-    mock_result.inserted_id = '12345'
-    mock_result.acknowledged = True
-    # Create a mock for books_collection
+
+def test_insert_book_to_mongo_calls_replace_one_with_upsert():
+    # ARRANGE:
     mock_books_collection = MagicMock()
-    mock_books_collection.insert_one.return_value = mock_result
 
     # Test data
     new_book = {
+        "id": "some-unique-id-123",
         "title": "The Great Gatsby",
         "author": "F. Scott Fitzgerald",
-        "synopsis": "A story about the American Dream"
+        "synopsis": "A story about the American Dream",
     }
 
+    # ACT:
     # Call the function
-    result = insert_book_to_mongo(new_book, mock_books_collection)
+    insert_book_to_mongo(new_book, mock_books_collection)
 
-    # Assertions
-    mock_books_collection.insert_one.assert_called_once_with(new_book)
-    assert result == '12345'
+    # ASSERT:
+    mock_books_collection.replace_one.assert_called_once()
+    expected_filter = {"id": "some-unique-id-123"}
+    mock_books_collection.replace_one.assert_called_once_with(
+        expected_filter,  # Argument 1: The query filter
+        new_book,  # Argument 2: The replacement document
+        upsert=True,  # Argument 3: The upsert keyword argument
+    )
