@@ -14,7 +14,6 @@ def load_books_json():
     """
     # Get the absolute path from this file to the project root
     root_dir = os.path.dirname(os.path.dirname(__file__))
-    print("rootDIR", root_dir)
 
     # Build absolute path to the books.json file
     json_path = os.path.join(root_dir, "scripts", "test_data", "sample_books.json")

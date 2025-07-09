@@ -1,5 +1,5 @@
 """
-Script for populating resouces to a database
+Script for populating resources to a database
 """
 
 from app import create_app

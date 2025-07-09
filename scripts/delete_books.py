@@ -13,7 +13,14 @@ from app.datastore.mongo_db import get_book_collection
 
 
 def delete_all_books(collection):
-    """Deletes all documents from the given collection."""
+    """Delete all documents from the given collection.
+
+    Args:
+        collection: A MongoDB collection object.
+
+    Returns:
+        int: The number of documents deleted.
+    """
 
     print("Attempting to delete all documents from the books collection...")
     # It returns a DeleteResult object, which contains useful information.
