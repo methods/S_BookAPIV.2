@@ -7,14 +7,15 @@ This file contains shared fixtures and helpers that are automatically discovered
 
 import mongomock
 import pytest
+from app import create_app
 
 
 @pytest.fixture(name="mock_books_collection")
 def mock_books_collection_fixture():
     """Provides an in-memory, empty 'books' collection for each test."""
     # mongomock.MongoClient() creates a fake client.
-    client = mongomock.MongoClient()
-    db = client["test_database"]
+    mongo_client = mongomock.MongoClient()
+    db = mongo_client["test_database"]
     return db["test_books_collection"]
 
 
@@ -47,3 +48,17 @@ def sample_book_data():
             "state": "active",
         },
     ]
+
+@pytest.fixture()
+def test_app():
+    """Creates an app with a specific 'TESTING' config"""
+    app = create_app({
+        "TESTING": True, 
+        "API_KEY": "test-key-123"
+        })
+    yield app
+
+@pytest.fixture(name="test_client")
+def client(app):
+    """A test client for the app."""
+    return app.test_client()

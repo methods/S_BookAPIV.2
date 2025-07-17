@@ -1,21 +1,20 @@
 """Initialize the Flask app and register all routes."""
 
 import os
-
-from dotenv import load_dotenv
 from flask import Flask
+from app.config import Config
 
-
-def create_app():
+def create_app(test_config=None):
     """Application factory pattern."""
-    # Load the env variables to use here
-    load_dotenv()
 
     app = Flask(__name__)
-    # Use app.config to set config connection details
-    app.config["MONGO_URI"] = os.getenv("MONGO_CONNECTION")
-    app.config["DB_NAME"] = os.getenv("PROJECT_DATABASE")
-    app.config["COLLECTION_NAME"] = os.getenv("PROJECT_COLLECTION")
+
+    if test_config is None:
+        # Load configuration from our Config object
+        app.config.from_object(Config)
+    else:
+        # Load the test configuration passed in
+        app.config.from_mapping(test_config)
 
     # Import routes — routes can import app safely because it exists
     from app.routes import \

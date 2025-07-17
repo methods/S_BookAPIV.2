@@ -12,7 +12,6 @@ from app.utils.helper import append_hostname
 from data import books
 
 
-# ----------- POST section ------------------
 def register_routes(app):  # pylint: disable=too-many-statements
     """
     Register all Flask routes with the given app instance.
@@ -20,7 +19,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
     Args:
         app (Flask): The Flask application instance to register routes on.
     """
-
+# ----------- POST section ------------------
     @app.route("/books", methods=["POST"])
     def add_book():
         """Function to add a new book to the collection."""
