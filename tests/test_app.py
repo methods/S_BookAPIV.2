@@ -9,25 +9,7 @@ from app import create_app
 from app.datastore.mongo_db import get_book_collection
 
 
-# Option 1: Rename the fixture to something unique (which I've used)
-# Option 2: Use a linter plugin that understands pytest
-@pytest.fixture(name="client")
-def client_fixture():
-    app = create_app()
-    app.config["TESTING"] = True
-    return app.test_client()
-
-
-# Create a stub to mock the insert_book_to_mongo function to avoid inserting to real DB
-@pytest.fixture(name="_insert_book_to_db")
-def stub_insert_book():
-    with patch("app.routes.insert_book_to_mongo") as mock_insert_book:
-        mock_insert_book.return_value.inserted_id = "12345"
-        yield mock_insert_book
-
-
 # Mock book database object
-
 books_database = [
     {
         "id": "1",
@@ -69,7 +51,6 @@ books_database = [
 
 # ------------------- Tests for POST ---------------------------------------------
 
-
 def test_add_book_creates_new_book(client, _insert_book_to_db):
 
     test_book = {
@@ -78,7 +59,12 @@ def test_add_book_creates_new_book(client, _insert_book_to_db):
         "synopsis": "Test Synopsis",
     }
 
-    response = client.post("/books", json=test_book)
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+
+    response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 201
     assert response.headers["content-type"] == "application/json"
@@ -95,7 +81,12 @@ def test_add_book_sent_with_missing_required_fields(client):
         "author": "AN Other"
         # missing 'title' and 'synopsis'
     }
-    response = client.post("/books", json=test_book)
+
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+    response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 400
     response_data = response.get_json()
@@ -104,9 +95,17 @@ def test_add_book_sent_with_missing_required_fields(client):
 
 
 def test_add_book_sent_with_wrong_types(client):
-    test_book = {"title": 1234567, "author": "AN Other", "synopsis": "Test Synopsis"}
+    test_book = {
+        "title": 1234567, 
+        "author": "AN Other", 
+        "synopsis": "Test Synopsis"
+        }
 
-    response = client.post("/books", json=test_book)
+ # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+    response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 400
     response_data = response.get_json()
@@ -116,19 +115,28 @@ def test_add_book_sent_with_wrong_types(client):
 
 def test_add_book_with_invalid_json_content(client):
 
+     # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+
     # This should trigger a TypeError
-    response = client.post("/books", json="This is not a JSON object")
+    response = client.post("/books", json="This is not a JSON object", headers=valid_headers)
 
     assert response.status_code == 400
     assert "JSON payload must be a dictionary" in response.get_json()["error"]
 
 
 def test_add_book_check_request_header_is_json(client):
+     # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
 
     response = client.post(
         "/books",
         data="This is not a JSON object",
-        headers={"content-type": "text/plain"},
+        headers=valid_headers,
     )
 
     assert response.status_code == 415
@@ -141,10 +149,14 @@ def test_500_response_is_json(client):
         "author": "AN Other",
         "synopsis": "Test Synopsis",
     }
+     # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
 
     # Use patch to mock uuid module failing and throwing an exception
     with patch("uuid.uuid4", side_effect=Exception("An unexpected error occurred")):
-        response = client.post("/books", json=test_book)
+        response = client.post("/books", json=test_book, headers=valid_headers)
 
         # Check the response code is 500
         assert response.status_code == 500
@@ -486,8 +498,12 @@ def test_append_host_to_links_in_post(client, _insert_book_to_db):
         "author": "AN Other II",
         "synopsis": "Test Synopsis",
     }
+     # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
 
-    response = client.post("/books", json=test_book)
+    response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 201
     assert response.headers["content-type"] == "application/json"

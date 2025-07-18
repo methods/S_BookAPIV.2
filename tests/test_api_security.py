@@ -1,13 +1,10 @@
+# pylint: disable=missing-docstring
 """
 Tests for API security features, such as API key authentication.
 """
 
-def test_create_book_fails_without_api_key(test_client, monkeypatch):
-    """
-    GIVEN a Flask application configured for testing
-    WHEN a POST request is made to '/books' WITHOUT an API key in the headers
-    THEN check that the response is 401 Unauthorized
-    """
+def test_create_book_fails_without_api_key(client, monkeypatch):
+
     # 1. Stub out any external dependencies
     monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
     monkeypatch.setattr("app.routes.insert_book_to_mongo", lambda book, collection: None)
@@ -21,7 +18,7 @@ def test_create_book_fails_without_api_key(test_client, monkeypatch):
     }
 
     # 3. Hit the endpoint without Authorization header
-    response = test_client.post("/books", json=payload)
+    response = client.post("/books", json=payload)
     print("Response:", response.get_data(as_text=True))
     print("Status code", response.status_code)
 
@@ -31,7 +28,7 @@ def test_create_book_fails_without_api_key(test_client, monkeypatch):
 
 
 
-def test_create_book_succeeds_with_valid_api_key(test_client, monkeypatch):
+def test_create_book_succeeds_with_valid_api_key(client, monkeypatch):
     """
     GIVEN a Flask application configured for testing
     WHEN a POST request is made to '/books' WITH a valid API key in the headers
@@ -55,6 +52,6 @@ def test_create_book_succeeds_with_valid_api_key(test_client, monkeypatch):
     }
 
     # Pass the headers dictionary to the `headers` argument.
-    response = test_client.post("/books", json=valid_payload, headers=valid_headers)
+    response = client.post("/books", json=valid_payload, headers=valid_headers)
 
     assert response.status_code == 201
