@@ -151,6 +151,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
     # ----------- DELETE section ------------------
     @app.route("/books/<string:book_id>", methods=["DELETE"])
+    @require_api_key
     def delete_book(book_id):
         """
         Soft delete a book by setting its state to 'deleted' or return error if not found.

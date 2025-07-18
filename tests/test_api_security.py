@@ -61,7 +61,7 @@ def test_create_book_succeeds_with_valid_api_key(client, monkeypatch):
 
     assert response.status_code == 201
 
-# -------------- POST --------------------------
+# -------------- PUT --------------------------
 
 def test_update_book_fails_without_api_key(monkeypatch, client):
     """Should return 401 if no API key is provided."""
@@ -109,3 +109,24 @@ def test_update_book_succeeds_with_api_key(monkeypatch, client):
     # 5. Assert response
     assert response.status_code == 200
     assert response.json["title"] == "New Title"
+
+# -------------- DELETE --------------------------
+def test_delete_book_unauthorized(client):
+    """
+    WHEN a DELETE request is made without an API key
+    THEN the response should be 401 Unauthorized
+    """
+    response = client.delete("/books/some-id")
+    assert response.status_code == 401
+    assert "Invalid or missing API Key" in response.json["error"]["message"]
+
+def test_delete_book_authorized(client, monkeypatch):
+    """
+    WHEN a DELETE request is made with a valid API key
+    THEN it should return 200 OK (or appropriate response)
+    """
+    monkeypatch.setattr("app.routes.books", [{"id": "some-id"}])
+
+    headers = {"X-API-KEY": "test-key-123"}
+    response = client.delete("/books/some-id", headers=headers)
+    assert response.status_code == 204
