@@ -309,9 +309,10 @@ def test_get_book_returns_404_if_state_equals_deleted(client):
 
 def test_book_is_soft_deleted_on_delete_request(client):
     with patch("app.routes.books", books_database):
-        # Send DELETE request
+        # Send DELETE request with valid API header
         book_id = "1"
-        response = client.delete(f"/books/{book_id}")
+        headers = {"X-API-KEY": "test-key-123"}
+        response = client.delete(f"/books/{book_id}", headers=headers)
 
         assert response.status_code == 204
         assert response.data == b""
@@ -328,7 +329,8 @@ def test_delete_empty_book_id(client):
 
 
 def test_delete_invalid_book_id(client):
-    response = client.delete("/books/12341234")
+    headers = {"X-API-KEY": "test-key-123"}
+    response = client.delete("/books/12341234", headers=headers)
     assert response.status_code == 404
     assert response.content_type == "application/json"
     assert "Book not found" in response.get_json()["error"]
@@ -336,7 +338,8 @@ def test_delete_invalid_book_id(client):
 
 def test_book_database_is_initialized_for_delete_book_route(client):
     with patch("app.routes.books", None):
-        response = client.delete("/books/1")
+        headers = {"X-API-KEY": "test-key-123"}
+        response = client.delete("/books/1", headers=headers)
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
 
