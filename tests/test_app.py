@@ -352,9 +352,13 @@ def test_update_book_request_returns_correct_status_and_content_type(client):
             "author": "AN Other",
             "synopsis": "Test Synopsis",
         }
+        # Define the valid headers, including the API key that matches conftest.py
+        valid_headers = {
+            "X-API-KEY": "test-key-123"
+        }
 
         # send PUT request
-        response = client.put("/books/1", json=test_book)
+        response = client.put("/books/1", json=test_book, headers=valid_headers)
 
         # Check response status code and content type
         assert response.status_code == 200
@@ -368,9 +372,13 @@ def test_update_book_request_returns_required_fields(client):
             "author": "AN Other",
             "synopsis": "Test Synopsis",
         }
+        # Define the valid headers, including the API key that matches conftest.py
+        valid_headers = {
+            "X-API-KEY": "test-key-123"
+        }
 
         # Send PUT request
-        response = client.put("/books/1", json=test_book)
+        response = client.put("/books/1", json=test_book, headers=valid_headers)
         response_data = response.get_json()
 
         # Check that required fields are in the response data
@@ -398,8 +406,11 @@ def test_update_book_replaces_whole_object(client):
             "author": "Updated Author",
             "synopsis": "Updated Synopsis",
         }
-
-        response = client.put("/books/1", json=updated_data)
+        # Define the valid headers, including the API key that matches conftest.py
+        valid_headers = {
+            "X-API-KEY": "test-key-123"
+        }
+        response = client.put("/books/1", json=updated_data, headers=valid_headers)
         assert response.status_code == 200
 
         data = response.get_json()
@@ -421,7 +432,11 @@ def test_update_book_sent_with_invalid_book_id(client):
             "author": "Some author",
             "synopsis": "Some synopsis",
         }
-        response = client.put("/books/999", json=test_book)
+        # Define the valid headers, including the API key that matches conftest.py
+        valid_headers = {
+            "X-API-KEY": "test-key-123"
+        }
+        response = client.put("/books/999", json=test_book, headers=valid_headers)
         assert response.status_code == 404
         assert "Book not found" in response.get_json()["error"]
 
@@ -433,9 +448,12 @@ def test_book_database_is_initialized_for_update_book_route(client):
             "author": "AN Other",
             "synopsis": "Test Synopsis",
         }
-
+        # Define the valid headers, including the API key that matches conftest.py
+        valid_headers = {
+            "X-API-KEY": "test-key-123"
+        }
         # Send PUT request
-        response = client.put("/books/1", json=test_book)
+        response = client.put("/books/1", json=test_book, headers=valid_headers)
         assert response.status_code == 500
         assert "Book collection not initialized" in response.get_json()["error"]
 
@@ -445,7 +463,10 @@ def test_update_book_check_request_header_is_json(client):
     response = client.put(
         "/books/1",
         data="This is not a JSON object",
-        headers={"content-type": "text/plain"},
+        headers={
+            "content-type": "text/plain",
+            "X-API-KEY": "test-key-123"
+            },
     )
 
     assert response.status_code == 415
@@ -453,9 +474,13 @@ def test_update_book_check_request_header_is_json(client):
 
 
 def test_update_book_with_invalid_json_content(client):
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
 
     # This should trigger a TypeError
-    response = client.put("/books/1", json="This is not a JSON object")
+    response = client.put("/books/1", json="This is not a JSON object", headers=valid_headers)
 
     assert response.status_code == 400
     assert "JSON payload must be a dictionary" in response.get_json()["error"]
@@ -466,7 +491,12 @@ def test_update_book_sent_with_missing_required_fields(client):
         "author": "AN Other"
         # missing 'title' and 'synopsis'
     }
-    response = client.put("/books/1", json=test_book)
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+
+    response = client.put("/books/1", json=test_book, headers=valid_headers)
 
     assert response.status_code == 400
     response_data = response.get_json()
@@ -573,7 +603,12 @@ def test_append_host_to_links_in_put(client):
         "author": "AN Other",
         "synopsis": "Test Synopsis",
     }
-    response = client.put("/books/1", json=test_book)
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {
+        "X-API-KEY": "test-key-123"
+    }
+
+    response = client.put("/books/1", json=test_book, headers=valid_headers)
 
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
