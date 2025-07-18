@@ -8,7 +8,6 @@ from pymongo.errors import ServerSelectionTimeoutError
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
 
-
 # Mock book database object
 books_database = [
     {
@@ -51,6 +50,7 @@ books_database = [
 
 # ------------------- Tests for POST ---------------------------------------------
 
+
 def test_add_book_creates_new_book(client, _insert_book_to_db):
 
     test_book = {
@@ -60,9 +60,7 @@ def test_add_book_creates_new_book(client, _insert_book_to_db):
     }
 
     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     response = client.post("/books", json=test_book, headers=valid_headers)
 
@@ -83,9 +81,7 @@ def test_add_book_sent_with_missing_required_fields(client):
     }
 
     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    valid_headers = {"X-API-KEY": "test-key-123"}
     response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 400
@@ -95,16 +91,10 @@ def test_add_book_sent_with_missing_required_fields(client):
 
 
 def test_add_book_sent_with_wrong_types(client):
-    test_book = {
-        "title": 1234567, 
-        "author": "AN Other", 
-        "synopsis": "Test Synopsis"
-        }
+    test_book = {"title": 1234567, "author": "AN Other", "synopsis": "Test Synopsis"}
 
- # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
     response = client.post("/books", json=test_book, headers=valid_headers)
 
     assert response.status_code == 400
@@ -115,23 +105,21 @@ def test_add_book_sent_with_wrong_types(client):
 
 def test_add_book_with_invalid_json_content(client):
 
-     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     # This should trigger a TypeError
-    response = client.post("/books", json="This is not a JSON object", headers=valid_headers)
+    response = client.post(
+        "/books", json="This is not a JSON object", headers=valid_headers
+    )
 
     assert response.status_code == 400
     assert "JSON payload must be a dictionary" in response.get_json()["error"]
 
 
 def test_add_book_check_request_header_is_json(client):
-     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     response = client.post(
         "/books",
@@ -149,10 +137,8 @@ def test_500_response_is_json(client):
         "author": "AN Other",
         "synopsis": "Test Synopsis",
     }
-     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     # Use patch to mock uuid module failing and throwing an exception
     with patch("uuid.uuid4", side_effect=Exception("An unexpected error occurred")):
@@ -498,10 +484,8 @@ def test_append_host_to_links_in_post(client, _insert_book_to_db):
         "author": "AN Other II",
         "synopsis": "Test Synopsis",
     }
-     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     response = client.post("/books", json=test_book, headers=valid_headers)
 

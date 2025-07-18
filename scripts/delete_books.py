@@ -7,7 +7,9 @@ Exits with status code 1 on failure (e.g., cannot connect to the database).
 """
 
 import sys
+
 from pymongo.errors import ConnectionFailure
+
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
 
@@ -37,7 +39,7 @@ def main():
     """
     Starts the Flask app context, connects to MongoDB, and deletes all
     documents in the books collection.
-    
+
     Returns:
         int: 0 on success, 1 on failure.
     """
@@ -62,7 +64,9 @@ def main():
             # This is a critical failure. The script could not do its job.
             # Printing to sys.stderr is best practice for error messages.
             print("❌ ERROR: Could not connect to MongoDB.", file=sys.stderr)
-            print("Please ensure the database is running and accessible.", file=sys.stderr)
+            print(
+                "Please ensure the database is running and accessible.", file=sys.stderr
+            )
             print(f"Details: {e}", file=sys.stderr)
 
             # Return the failure code.

@@ -1,10 +1,13 @@
 """API security decorators."""
 
 from functools import wraps
-from flask import request, abort, current_app
+
+from flask import abort, current_app, request
+
 
 def require_api_key(f):
     """A decorator to protect routes with a required API key"""
+
     @wraps(f)
     def decorated_function(*args, **kwargs):
         # Check for the key in the request headers.
@@ -12,7 +15,7 @@ def require_api_key(f):
         print("PROVIDED_KEY", provided_key)
 
         # Get the real key from our application config
-        expected_key = current_app.config.get('API_KEY')
+        expected_key = current_app.config.get("API_KEY")
         print("EXPECTED_KEY", expected_key)
 
         if not provided_key or provided_key != expected_key:
@@ -20,4 +23,5 @@ def require_api_key(f):
 
         # If key is valid, proceed with the original function
         return f(*args, **kwargs)
+
     return decorated_function

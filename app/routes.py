@@ -4,7 +4,7 @@ import copy
 import uuid
 
 from flask import jsonify, request
-from werkzeug.exceptions import NotFound, HTTPException
+from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
@@ -20,7 +20,8 @@ def register_routes(app):  # pylint: disable=too-many-statements
     Args:
         app (Flask): The Flask application instance to register routes on.
     """
-# ----------- POST section ------------------
+
+    # ----------- POST section ------------------
     @app.route("/books", methods=["POST"])
     @require_api_key
     def add_book():
@@ -220,8 +221,8 @@ def register_routes(app):  # pylint: disable=too-many-statements
     def handle_not_found(e):
         """Return a custom JSON response for 404 Not Found errors."""
         return jsonify({"error": str(e)}), 404
-    @app.errorhandler(HTTPException)
 
+    @app.errorhandler(HTTPException)
     def handle_http_exception(e):
         """
         Return JSON for any HTTPException (401, 404, 403, etc.)
@@ -229,12 +230,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
         """
         # e.code is the HTTP status code (e.g. 401)
         # e.description is the text you passed to abort()
-        response = {
-        "error": {
-            "code":    e.code,
-            "message": e.description
-        }
-        }
+        response = {"error": {"code": e.code, "message": e.description}}
         return jsonify(response), e.code
 
     @app.errorhandler(Exception)

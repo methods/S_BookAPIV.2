@@ -2,8 +2,6 @@
 import pytest
 from pymongo import MongoClient
 
-from app import create_app
-
 
 @pytest.fixture(name="mongo_client")
 def mongo_client_fixture():
@@ -27,10 +25,8 @@ def test_post_route_inserts_to_mongodb(mongo_client, client):
         "synopsis": "A novel about all the choices that go into a life well lived.",
         "author": "Matt Haig",
     }
-     # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {
-        "X-API-KEY": "test-key-123"
-    }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     # Act- send the POST request:
     response = client.post("/books", json=new_book_payload, headers=valid_headers)
