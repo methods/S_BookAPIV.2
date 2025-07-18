@@ -9,14 +9,13 @@ def create_app(test_config=None):
 
     app = Flask(__name__)
 
-    if test_config is None:
-        # Load configuration from our Config object
-        app.config.from_object(Config)
-    else:
-        # Load the test configuration passed in
+    # 1. Load the default configuration from the Config object.
+    app.config.from_object(Config)
+
+    if test_config: # Override with test specifics
         app.config.from_mapping(test_config)
 
-    # Import routes — routes can import app safely because it exists
+    # Import routes
     from app.routes import \
         register_routes  # pylint: disable=import-outside-toplevel
 
