@@ -51,14 +51,14 @@ def sample_book_data():
 
 @pytest.fixture()
 def test_app():
-    """Creates an app with a specific 'TESTING' config"""
+    """Creates an app with a specific 'TESTING' config."""
     app = create_app({
-        "TESTING": True, 
+        "TESTING": True,
         "API_KEY": "test-key-123"
-        })
+    })
     yield app
 
 @pytest.fixture(name="test_client")
-def client(app):
+def client(test_app): # pylint: disable=redefined-outer-name
     """A test client for the app."""
-    return app.test_client()
+    return test_app.test_client()
