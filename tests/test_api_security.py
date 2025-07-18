@@ -3,6 +3,7 @@
 Tests for API security features, such as API key authentication.
 """
 
+# -------------- POST --------------------------
 
 def test_create_book_fails_without_api_key(client, monkeypatch):
 
@@ -59,3 +60,52 @@ def test_create_book_succeeds_with_valid_api_key(client, monkeypatch):
     response = client.post("/books", json=valid_payload, headers=valid_headers)
 
     assert response.status_code == 201
+
+# -------------- POST --------------------------
+
+def test_update_book_fails_without_api_key(monkeypatch, client):
+    """Should return 401 if no API key is provided."""
+
+    monkeypatch.setattr("app.routes.books", [])
+
+    payload = {
+        "title": "New Title",
+        "synopsis": "New Synopsis",
+        "author": "New Author"
+    }
+
+    response = client.put("/books/abc123", json=payload)
+
+    assert response.status_code == 401
+    assert "API Key" in response.json["error"]["message"]
+
+
+def test_update_book_succeeds_with_api_key(monkeypatch, client):
+    """Test successful book update with valid API key."""
+
+    # 1. Patch the books list
+    test_books = [{
+        "id": "abc123",
+        "title": "Old Title",
+        "synopsis": "Old Synopsis",
+        "author": "Old Author"
+    }]
+    monkeypatch.setattr("app.routes.books", test_books)
+
+    # 2. Patch append_hostname to just return the book
+    monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
+
+    # 3. Build request
+    headers = {"X-API-KEY": "test-key-123"}
+    payload = {
+        "title": "New Title",
+        "synopsis": "New Synopsis",
+        "author": "New Author"
+    }
+
+    # 4. Call the endpoint
+    response = client.put("/books/abc123", json=payload, headers=headers)
+
+    # 5. Assert response
+    assert response.status_code == 200
+    assert response.json["title"] == "New Title"

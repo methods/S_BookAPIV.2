@@ -167,6 +167,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
     # ----------- PUT section ------------------
 
     @app.route("/books/<string:book_id>", methods=["PUT"])
+    @require_api_key
     def update_book(book_id):
         """
         Update a book by its unique ID using JSON from the request body.
