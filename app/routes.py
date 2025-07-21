@@ -219,6 +219,9 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         return jsonify({"error": "Book not found"}), 404
 
+
+    # ----------- CUSTOM ERROR HANDLERS ------------------
+
     @app.errorhandler(NotFound)
     def handle_not_found(e):
         """Return a custom JSON response for 404 Not Found errors."""
@@ -226,13 +229,18 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
     @app.errorhandler(HTTPException)
     def handle_http_exception(e):
-        """
-        Return JSON for any HTTPException (401, 404, 403, etc.)
+        """Return JSON for any HTTPException (401, 404, 403, etc.)
         preserving its original status code & description.
         """
         # e.code is the HTTP status code (e.g. 401)
         # e.description is the text you passed to abort()
-        response = {"error": {"code": e.code, "message": e.description}}
+        response = {
+            "error": {
+                "code": e.code,
+                "name": e.name,
+                "message": e.description
+            }
+        }
         return jsonify(response), e.code
 
     @app.errorhandler(Exception)
