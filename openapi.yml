@@ -6,12 +6,12 @@ info:
   title: Book Collection API
   version: v1.0.0
   description: A simple API to manage a collection of books.
-  termsOfService: 'https://github.com/methods/NandS_BookAPIV.2'
+  termsOfService: 'https://github.com/methods/S_BookAPIV.2'
   contact:
     email: booksAPI@example.com
   license:
     name: MIT License
-    url: 'https://github.com/methods/NandS_BookAPIV.2/blob/main/LICENSE.md'
+    url: 'https://github.com/methods/S_BookAPIV.2/blob/main/LICENSE.md'
 
 # --------------------------------------------
 # Server
@@ -31,6 +31,12 @@ tags:
 # --------------------------------------------
 # Components
 components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-KEY
+  
   schemas:
     # Schema for the data client POSTs to create a book
     BookInput:
@@ -105,14 +111,63 @@ components:
             $ref: '#/components/schemas/BookOutput'
 
     # Generic Error schema
-    Error:
+    StandardError:
       type: object
       properties:
         error:
-          type: string
-          description: A message describing the error.
+          type: object
+          properties:
+            code:
+              type: integer
+              description: The HTTP status code.
+              example: 400
+            name:
+              type: string
+              description: The HTTP status name.
+              example: "Bad Request"
+            message:
+              type: string
+              description: A detailed error message.
+              example: "API key is missing."
+          required:
+            - code
+            - name
+            - message
       required:
         - error
+    
+  # API Error: Reusable responses for common errors  
+  responses:
+    BadRequest:
+      description: The server could not process the request due to a client error (e.g., malformed request syntax, invalid request message framing, or deceptive request routing).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+    Unauthorized:
+      description: API key is missing or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+    NotFound:
+      description: The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+    UnsupportedMediaType:
+      description: The request payload is not in the expected format (e.g., not JSON).
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+    InternalServerError:
+      description: An unexpected error occurred on the server.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
 # --------------------------------------------
 # Paths
 paths:
@@ -123,8 +178,10 @@ paths:
       tags:
         - Books
       summary: Add a new book
+      security:
+        - ApiKeyAuth: [] 
       description: Adds a new book to the collection. The server will generate a unique ID and HATEOAS links for the new book.
-      operationId: addBook 
+      operationId: addBook
       requestBody:
         description: Book object that needs to be added to the store.
         required: true
@@ -140,40 +197,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookOutput' 
         '400': 
-          description: Invalid input provided or missing fields.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                missingFields:
-                  summary: Example of missing fields error
-                  value:
-                    error: "Missing required fields: title, synopsis"
-                notADictionary:
-                  summary: Example of payload not being a dictionary
-                  value:
-                    error: "JSON payload must be a dictionary"
-                incorrectFieldTypeInternal:
-                  summary: Example of internal field type validation error 
-                  value:
-                    error: "Field title is not of type <class 'str'>"
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '415': 
-          description: Request payload is not JSON.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "Request must be JSON"
+          $ref: '#/components/responses/UnsupportedMediaType'
         '500':
-          description: Internal Server Error. An unexpected error occurred on the server.
-          content:
-            application/json: 
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "An unexpected error occurred."
+          $ref: '#/components/responses/InternalServerError' 
     # --------------------------------------------
     get:
       tags:
@@ -198,21 +228,9 @@ paths:
                     items:
                       $ref: '#/components/schemas/BookOutput'
         '404':
-          description: No books found in the database.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "No books found"
+          $ref: '#/components/responses/NotFound' 
         '500':
-          description: Internal Server Error. An unexpected error occurred.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "An unexpected error occurred."
+          $ref: '#/components/responses/InternalServerError' 
   # --------------------------------------------
   /books/{book_id}: 
   # --------------------------------------------
@@ -239,30 +257,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookOutput' 
         '404': 
-          description: Book not found. The requested book ID does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error' 
-              example:
-                bookNotFound:
-                  summary: Example of a book not found error
-                  value:
-                    error: "Book not found"
+          $ref: '#/components/responses/NotFound' 
         '500': 
-          description: Internal Server Error. An unexpected error occurred on the server.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error' 
-              example: 
-                error: "An unexpected error occurred."
+          $ref: '#/components/responses/InternalServerError' 
      # --------------------------------------------
 
     put:
       tags:
         - Books
       summary: Update a book
+      security:
+        - ApiKeyAuth: []
       description: Updates an existing book by its unique ID. The entire book object must be provided in the request body.
       operationId: updateBook
       parameters:
@@ -289,50 +294,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookOutput'
         '400':
-          description: Invalid input, or missing required fields.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                missingFields:
-                  summary: Example of missing fields error
-                  value:
-                    error: "Missing required fields: title"
-                notADictionary:
-                  summary: Example of payload not being a dictionary
-                  value:
-                    error: "JSON payload must be a dictionary"
+          $ref: '#/components/responses/BadRequest' 
+        '401':
+          $ref: '#/components/responses/Unauthorized' 
         '404':
-          description: Book not found. The requested book ID does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "Book not found"
+          $ref: '#/components/responses/NotFound' 
         '415':
-          description: Request payload is not JSON.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "Request must be JSON"
+          $ref: '#/components/responses/UnsupportedMediaType' 
         '500':
-          description: Internal Server Error. An unexpected error occurred on the server.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "Book collection not initialized"
+          $ref: '#/components/responses/InternalServerError' 
+
     # --------------------------------------------
     
     delete:
       tags:
         - Books
       summary: Delete a book by ID
+      security:
+        - ApiKeyAuth: []
       description: Soft deletes a book by setting its state to 'deleted'.
       operationId: deleteBookById
       parameters:
@@ -347,19 +326,10 @@ paths:
       responses:
         '204':
           description: Book deleted successfully.
+          content: {}
+        '401':
+          $ref: '#/components/responses/Unauthorized' 
         '404':
-          description: Book not found. The requested book ID does not exist.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "Book not found"
+          $ref: '#/components/responses/NotFound' 
         '500':
-          description: Internal Server Error. An unexpected error occurred on the server.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              example:
-                error: "An unexpected error occurred."
+          $ref: '#/components/responses/InternalServerError' 
