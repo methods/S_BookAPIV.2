@@ -2,6 +2,31 @@
 """
 Tests for API security features, such as API key authentication.
 """
+import logging
+import pytest
+
+# -------------- LOGGING --------------------------
+
+@pytest.mark.parametrize("method, path", [
+    ("post", "/books"),
+    ("put", "/books/some-id"),
+    ("delete", "/books/some-id"),
+])
+
+def test_invalid_api_key_logs_attempt_for_post_route(client, caplog, method, path):
+    caplog.set_level(logging.WARNING)
+
+    invalid_header = {
+        "X-API-KEY": 'This-is-the-wrong-key-12345'
+    }
+
+    response = getattr(client, method)(path, headers=invalid_header)
+
+
+    assert response.status_code == 401
+    assert "Unauthorized access attempt" in caplog.text
+    assert "/books" in caplog.text
+
 
 # -------------- POST --------------------------
 
