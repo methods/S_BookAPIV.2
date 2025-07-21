@@ -124,7 +124,7 @@ def test_add_book_check_request_header_is_json(client):
     response = client.post(
         "/books",
         data="This is not a JSON object",
-        headers=valid_headers,
+        headers={"content-type": "text/plain", **valid_headers},
     )
 
     assert response.status_code == 415
