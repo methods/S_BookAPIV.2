@@ -1,7 +1,10 @@
 """API security decorators."""
+
 import hmac
 from functools import wraps
+
 from flask import abort, current_app, request
+
 
 def log_unauthorized_access():
     """
@@ -10,6 +13,7 @@ def log_unauthorized_access():
     current_app.logger.warning(
         f"Unauthorized access attempt: IP={request.remote_addr}, path={request.path}"
     )
+
 
 def require_api_key(f):
     """A decorator to protect routes with a required API key"""
