@@ -5,7 +5,7 @@ Tests for API security features, such as API key authentication.
 
 # -------------- POST --------------------------
 
-def test_create_book_fails_without_api_key(client, monkeypatch):
+def test_protected_route_fails_with_missing_key(client, monkeypatch):
 
     # 1. Stub out any external dependencies
     monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
@@ -28,10 +28,9 @@ def test_create_book_fails_without_api_key(client, monkeypatch):
 
     # 4. Assert that you got a 401 back
     assert response.status_code == 401
-    assert "Invalid or missing API Key" in response.json["error"]["message"]
+    assert "API key is missing." in response.json["error"]["message"]
 
-
-def test_create_book_succeeds_with_valid_api_key(client, monkeypatch):
+def test_protected_route_succeeds_with_valid_key(client, monkeypatch):
     """
     GIVEN a Flask application configured for testing
     WHEN a POST request is made to '/books' WITH a valid API key in the headers
@@ -61,6 +60,42 @@ def test_create_book_succeeds_with_valid_api_key(client, monkeypatch):
 
     assert response.status_code == 201
 
+def test_access_fails_with_invalid_key(client):
+
+    # ARRANGE
+    invalid_headers = {
+        "X-API-KEY": 'This-is-the-wrong-key-12345'
+    }
+     # The payload does NOT contain the key.
+    valid_payload = {
+        "title": "A Real Book",
+        "synopsis": "It's real.",
+        "author": "A. Real Person",
+    }
+
+    # ACT
+    response = client.post('/books', json=valid_payload, headers=invalid_headers)
+
+    # ASSERT: Verify the server rejected the request as expected.
+    assert response.status_code == 401
+    assert "Invalid API key." in response.json["error"]["message"]
+
+def test_access_fails_if_api_key_not_configured_on_the_server(client, test_app):
+    # ARRANGE: Remove API_KEY from the test_app config
+    test_app.config.pop("API_KEY", None)
+
+    payload = {
+        "title": "A Test Book",
+        "synopsis": "A test synopsis.",
+        "author": "Tester McTestFace",
+    }
+
+    response = client.post('/books', json=payload)
+
+    assert response.status_code == 500
+    assert "API key not configured on the server." in response.json["error"]["message"]
+
+
 # -------------- PUT --------------------------
 
 def test_update_book_fails_without_api_key(monkeypatch, client):
@@ -77,7 +112,7 @@ def test_update_book_fails_without_api_key(monkeypatch, client):
     response = client.put("/books/abc123", json=payload)
 
     assert response.status_code == 401
-    assert "API Key" in response.json["error"]["message"]
+    assert "API key is missing." in response.json["error"]["message"]
 
 
 def test_update_book_succeeds_with_api_key(monkeypatch, client):
@@ -118,7 +153,7 @@ def test_delete_book_unauthorized(client):
     """
     response = client.delete("/books/some-id")
     assert response.status_code == 401
-    assert "Invalid or missing API Key" in response.json["error"]["message"]
+    assert "API key is missing." in response.json["error"]["message"]
 
 def test_delete_book_authorized(client, monkeypatch):
     """
