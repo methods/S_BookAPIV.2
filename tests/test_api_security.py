@@ -48,7 +48,7 @@ def test_invalid_api_key_logs_attempt_for_post_route(client, caplog, method, pat
 
 def test_add_book_fails_with_missing_key(client, monkeypatch):
 
-    # Stub out any external dependencies
+    # Mock external dependencies using monkeypatch
     monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
     monkeypatch.setattr(
         "app.routes.insert_book_to_mongo", lambda book, collection: None
@@ -58,8 +58,6 @@ def test_add_book_fails_with_missing_key(client, monkeypatch):
 
     # Hit the endpoint without Authorization header
     response = client.post("/books", json=DUMMY_PAYLOAD)
-    print("Response:", response.get_data(as_text=True))
-    print("Status code", response.status_code)
 
     # 4. Assert that you got a 401 back
     assert response.status_code == 401
@@ -192,7 +190,7 @@ def test_delete_book_fails_with_invalid_key(client):
 def test_delete_book_fails_if_api_key_not_configured_on_the_server(client, test_app):
     test_app.config.pop("API_KEY", None)
 
-    response = client.put("/books/any-book-id", json=DUMMY_PAYLOAD)
+    response = client.delete("/books/any-book-id")
 
     assert response.status_code == 500
     assert "API key not configured on the server." in response.json["error"]["message"]
