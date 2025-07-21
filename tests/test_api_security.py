@@ -97,7 +97,7 @@ def test_add_book_fails_if_api_key_not_configured_on_the_server(client, test_app
 
 
 # -------------- PUT --------------------------
-def test_update_book_succeeds_with_api_key(monkeypatch, client):
+def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     """Test successful book update with valid API key."""
 
     # 1. Patch the books list
@@ -143,7 +143,7 @@ def test_update_book_fails_with_missing_api_key(monkeypatch, client):
     assert response.status_code == 401
     assert "API key is missing." in response.json["error"]["message"]
 
-def test_update_book_fails_with_invalid_key(client, monkeypatch):
+def test_update_book_fails_with_invalid_api_key(client, monkeypatch):
     monkeypatch.setattr("app.routes.books", [])
     invalid_header = {
         "X-API-KEY": 'This-is-the-wrong-key-12345'
@@ -177,7 +177,7 @@ def test_update_book_fails_if_api_key_not_configured_on_the_server(client, test_
 
 
 # -------------- DELETE --------------------------
-def test_delete_book_unauthorized(client):
+def test_delete_book_fails_with_invalid_api_key(client):
     """
     WHEN a DELETE request is made without an API key
     THEN the response should be 401 Unauthorized
@@ -186,7 +186,7 @@ def test_delete_book_unauthorized(client):
     assert response.status_code == 401
     assert "API key is missing." in response.json["error"]["message"]
 
-def test_delete_book_authorized(client, monkeypatch):
+def test_delete_book_succeeds_with_valid_api_key(client, monkeypatch):
     """
     WHEN a DELETE request is made with a valid API key
     THEN it should return 200 OK (or appropriate response)
@@ -197,3 +197,27 @@ def test_delete_book_authorized(client, monkeypatch):
     response = client.delete("/books/some-id", headers=headers)
     assert response.status_code == 204
 
+def test_delete_book_fails_with_invalid_key(client):
+    invalid_header = {
+        "X-API-KEY": 'This-is-the-wrong-key-12345'
+    }
+
+    response = client.delete('/books/any-book-id', headers=invalid_header)
+
+    # ASSERT: Verify the server rejected the request as expected.
+    assert response.status_code == 401
+    assert "Invalid API key." in response.json["error"]["message"]
+
+def test_delete_book_fails_if_api_key_not_configured_on_the_server(client, test_app):
+    test_app.config.pop("API_KEY", None)
+
+    payload = {
+        "title": "A Test Book",
+        "synopsis": "A test synopsis.",
+        "author": "Tester McTestFace",
+    }
+
+    response = client.put('/books/any-book-id', json=payload)
+
+    assert response.status_code == 500
+    assert "API key not configured on the server." in response.json["error"]["message"]
