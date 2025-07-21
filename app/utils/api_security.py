@@ -3,6 +3,13 @@ import hmac
 from functools import wraps
 from flask import abort, current_app, request
 
+def log_unauthorized_access():
+    """
+    Helper function to log a warning for unauthorized access attempts with IP and path info.
+    """
+    current_app.logger.warning(
+        f"Unauthorized access attempt: IP={request.remote_addr}, path={request.path}"
+    )
 
 def require_api_key(f):
     """A decorator to protect routes with a required API key"""
@@ -10,20 +17,24 @@ def require_api_key(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
 
-        # Get the real key from our application config
         expected_key = current_app.config.get("API_KEY")
-        print("EXPECTED_KEY", expected_key)
+
         if not expected_key:
+            # Secure logging — don't leak keys
+            log_unauthorized_access()
+
             abort(500, description="API key not configured on the server.")
 
-        # 2. Get the provided key from the request headers.
         provided_key = request.headers.get("X-API-KEY")
         if not provided_key:
+            # Secure logging — don't leak keys
+            log_unauthorized_access()
             abort(401, description="API key is missing.")
 
-        # 3. Securely compare the provided key with the expected key
-        # hmac.compare_digest is essential to prevent timing attacks
+        # Securely compare the provided key with the expected key
         if not hmac.compare_digest(provided_key, expected_key):
+            # Secure logging — don't leak keys
+            log_unauthorized_access()
             abort(401, description="Invalid API key.")
 
         # If key is valid, proceed with the original function
