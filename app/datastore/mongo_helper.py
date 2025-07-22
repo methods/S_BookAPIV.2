@@ -24,7 +24,7 @@ def insert_book_to_mongo(book_data, collection):
     #      - "If you DON'T find a document, INSERT the new data as a new document."
     result = collection.replace_one(query_filter, book_data, upsert=True)
 
-    # 3. Check the result for logging/feedback.
+    # Check the result for logging/feedback.
     if result.upserted_id:
         print(f"✅ INSERTED new book with id: {result.upserted_id}")
     elif result.modified_count > 0:
