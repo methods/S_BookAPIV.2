@@ -1,6 +1,8 @@
 # pylint: disable=missing-docstring,line-too-long
 from unittest.mock import MagicMock, patch
+
 from pymongo.errors import ConnectionFailure
+
 from scripts.delete_books import delete_all_books, main
 
 # ----------------- TEST SUITE ---------------------------------
@@ -98,8 +100,10 @@ def test_delete_all_books_clears_collection_and_returns_count(
     assert mock_books_collection.count_documents({}) == 0
 
 
-@patch('scripts.delete_books.get_book_collection',
-side_effect=ConnectionFailure("Mock DB connection error"))
+@patch(
+    "scripts.delete_books.get_book_collection",
+    side_effect=ConnectionFailure("Mock DB connection error"),
+)
 def test_main_handles_connection_failure_gracefully(mock_get_book_collection, capsys):
     # ACT
     exit_code = main()

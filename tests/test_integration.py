@@ -2,19 +2,6 @@
 import pytest
 from pymongo import MongoClient
 
-from app import create_app
-
-
-@pytest.fixture(name="client")
-def client_fixture():
-    """Provides a test client for making requests to our Flask app."""
-    app = create_app()
-    app.config["TESTING"] = True
-    app.config["MONGO_URI"] = "mongodb://localhost:27017/"
-    app.config["DB_NAME"] = "test_database"
-    app.config["COLLECTION_NAME"] = "test_books"
-    return app.test_client()
-
 
 @pytest.fixture(name="mongo_client")
 def mongo_client_fixture():
@@ -38,9 +25,11 @@ def test_post_route_inserts_to_mongodb(mongo_client, client):
         "synopsis": "A novel about all the choices that go into a life well lived.",
         "author": "Matt Haig",
     }
+    # Define the valid headers, including the API key that matches conftest.py
+    valid_headers = {"X-API-KEY": "test-key-123"}
 
     # Act- send the POST request:
-    response = client.post("/books", json=new_book_payload)
+    response = client.post("/books", json=new_book_payload, headers=valid_headers)
 
     # Assert:
     assert response.status_code == 201

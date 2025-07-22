@@ -4,15 +4,15 @@ import copy
 import uuid
 
 from flask import jsonify, request
-from werkzeug.exceptions import NotFound
+from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
+from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 from data import books
 
 
-# ----------- POST section ------------------
 def register_routes(app):  # pylint: disable=too-many-statements
     """
     Register all Flask routes with the given app instance.
@@ -21,7 +21,9 @@ def register_routes(app):  # pylint: disable=too-many-statements
         app (Flask): The Flask application instance to register routes on.
     """
 
+    # ----------- POST section ------------------
     @app.route("/books", methods=["POST"])
+    @require_api_key
     def add_book():
         """Function to add a new book to the collection."""
         # check if request is json
@@ -149,6 +151,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
     # ----------- DELETE section ------------------
     @app.route("/books/<string:book_id>", methods=["DELETE"])
+    @require_api_key
     def delete_book(book_id):
         """
         Soft delete a book by setting its state to 'deleted' or return error if not found.
@@ -165,6 +168,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
     # ----------- PUT section ------------------
 
     @app.route("/books/<string:book_id>", methods=["PUT"])
+    @require_api_key
     def update_book(book_id):
         """
         Update a book by its unique ID using JSON from the request body.
@@ -215,10 +219,29 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         return jsonify({"error": "Book not found"}), 404
 
+
+    # ----------- CUSTOM ERROR HANDLERS ------------------
+
     @app.errorhandler(NotFound)
     def handle_not_found(e):
         """Return a custom JSON response for 404 Not Found errors."""
         return jsonify({"error": str(e)}), 404
+
+    @app.errorhandler(HTTPException)
+    def handle_http_exception(e):
+        """Return JSON for any HTTPException (401, 404, 403, etc.)
+        preserving its original status code & description.
+        """
+        # e.code is the HTTP status code (e.g. 401)
+        # e.description is the text you passed to abort()
+        response = {
+            "error": {
+                "code": e.code,
+                "name": e.name,
+                "message": e.description
+            }
+        }
+        return jsonify(response), e.code
 
     @app.errorhandler(Exception)
     def handle_exception(e):

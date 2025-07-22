@@ -2,22 +2,23 @@
 
 import os
 
-from dotenv import load_dotenv
 from flask import Flask
 
+from app.config import Config
 
-def create_app():
+
+def create_app(test_config=None):
     """Application factory pattern."""
-    # Load the env variables to use here
-    load_dotenv()
 
     app = Flask(__name__)
-    # Use app.config to set config connection details
-    app.config["MONGO_URI"] = os.getenv("MONGO_CONNECTION")
-    app.config["DB_NAME"] = os.getenv("PROJECT_DATABASE")
-    app.config["COLLECTION_NAME"] = os.getenv("PROJECT_COLLECTION")
 
-    # Import routes — routes can import app safely because it exists
+    # 1. Load the default configuration from the Config object.
+    app.config.from_object(Config)
+
+    if test_config:  # Override with test specifics
+        app.config.from_mapping(test_config)
+
+    # Import routes
     from app.routes import \
         register_routes  # pylint: disable=import-outside-toplevel
 

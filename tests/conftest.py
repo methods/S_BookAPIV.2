@@ -4,17 +4,29 @@ A configuration file for pytest.
 
 This file contains shared fixtures and helpers that are automatically discovered by pytest and made available to all tests.
 """
+from unittest.mock import patch
 
 import mongomock
 import pytest
+
+from app import create_app
+
+
+@pytest.fixture(name="_insert_book_to_db")
+def stub_insert_book():
+    """Fixture that mocks insert_book_to_mongo() to prevent real DB writes during tests. Returns a mock with a fixed inserted_id."""
+
+    with patch("app.routes.insert_book_to_mongo") as mock_insert_book:
+        mock_insert_book.return_value.inserted_id = "12345"
+        yield mock_insert_book
 
 
 @pytest.fixture(name="mock_books_collection")
 def mock_books_collection_fixture():
     """Provides an in-memory, empty 'books' collection for each test."""
     # mongomock.MongoClient() creates a fake client.
-    client = mongomock.MongoClient()
-    db = client["test_database"]
+    mongo_client = mongomock.MongoClient()
+    db = mongo_client["test_database"]
     return db["test_books_collection"]
 
 
@@ -47,3 +59,28 @@ def sample_book_data():
             "state": "active",
         },
     ]
+
+
+@pytest.fixture()
+def test_app():
+    """
+    Creates the Flask app instance configured for testing.
+    This is the single source of truth for the test app.
+    """
+    app = create_app(
+        {
+            "TESTING": True,
+            "TRAP_HTTP_EXCEPTIONS": True,
+            "API_KEY": "test-key-123",
+            "MONGO_URI": "mongodb://localhost:27017/",
+            "DB_NAME": "test_database",
+            "COLLECTION_NAME": "test_books",
+        }
+    )
+    yield app
+
+
+@pytest.fixture(name="client")
+def client(test_app):  # pylint: disable=redefined-outer-name
+    """A test client for the app."""
+    return test_app.test_client()
