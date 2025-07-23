@@ -1,8 +1,9 @@
 """Service layer for handling book-related operations."""
 
-from app.utils.helper import append_hostname
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import find_books
+from app.utils.helper import append_hostname
+
 
 def fetch_active_books():
     """
@@ -32,9 +33,7 @@ def format_books_for_api(books, host_url):
     for raw in books:
         missing = [f for f in required_fields if f not in raw]
         if missing:
-            missing_fields_info.append(
-                {"book": raw, "missing_fields": missing}
-            )
+            missing_fields_info.append({"book": raw, "missing_fields": missing})
 
     # 2) If any errors, build error message and return
     if missing_fields_info:
@@ -45,12 +44,11 @@ def format_books_for_api(books, host_url):
             fields = ", ".join(info["missing_fields"])
             msg_lines_list.append(f"- {fields} in book: {info['book']}")
 
-            # Join all the strings in the list ONCE at the end
-            error_message = "\n".join(msg_lines_list)
+        # Join all the strings in the list ONCE at the end
+        error_message = "\n".join(msg_lines_list)
 
-            # 4. Return the final string
-            return None, error_message
-
+        # 4. Return the final string
+        return None, error_message
 
     # FORMAT: Remove fields not meant for the public API
     formatted_list = []
