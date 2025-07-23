@@ -4,16 +4,19 @@ from app.utils.helper import append_hostname
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import find_books
 
-def fetch_active_books_cursor():
-    """Fetches a cursor for all non-deleted books from the database."""
+def fetch_active_books():
+    """
+    Fetches a cursor for all non-deleted books from the database.
+    Returns a Python list.
+    """
 
     collection = get_book_collection()
     query_filter = {"state": {"ne": "deleted"}}  # Only non-deleted books
 
-    return find_books(collection, query_filter=query_filter)
+    return list(find_books(collection, query_filter=query_filter))
 
 
-def format_books_for_api(books_cursor, host_url):
+def format_books_for_api(books, host_url):
     """
     Validate and format a list or cursor of raw book dicts for API response.
 
@@ -26,7 +29,7 @@ def format_books_for_api(books_cursor, host_url):
     missing_fields_info = []
 
     # 1) Collect all validation errors
-    for raw in books_cursor:
+    for raw in books:
         missing = [f for f in required_fields if f not in raw]
         if missing:
             missing_fields_info.append(
@@ -49,10 +52,9 @@ def format_books_for_api(books_cursor, host_url):
             return None, error_message
 
 
-
     # FORMAT: Remove fields not meant for the public API
     formatted_list = []
-    for raw in books_cursor:
+    for raw in books:
         book = raw.copy()
         book.pop("_id", None)
         book.pop("state", None)
