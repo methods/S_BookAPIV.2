@@ -1,5 +1,7 @@
 """Module containing pymongo helper functions."""
 
+from pymongo.cursor import Cursor
+
 
 def insert_book_to_mongo(book_data, collection):
     """
@@ -31,3 +33,22 @@ def insert_book_to_mongo(book_data, collection):
         print(f"✅ REPLACED existing book with id: {book_data['id']}")
 
     return result
+
+
+def find_books(collection, query_filter=None, projection=None, limit=None) -> Cursor:
+    """This acts as a wrapper around pymongo's collection.find() method.
+
+    Args:
+        collection: The pymongo collection object.
+        filter: The MongoDB query filter. Defaults to None (find all).
+        projection: The fields to include/exclude. Defaults to None (all fields).
+        limit: The maximum number of results to return. Defaults to None.
+
+    Returns:
+        A pymongo Cursor for the query results. 
+    """
+    query_filter = query_filter or {}
+    cursor = collection.find(query_filter, projection)
+    if limit is not None and limit > 0:
+        cursor = cursor.limit(limit)
+    return cursor
