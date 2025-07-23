@@ -1,6 +1,6 @@
 # pylint: disable=missing-docstring
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from pymongo.errors import ServerSelectionTimeoutError
@@ -152,25 +152,46 @@ def test_500_response_is_json(client):
 
 
 # ------------------------ Tests for GET --------------------------------------------
-def test_get_all_books_returns_all_books(client):
+
+@patch("app.routes.format_books_for_api")
+@patch("app.routes.fetch_active_books")
+def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
+
+    mock_books_list = MagicMock()
+    mock_fetch.return_value = mock_books_list
+
+    mock_formatted_data = [
+        {"id": "1", "title": "A", "synopsis": "x", "author": "y", "links": {}},
+        {"id": "2", "title": "B", "synopsis": "z", "author": "w", "links": {}},
+    ]
+
+    mock_format.return_value = (mock_formatted_data, None)
+
     response = client.get("/books")
 
+    # Assert HTTP properties
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
+
+    # Assert the repsonse body
     response_data = response.get_json()
     assert isinstance(response_data, dict)
-    assert "total_count" in response_data
-    assert "items" in response_data
+    assert response_data["total_count"] == 2
+    assert response_data["items"] == mock_formatted_data
+
+    # Assert that mocks were called correctly
+    mock_fetch.assert_called_once()
+    mock_format.assert_called_once_with(mock_books_list, "http://localhost")
 
 
-def test_return_error_404_when_list_is_empty(client):
+def test_get_all_books_returns_error_404_when_list_is_empty(client):
     with patch("app.routes.books", []):
         response = client.get("/books")
         assert response.status_code == 404
         assert "No books found" in response.get_json()["error"]
 
 
-def test_get_books_returns_404_when_books_is_none(client):
+def test_get_book_returns_404_when_books_is_none(client):
     with patch("app.routes.books", None):
         response = client.get("/books")
         assert response.status_code == 404
