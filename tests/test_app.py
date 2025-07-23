@@ -153,6 +153,7 @@ def test_500_response_is_json(client):
 
 # ------------------------ Tests for GET --------------------------------------------
 
+
 @patch("app.routes.format_books_for_api")
 @patch("app.routes.fetch_active_books")
 def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
@@ -184,6 +185,33 @@ def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
     mock_format.assert_called_once_with(mock_books_list, "http://localhost")
 
 
+@patch("app.routes.fetch_active_books")
+def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
+
+    bad_raw_data = [
+        {"id": "1", "synopsis": "x", "author": "y", "links": {}},  # Missing 'title'
+        {"id": "2", "title": "B", "author": "w", "links": {}},  # Missing 'synopsis'
+    ]
+    mock_fetch.return_value = bad_raw_data
+
+    expected_error_message = (
+        "Missing required fields:\n"
+        f"- title in book: {bad_raw_data[0]}\n"
+        f"- synopsis in book: {bad_raw_data[1]}"
+    )
+
+    # --- ACT ---
+    response = client.get("/books")
+
+    # --- ASSERT ---
+    assert response.status_code == 500
+
+    response_data = response.get_json()
+    assert "error" in response_data
+    assert response_data["error"] == expected_error_message
+    mock_fetch.assert_called_once()
+
+
 def test_get_all_books_returns_error_404_when_list_is_empty(client):
     with patch("app.routes.books", []):
         response = client.get("/books")
@@ -196,29 +224,6 @@ def test_get_book_returns_404_when_books_is_none(client):
         response = client.get("/books")
         assert response.status_code == 404
         assert "No books found" in response.get_json()["error"]
-
-
-def test_missing_fields_in_book_object_returned_by_database(client):
-    with patch(
-        "app.routes.books",
-        [
-            {
-                "id": "1",
-                "title": "The Great Adventure",
-                "synopsis": "A thrilling adventure through the jungles of South America.",
-                "author": "Jane Doe",
-            },
-            {"id": "2", "title": "Mystery of the Old Manor"},
-            {
-                "id": "3",
-                "title": "The Science of Everything",
-                "synopsis": "An in-depth look at the scientific principles that govern our world.",
-            },
-        ],
-    ):
-        response = client.get("/books")
-        assert response.status_code == 500
-        assert "Missing fields" in response.get_json()["error"]
 
 
 # -------- Tests for filter GET /books by delete ----------------
