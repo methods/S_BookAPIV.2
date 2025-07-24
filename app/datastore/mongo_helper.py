@@ -45,7 +45,7 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
         limit: The maximum number of results to return. Defaults to None.
 
     Returns:
-        A pymongo Cursor for the query results. 
+        A pymongo Cursor for the query results.
     """
     query_filter = query_filter or {}
     cursor = collection.find(query_filter, projection)

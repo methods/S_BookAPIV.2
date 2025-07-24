@@ -8,8 +8,7 @@ from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
-from app.services.book_service import (fetch_active_books,
-                                       format_books_for_api)
+from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 from data import books
@@ -105,11 +104,12 @@ def register_routes(app):  # pylint: disable=too-many-statements
             # Return HTTP error in controller layer
             return jsonify({"error": error}), 500
 
-        return jsonify({
-            "total_count": len(all_formatted_books),
-            "items": all_formatted_books
-        }), 200
-
+        return (
+            jsonify(
+                {"total_count": len(all_formatted_books), "items": all_formatted_books}
+            ),
+            200,
+        )
 
     @app.route("/books/<string:book_id>", methods=["GET"])
     def get_book(book_id):
