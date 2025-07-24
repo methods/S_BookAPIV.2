@@ -20,23 +20,27 @@ def fetch_active_books():
 
 def format_books_for_api(books, host_url):
     """
-    Validate and format a list or cursor of raw book dicts for API response.
-
-    Returns:
-        tuple: (formatted_list, None) on success,
-               (None, msg_lines) on validation failure.
+    Process, validate, and format a list of raw book dicts for API response.
     """
+    # 1) PRE-PROCESS: Create a new list with the fields we will validate.
+    processed_books = []
+    for raw in books:
+        book = raw.copy()
+        # Create the 'id' field from '_id' for consistent validation.
+        if "_id" in book:
+            book["id"] = str(book["_id"])
+        processed_books.append(book)
 
     required_fields = ["id", "title", "synopsis", "author", "links"]
     missing_fields_info = []
 
-    # 1) Collect all validation errors
-    for raw in books:
+    # 2) Collect all validation errors
+    for raw in processed_books:
         missing = [f for f in required_fields if f not in raw]
         if missing:
             missing_fields_info.append({"book": raw, "missing_fields": missing})
 
-    # 2) If any errors, build error message and return
+    # 3) If any errors, build error message and return
     if missing_fields_info:
         msg_lines_list = ["Missing required fields:"]
 
@@ -53,8 +57,7 @@ def format_books_for_api(books, host_url):
 
     # FORMAT: Remove fields not meant for the public API
     formatted_list = []
-    for raw in books:
-        book = raw.copy()
+    for book in processed_books:
         book.pop("_id", None)
         book.pop("state", None)
 
