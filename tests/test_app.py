@@ -306,6 +306,7 @@ def test_get_books_retrieves_and_formats_books_correctly(mock_find_books, client
     assert response_data["items"] == expected_response_items
     assert len(response_data["items"]) == 2
 
+
 # -------- Tests for GET a single resource ----------------
 
 
@@ -580,22 +581,41 @@ def test_append_host_to_links_in_post(client, _insert_book_to_db):
     ), f"Link should end with the resource path '{expected_path}'"
 
 
-def test_append_host_to_links_in_get(client):
+@patch("app.services.book_service.find_books")
+def test_append_host_to_links_in_get(mock_find_books, client):
+
+    # ARRANGE: Provide sample data for the mock to return
+    mock_find_books.return_value = [
+        {
+            "_id": "123",
+            "title": "A Test Book",
+            "author": "The Tester",
+            "synopsis": "A book for testing.",
+            "links": {
+                "self": "/books/123",
+                "reservations": "/books/123",
+                "reviews": "/books/123",
+            },
+        }
+    ]
+
+    # ACT
     response = client.get("/books")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
-
-    # Get the response data
     response_data = response.get_json()
+
+    # ASSERT
+    assert response.status_code == 200
+
+    book = response_data["items"][0]
+    assert response.headers["content-type"] == "application/json"
     assert isinstance(response_data, dict)
     assert "total_count" in response_data
     assert "items" in response_data
-
     # response_data["items"]["links"]["self"]
     for book in response_data["items"]:
         new_book_id = book.get("id")
         assert book["links"]["self"].startswith("http://localhost")
+        assert book["links"]["self"] == "http://localhost/books/123"
         assert book["links"]["reservations"].startswith("http://localhost")
         assert book["links"]["reviews"].startswith("http://localhost")
         assert book["links"]["self"].endswith(f"books/{new_book_id}")
