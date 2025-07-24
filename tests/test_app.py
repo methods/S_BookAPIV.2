@@ -174,7 +174,7 @@ def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
 
-    # Assert the repsonse body
+    # Assert the response body
     response_data = response.get_json()
     assert isinstance(response_data, dict)
     assert response_data["total_count"] == 2
