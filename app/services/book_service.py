@@ -12,9 +12,10 @@ def fetch_active_books():
     """
 
     collection = get_book_collection()
-    query_filter = {"state": {"ne": "deleted"}}  # Only non-deleted books
+    query_filter = {"state": {"$ne": "deleted"}}  # Only non-deleted books
 
-    return list(find_books(collection, query_filter=query_filter))
+    cursor = find_books(collection, query_filter=query_filter)
+    return list(cursor)
 
 
 def format_books_for_api(books, host_url):
@@ -61,4 +62,4 @@ def format_books_for_api(books, host_url):
         book_with_hostname = append_hostname(book, host_url)
         formatted_list.append(book_with_hostname)
 
-    return formatted_list
+    return formatted_list, None
