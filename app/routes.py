@@ -95,7 +95,11 @@ def register_routes(app):  # pylint: disable=too-many-statements
             raw_books = fetch_active_books()
         except ConnectionFailure:
             error_payload = {
-                "error": "The database service is temporarily unavailable."
+                "error": {
+                    "code": 503,
+                    "name": "Service Unavailable",
+                    "message": "The database service is temporarily unavailable.",
+                }
             }
 
             return jsonify(error_payload), 503

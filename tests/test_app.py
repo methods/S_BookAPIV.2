@@ -325,7 +325,7 @@ def test_get_books_handles_database_connection_error(mock_get_collection, client
 
     # This assertion will now pass because your controller is returning the correct message
     expected_error = "The database service is temporarily unavailable."
-    assert expected_error == response.get_json()["error"]
+    assert expected_error in response.json["error"]["message"]
 
 
 # -------- Tests for GET a single resource ----------------
