@@ -40,7 +40,7 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
 
     Args:
         collection: The pymongo collection object.
-        filter: The MongoDB query filter. Defaults to None (find all).
+        query_filter: The MongoDB query filter. Defaults to None (find all).
         projection: The fields to include/exclude. Defaults to None (all fields).
         limit: The maximum number of results to return. Defaults to None.
 
