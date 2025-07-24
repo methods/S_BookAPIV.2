@@ -4,6 +4,7 @@ import copy
 import uuid
 
 from flask import jsonify, request
+from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
@@ -90,7 +91,14 @@ def register_routes(app):  # pylint: disable=too-many-statements
         return them in a JSON response
         including the total count.
         """
-        raw_books = fetch_active_books()
+        try:
+            raw_books = fetch_active_books()
+        except ConnectionFailure:
+            error_payload = {
+                "error": "The database service is temporarily unavailable."
+            }
+
+            return jsonify(error_payload), 503
 
         if not raw_books:
             return jsonify({"error": "No books found"}), 404

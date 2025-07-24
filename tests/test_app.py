@@ -3,7 +3,7 @@
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
-from pymongo.errors import ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
@@ -305,6 +305,27 @@ def test_get_books_retrieves_and_formats_books_correctly(mock_find_books, client
     response_data = response.get_json()
     assert response_data["items"] == expected_response_items
     assert len(response_data["items"]) == 2
+
+
+@patch("app.services.book_service.get_book_collection")
+def test_get_books_handles_database_connection_error(mock_get_collection, client):
+    """
+    GIVEN the database connection fails
+    WHEN the /books endpoint is called
+    THEN a 503 Service Unavailable error should be returned with a friendly message.
+    """
+    # ARRANGE: Configure the mock to raise the exception when called
+    mock_get_collection.side_effect = ConnectionFailure("Could not connect to DB")
+
+    # ACT
+    response = client.get("/books")
+
+    # ASSERT
+    assert response.status_code == 503  # Now asserting the correct code
+
+    # This assertion will now pass because your controller is returning the correct message
+    expected_error = "The database service is temporarily unavailable."
+    assert expected_error == response.get_json()["error"]
 
 
 # -------- Tests for GET a single resource ----------------
