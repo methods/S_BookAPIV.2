@@ -4,10 +4,12 @@ import copy
 import uuid
 
 from flask import jsonify, request
+from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
+from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 from data import books
@@ -26,7 +28,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
     @require_api_key
     def add_book():
         """Function to add a new book to the collection."""
-        # check if request is json
+
         if not request.is_json:
             return jsonify({"error": "Request must be JSON"}), 415
 
@@ -65,9 +67,9 @@ def register_routes(app):  # pylint: disable=too-many-statements
             if not isinstance(new_book[field], expected_type):
                 return {"error": f"Field {field} is not of type {expected_type}"}, 400
 
-        # use helper function
+        # establish connection to mongoDB
         books_collection = get_book_collection()
-        # check if mongoDB connected??
+        # use mongoDB helper to insert/replace new book
         insert_book_to_mongo(new_book, books_collection)
 
         # Get the host from the request headers
@@ -89,45 +91,37 @@ def register_routes(app):  # pylint: disable=too-many-statements
         return them in a JSON response
         including the total count.
         """
-        if not books:
+        try:
+            raw_books = fetch_active_books()
+        except ConnectionFailure:
+            error_payload = {
+                "error": {
+                    "code": 503,
+                    "name": "Service Unavailable",
+                    "message": "The database service is temporarily unavailable.",
+                }
+            }
+
+            return jsonify(error_payload), 503
+
+        if not raw_books:
             return jsonify({"error": "No books found"}), 404
 
-        all_books = []
         # extract host from the request
-        host = request.host_url
+        host = request.host_url.rstrip("/")
 
-        for book in books:
-            # check if the book has the "deleted" state
-            if book.get("state") != "deleted":
-                # Remove state unless it's "deleted", then append
-                book_copy = copy.deepcopy(book)
-                book_copy.pop("state", None)
-                book_with_hostname = append_hostname(book_copy, host)
-                all_books.append(book_with_hostname)
+        all_formatted_books, error = format_books_for_api(raw_books, host)
 
-        # validation
-        required_fields = ["id", "title", "synopsis", "author", "links"]
-        missing_fields_info = []
+        if error:
+            # Return HTTP error in controller layer
+            return jsonify({"error": error}), 500
 
-        for book in all_books:
-            missing_fields = [field for field in required_fields if field not in book]
-            if missing_fields:
-                missing_fields_info.append(
-                    {"book": book, "missing_fields": missing_fields}
-                )
-
-        if missing_fields_info:
-            error_message = "Missing required fields:\n"
-            for info in missing_fields_info:
-                error_message += f"Missing fields: {', '.join(info['missing_fields'])} in {info['book']}. \n"  # pylint: disable=line-too-long
-
-            print(error_message)
-            return jsonify({"error": error_message}), 500
-
-        count_books = len(all_books)
-        response_data = {"total_count": count_books, "items": all_books}
-
-        return jsonify(response_data), 200
+        return (
+            jsonify(
+                {"total_count": len(all_formatted_books), "items": all_formatted_books}
+            ),
+            200,
+        )
 
     @app.route("/books/<string:book_id>", methods=["GET"])
     def get_book(book_id):
@@ -219,7 +213,6 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         return jsonify({"error": "Book not found"}), 404
 
-
     # ----------- CUSTOM ERROR HANDLERS ------------------
 
     @app.errorhandler(NotFound)
@@ -234,13 +227,7 @@ def register_routes(app):  # pylint: disable=too-many-statements
         """
         # e.code is the HTTP status code (e.g. 401)
         # e.description is the text you passed to abort()
-        response = {
-            "error": {
-                "code": e.code,
-                "name": e.name,
-                "message": e.description
-            }
-        }
+        response = {"error": {"code": e.code, "name": e.name, "message": e.description}}
         return jsonify(response), e.code
 
     @app.errorhandler(Exception)

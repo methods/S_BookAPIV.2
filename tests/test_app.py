@@ -1,9 +1,9 @@
 # pylint: disable=missing-docstring
 
-from unittest.mock import patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
-from pymongo.errors import ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
@@ -152,112 +152,180 @@ def test_500_response_is_json(client):
 
 
 # ------------------------ Tests for GET --------------------------------------------
-def test_get_all_books_returns_all_books(client):
+
+
+@patch("app.routes.format_books_for_api")
+@patch("app.routes.fetch_active_books")
+def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
+
+    mock_books_list = MagicMock()
+    mock_fetch.return_value = mock_books_list
+
+    mock_formatted_data = [
+        {"id": "1", "title": "A", "synopsis": "x", "author": "y", "links": {}},
+        {"id": "2", "title": "B", "synopsis": "z", "author": "w", "links": {}},
+    ]
+
+    mock_format.return_value = (mock_formatted_data, None)
+
     response = client.get("/books")
 
+    # Assert HTTP properties
     assert response.status_code == 200
     assert response.headers["content-type"] == "application/json"
+
+    # Assert the response body
     response_data = response.get_json()
     assert isinstance(response_data, dict)
-    assert "total_count" in response_data
-    assert "items" in response_data
+    assert response_data["total_count"] == 2
+    assert response_data["items"] == mock_formatted_data
+
+    # Assert that mocks were called correctly
+    mock_fetch.assert_called_once()
+    mock_format.assert_called_once_with(mock_books_list, "http://localhost")
 
 
-def test_return_error_404_when_list_is_empty(client):
-    with patch("app.routes.books", []):
-        response = client.get("/books")
-        assert response.status_code == 404
-        assert "No books found" in response.get_json()["error"]
+@patch("app.routes.fetch_active_books")
+def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
+
+    bad_raw_data = [
+        {"id": "1", "synopsis": "x", "author": "y", "links": {}},  # Missing 'title'
+        {"id": "2", "title": "B", "author": "w", "links": {}},  # Missing 'synopsis'
+    ]
+    mock_fetch.return_value = bad_raw_data
+
+    expected_error_message = (
+        "Missing required fields:\n"
+        f"- title in book: {bad_raw_data[0]}\n"
+        f"- synopsis in book: {bad_raw_data[1]}"
+    )
+
+    # --- ACT ---
+    response = client.get("/books")
+
+    # --- ASSERT ---
+    assert response.status_code == 500
+
+    response_data = response.get_json()
+    assert "error" in response_data
+    assert response_data["error"] == expected_error_message
+    mock_fetch.assert_called_once()
 
 
-def test_get_books_returns_404_when_books_is_none(client):
-    with patch("app.routes.books", None):
-        response = client.get("/books")
-        assert response.status_code == 404
-        assert "No books found" in response.get_json()["error"]
+@patch("app.routes.fetch_active_books")
+def test_get_all_books_returns_error_404_when_list_is_empty(mock_fetch, client):
+    empty_data = []
+    mock_fetch.return_value = empty_data
+    response = client.get("/books")
+    assert response.status_code == 404
+    assert "No books found" in response.get_json()["error"]
 
 
-def test_missing_fields_in_book_object_returned_by_database(client):
-    with patch(
-        "app.routes.books",
-        [
-            {
-                "id": "1",
-                "title": "The Great Adventure",
-                "synopsis": "A thrilling adventure through the jungles of South America.",
-                "author": "Jane Doe",
+@patch("app.routes.fetch_active_books")
+def test_get_book_returns_404_when_books_is_none(mock_fetch, client):
+    none_data = None
+    mock_fetch.return_value = none_data
+    response = client.get("/books")
+    assert response.status_code == 404
+    assert "No books found" in response.get_json()["error"]
+
+
+@patch("app.services.book_service.find_books")
+def test_get_books_retrieves_and_formats_books_correctly(mock_find_books, client):
+    """
+    GIVEN a mocked database service
+    WHEN the /books endpoint is called
+    THEN the service layer correctly queries the database for non-deleted books
+    AND the API response is correctly formatted with absolute URLs
+    """
+    # ARRANGE
+    filtered_db_result = [
+        {
+            "_id": "2",
+            "title": "Mystery of the Old Manor",
+            "author": "John Smith",
+            "synopsis": "A detective story set in an old manor with many secrets.",
+            "links": {
+                "self": "/books/2",
+                "reservations": "/books/2/reservations",
+                "reviews": "/books/2/reviews",
             },
-            {"id": "2", "title": "Mystery of the Old Manor"},
-            {
-                "id": "3",
-                "title": "The Science of Everything",
-                "synopsis": "An in-depth look at the scientific principles that govern our world.",
+            "state": "active",
+        },
+        {
+            "_id": "3",
+            "title": "The Science of Everything",
+            "author": "Alice Johnson",
+            "synopsis": "An in-depth look at the scientific principles that govern our world.",
+            "links": {
+                "self": "/books/3",
+                "reservations": "/books/3/reservations",
+                "reviews": "/books/3/reviews",
             },
-        ],
-    ):
-        response = client.get("/books")
-        assert response.status_code == 500
-        assert "Missing fields" in response.get_json()["error"]
+            # No 'state' field, correctly simulating a record that is implicitly active.
+        },
+    ]
+    mock_find_books.return_value = filtered_db_result
 
-
-# -------- Tests for filter GET /books by delete ----------------
-
-
-def test_get_books_excludes_deleted_books_and_omits_state_field(client):
-    # Add a book so we have a known ID
-    with patch(
-        "app.routes.books",
-        [
-            {
-                "id": "1",
-                "title": "The Great Adventure",
-                "synopsis": "A thrilling adventure through the jungles of South America.",
-                "author": "Jane Doe",
-                "links": {
-                    "self": "/books/1",
-                    "reservations": "/books/1/reservations",
-                    "reviews": "/books/1/reviews",
-                },
-                "state": "deleted",
+    base_url = "http://localhost"
+    expected_response_items = [
+        {
+            "id": "2",  # Renamed from _id
+            "title": "Mystery of the Old Manor",
+            "author": "John Smith",
+            "synopsis": "A detective story set in an old manor with many secrets.",
+            "links": {
+                "self": f"{base_url}/books/2",
+                "reservations": f"{base_url}/books/2/reservations",
+                "reviews": f"{base_url}/books/2/reviews",
             },
-            {
-                "id": "2",
-                "title": "Mystery of the Old Manor",
-                "synopsis": "A detective story set in an old manor with many secrets.",
-                "author": "John Smith",
-                "links": {
-                    "self": "/books/2",
-                    "reservations": "/books/2/reservations",
-                    "reviews": "/books/2/reviews",
-                },
-                "state": "active",
+        },
+        {
+            "id": "3",  # Renamed from _id
+            "title": "The Science of Everything",
+            "author": "Alice Johnson",
+            "synopsis": "An in-depth look at the scientific principles that govern our world.",
+            "links": {
+                "self": f"{base_url}/books/3",
+                "reservations": f"{base_url}/books/3/reservations",
+                "reviews": f"{base_url}/books/3/reviews",
             },
-            {
-                "id": "3",
-                "title": "The Science of Everything",
-                "synopsis": "An in-depth look at the scientific principles that govern our world.",
-                "author": "Alice Johnson",
-                "links": {
-                    "self": "/books/3",
-                    "reservations": "/books/3/reservations",
-                    "reviews": "/books/3/reviews",
-                },
-            },
-        ],
-    ):
-        response = client.get("/books")
-        assert response.status_code == 200
+        },
+    ]
 
-        data = response.get_json()
-        assert "items" in data
-        books = data["items"]
+    # ACT
+    response = client.get("/books")
 
-        # Check right object is returned
-        assert len(books) == 2
-        for book in books:
-            assert "state" not in book
-        assert books[0].get("id") == "2"
-        assert books[1].get("title") == "The Science of Everything"
+    # ASSERT
+    assert response.status_code == 200
+    # 1) Service layer called with correct filter
+    expected_db_filter = {"state": {"$ne": "deleted"}}
+    mock_find_books.assert_called_once_with(ANY, query_filter=expected_db_filter)
+    # 2) Response formatting is exactly as expected
+    response_data = response.get_json()
+    assert response_data["items"] == expected_response_items
+    assert len(response_data["items"]) == 2
+
+
+@patch("app.services.book_service.get_book_collection")
+def test_get_books_handles_database_connection_error(mock_get_collection, client):
+    """
+    GIVEN the database connection fails
+    WHEN the /books endpoint is called
+    THEN a 503 Service Unavailable error should be returned with a friendly message.
+    """
+    # ARRANGE: Configure the mock to raise the exception when called
+    mock_get_collection.side_effect = ConnectionFailure("Could not connect to DB")
+
+    # ACT
+    response = client.get("/books")
+
+    # ASSERT
+    assert response.status_code == 503  # Now asserting the correct code
+
+    # This assertion will now pass because your controller is returning the correct message
+    expected_error = "The database service is temporarily unavailable."
+    assert expected_error in response.json["error"]["message"]
 
 
 # -------- Tests for GET a single resource ----------------
@@ -534,22 +602,41 @@ def test_append_host_to_links_in_post(client, _insert_book_to_db):
     ), f"Link should end with the resource path '{expected_path}'"
 
 
-def test_append_host_to_links_in_get(client):
+@patch("app.services.book_service.find_books")
+def test_append_host_to_links_in_get(mock_find_books, client):
+
+    # ARRANGE: Provide sample data for the mock to return
+    mock_find_books.return_value = [
+        {
+            "_id": "123",
+            "title": "A Test Book",
+            "author": "The Tester",
+            "synopsis": "A book for testing.",
+            "links": {
+                "self": "/books/123",
+                "reservations": "/books/123",
+                "reviews": "/books/123",
+            },
+        }
+    ]
+
+    # ACT
     response = client.get("/books")
-
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
-
-    # Get the response data
     response_data = response.get_json()
+
+    # ASSERT
+    assert response.status_code == 200
+
+    book = response_data["items"][0]
+    assert response.headers["content-type"] == "application/json"
     assert isinstance(response_data, dict)
     assert "total_count" in response_data
     assert "items" in response_data
-
     # response_data["items"]["links"]["self"]
     for book in response_data["items"]:
         new_book_id = book.get("id")
         assert book["links"]["self"].startswith("http://localhost")
+        assert book["links"]["self"] == "http://localhost/books/123"
         assert book["links"]["reservations"].startswith("http://localhost")
         assert book["links"]["reviews"].startswith("http://localhost")
         assert book["links"]["self"].endswith(f"books/{new_book_id}")

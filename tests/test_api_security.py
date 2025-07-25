@@ -55,7 +55,6 @@ def test_add_book_fails_with_missing_key(client, monkeypatch):
     )
     monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
 
-
     # Hit the endpoint without Authorization header
     response = client.post("/books", json=DUMMY_PAYLOAD)
 
@@ -114,7 +113,6 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     # 2. Patch append_hostname to just return the book
     monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
 
-
     # 3. Call the endpoint with request details
     response = client.put("/books/abc123", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
 
@@ -137,7 +135,9 @@ def test_update_book_fails_with_missing_api_key(monkeypatch, client):
 def test_update_book_fails_with_invalid_api_key(client, monkeypatch):
     monkeypatch.setattr("app.routes.books", [])
 
-    response = client.put("/books/abc123", json=DUMMY_PAYLOAD, headers=HEADERS["INVALID"])
+    response = client.put(
+        "/books/abc123", json=DUMMY_PAYLOAD, headers=HEADERS["INVALID"]
+    )
     # ASSERT: Verify the server rejected the request as expected.
     assert response.status_code == 401
     assert "Invalid API key." in response.json["error"]["message"]

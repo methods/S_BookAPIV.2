@@ -162,6 +162,12 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+    ServiceUnavailable:
+      description: The service is temporarily unavailable, likely due to a database connection issue or server maintenance.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
     InternalServerError:
       description: An unexpected error occurred on the server.
       content:
@@ -230,7 +236,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound' 
         '500':
-          $ref: '#/components/responses/InternalServerError' 
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
   # --------------------------------------------
   /books/{book_id}: 
   # --------------------------------------------
