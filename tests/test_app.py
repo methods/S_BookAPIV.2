@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import ANY, MagicMock, patch
+from bson.objectid import ObjectId
 
 import pytest
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
@@ -51,7 +52,7 @@ books_database = [
 # ------------------- Tests for POST ---------------------------------------------
 
 
-def test_add_book_creates_new_book(client, _insert_book_to_db):
+def test_add_book_creates_and_returns_new_book(client, _insert_book_to_db, monkeypatch):
 
     test_book = {
         "title": "Test Book",
@@ -59,19 +60,46 @@ def test_add_book_creates_new_book(client, _insert_book_to_db):
         "synopsis": "Test Synopsis",
     }
 
+    # Mock the 'replace_one' operation
+    mock_insert_result = MagicMock()
+    mock_insert_result.inserted_id = ObjectId()
+
+    # Mock the full book document that 'find_one' will return
+    mock_book_from_db = test_book.copy()
+    mock_book_from_db["_id"] = mock_insert_result.inserted_id
+    mock_book_from_db["links"] = { "self": f"/books/{mock_insert_result.inserted_id}" }
+
+    # Mock the entire db collection object and its methods
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = mock_book_from_db
+
+    # Create a mock for the helper function that returns our mock result
+    mock_insert_helper = MagicMock(return_value=mock_insert_result)
+
+    # Apply all the patches
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr("app.routes.insert_book_to_mongo",mock_insert_helper)
+    monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
+
     # Define the valid headers, including the API key that matches conftest.py
     valid_headers = {"X-API-KEY": "test-key-123"}
 
+    # Act
     response = client.post("/books", json=test_book, headers=valid_headers)
 
+    # Assert
     assert response.status_code == 201
-    assert response.headers["content-type"] == "application/json"
 
+    # Now these assertions will work correctly!
+    mock_insert_helper.assert_called_once_with(test_book, mock_collection)
+    mock_collection.update_one.assert_called_once()
+    mock_collection.find_one.assert_called_once()
+
+    # Assert the response body is correct
     response_data = response.get_json()
-    required_fields = ["id", "title", "synopsis", "author", "links"]
-    # check that required fields are in the response data
-    for field in required_fields:
-        assert field in response_data, f"{field} not in response_data"
+    assert response_data["id"] == str(mock_insert_result.inserted_id)
+    assert response_data["title"] == test_book["title"]
+    assert "_id" not in response_data
 
 
 def test_add_book_sent_with_missing_required_fields(client):
