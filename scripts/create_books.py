@@ -4,9 +4,8 @@ Script for populating resources to a database
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import insert_book_to_mongo
+from app.datastore.mongo_helper import upsert_book_from_file
 from utils.db_helpers import load_books_json
-
 
 # ---------------------- Book upsert helper ---------------------------
 def populate_books(collection, data):
@@ -21,7 +20,7 @@ def populate_books(collection, data):
     """
     inserted_books_list = []
     for book in data:
-        insert_book_to_mongo(book, collection)
+        upsert_book_from_file(book, collection)
         inserted_books_list.append(book)
 
     return inserted_books_list
