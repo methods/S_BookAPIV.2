@@ -5,13 +5,12 @@ from unittest.mock import MagicMock
 from app.datastore.mongo_helper import find_books, insert_book_to_mongo
 
 
-def test_insert_book_to_mongo_calls_replace_one_with_upsert():
+def test_insert_book_to_mongo_calls_insert_one():
     # ARRANGE:
     mock_books_collection = MagicMock()
 
     # Test data
     new_book = {
-        "id": "some-unique-id-123",
         "title": "The Great Gatsby",
         "author": "F. Scott Fitzgerald",
         "synopsis": "A story about the American Dream",
@@ -22,13 +21,8 @@ def test_insert_book_to_mongo_calls_replace_one_with_upsert():
     insert_book_to_mongo(new_book, mock_books_collection)
 
     # ASSERT:
-    mock_books_collection.replace_one.assert_called_once()
-    expected_filter = {"id": "some-unique-id-123"}
-    mock_books_collection.replace_one.assert_called_once_with(
-        expected_filter,  # Argument 1: The query filter
-        new_book,  # Argument 2: The replacement document
-        upsert=True,  # Argument 3: The upsert keyword argument
-    )
+    mock_books_collection.insert_one.assert_called_once()
+    mock_books_collection.insert_one.assert_called_once_with(new_book)
 
 
 def test_find_books_calls_find_with_filter_and_projection():
