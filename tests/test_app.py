@@ -160,22 +160,25 @@ def test_add_book_check_request_header_is_json(client):
 
 
 def test_500_response_is_json(client):
+    # Arrange
     test_book = {
         "title": "Valid Title",
         "author": "AN Other",
         "synopsis": "Test Synopsis",
     }
-    # Define the valid headers, including the API key that matches conftest.py
+
     valid_headers = {"X-API-KEY": "test-key-123"}
 
+    error_message = "An unexpected error occurred"
+
     # Use patch to mock uuid module failing and throwing an exception
-    with patch("uuid.uuid4", side_effect=Exception("An unexpected error occurred")):
+    with patch("app.routes.insert_book_to_mongo", side_effect=Exception(error_message)):
         response = client.post("/books", json=test_book, headers=valid_headers)
 
-        # Check the response code is 500
+        # ASSERT
         assert response.status_code == 500
-
         assert response.content_type == "application/json"
+
         assert "An unexpected error occurred" in response.get_json()["error"]
 
 
@@ -590,44 +593,54 @@ def test_update_book_sent_with_missing_required_fields(client):
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
-
-def test_append_host_to_links_in_post(client, _insert_book_to_db):
-    # 1. Make a POST request
-    test_book = {
+def test_add_book_response_contains_absolute_urls(client, monkeypatch):
+    # Arrange
+    test_book_payload = {
         "title": "Append Test Book",
         "author": "AN Other II",
         "synopsis": "Test Synopsis",
     }
-    # Define the valid headers, including the API key that matches conftest.py
     valid_headers = {"X-API-KEY": "test-key-123"}
 
-    response = client.post("/books", json=test_book, headers=valid_headers)
+    # A. Mock the result of the insert operation
+    mock_insert_result = MagicMock()
+    mock_insert_result.inserted_id = ObjectId()
+    book_id_str = str(mock_insert_result.inserted_id)
 
-    assert response.status_code == 201
-    assert response.headers["content-type"] == "application/json"
+    # B. Mock the book as it would look coming from the database, *before* formatting.
+    #    It has an `_id` and RELATIVE links.
+    mock_book_from_db = test_book_payload.copy()
+    mock_book_from_db["_id"] = mock_insert_result.inserted_id
+    mock_book_from_db["links"] = { "self": f"/books/{book_id_str}" }
 
-    # 2. Get the response data
+    # C. Mock the collection object
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = mock_book_from_db
+
+    # D. Mock the helper function that gets called
+    mock_insert_helper = MagicMock(return_value=mock_insert_result)
+
+    # E. Apply all patches to isolate the route from the database
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr("app.routes.insert_book_to_mongo", mock_insert_helper)
+
+    # Act
+    response = client.post("/books", json=test_book_payload, headers=valid_headers)
+
+    # Assert
+    assert response.status_code == 201, f"Expected 201 but got {response.status_code}"
+
     response_data = response.get_json()
-    new_book_id = response_data.get("id")
-    links = response_data.get("links")
 
-    assert new_book_id is not None, "Response JSON must contain an 'id'"
-    assert links is not None, "Response JSON must contain a 'links' object"
+    assert "links" in response_data
+    assert "self" in response_data["links"]
 
-    # 3. Assert the hostname in the generated links
-    print(f"\n[TEST INFO] Links returned from API: {links}")
-    self_link = links.get("self")
-    assert self_link is not None, "'links' object must contain a 'self' link"
-    # Check that the hostname from the simulated request ('localhost') was correctly prepended.
-    expected_link_start = "http://localhost"
-    assert self_link.startswith(
-        expected_link_start
-    ), f"Link should start with the test server's hostname '{expected_link_start}'"
-    # Also check that the path is correct
-    expected_path = f"/books/{new_book_id}"
-    assert self_link.endswith(
-        expected_path
-    ), f"Link should end with the resource path '{expected_path}'"
+    expected_link_start = f"http://localhost/books/{book_id_str}"
+    actual_link = response_data["links"]["self"]
+
+    assert actual_link == expected_link_start, f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'"
+    assert actual_link is not None, "Response JSON must contain a 'links' object"
+
 
 
 @patch("app.services.book_service.find_books")
