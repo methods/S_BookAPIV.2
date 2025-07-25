@@ -1,11 +1,11 @@
 """Flask application module for managing a collection of books."""
 
 import copy
-import uuid
 
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
+from bson import ObjectId
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
@@ -29,59 +29,74 @@ def register_routes(app):  # pylint: disable=too-many-statements
     def add_book():
         """Function to add a new book to the collection."""
 
+        # VALIDATION I
         if not request.is_json:
             return jsonify({"error": "Request must be JSON"}), 415
 
-        new_book = request.json
-        if not isinstance(new_book, dict):
+        new_book_data = request.json
+        if not isinstance(new_book_data, dict):
             return jsonify({"error": "JSON payload must be a dictionary"}), 400
 
-        # create UUID and add it to the new_book object
-        new_book_id = str(uuid.uuid4())
-        new_book["id"] = new_book_id
 
-        # validation
+        # VALIDATION II
         required_fields = ["title", "synopsis", "author"]
-        missing_fields = [field for field in required_fields if field not in new_book]
+        missing_fields = [field for field in required_fields if field not in new_book_data]
         if missing_fields:
             return {
                 "error": f"Missing required fields: {', '.join(missing_fields)}"
             }, 400
 
-        new_book["links"] = {
-            "self": f"/books/{new_book_id}",
-            "reservations": f"/books/{new_book_id}/reservations",
-            "reviews": f"/books/{new_book_id}/reviews",
-        }
-
         # Map field names to their expected types
         field_types = {
-            "id": str,
             "title": str,
             "synopsis": str,
             "author": str,
-            "links": dict,
         }
 
         for field, expected_type in field_types.items():
-            if not isinstance(new_book[field], expected_type):
+            if not isinstance(new_book_data[field], expected_type):
                 return {"error": f"Field {field} is not of type {expected_type}"}, 400
 
+        # DATABASE OPERATIONS
         # establish connection to mongoDB
         books_collection = get_book_collection()
-        # use mongoDB helper to insert/replace new book
-        insert_book_to_mongo(new_book, books_collection)
 
+        # use mongoDB helper to insert/replace new book
+        insert_result = insert_book_to_mongo(new_book_data, books_collection)
+        # Get the new id from the insert result + str() ObjectID
+        new_book_id = insert_result.inserted_id
+        book_id_str = str(new_book_id)
+
+        # Create relative links to store in the database
+        links_to_store = {
+            "self": f"/books/{book_id_str}",
+            "reservations": f"/books/{book_id_str}/reservations",
+            "reviews": f"/books/{book_id_str}/reviews",
+        }
+
+        # Update the document in MongoDB to add the links
+        books_collection.update_one(
+            {"_id": new_book_id},
+            {"$set": {"links": links_to_store}}
+        )
+
+
+        # PREPARE RESPONSE FROM API
+        # Fetch the complete, updated document from the DB
+        book_from_db = books_collection.find_one({"_id": new_book_id})
+
+        # USE YOUR HELPER to create ABSOLUTE URLs for the client
         # Get the host from the request headers
         host = request.host_url
         # Send the host and new book_id to the helper function to generate links
-        book_for_response = append_hostname(new_book, host)
-        print("book_for_response", book_for_response)
+        final_book_for_api = append_hostname(book_from_db, host)
+        print("final_book_for_api", final_book_for_api)
+        
+        # Transform _id to id and remove the internal _id
+        final_book_for_api['id'] = str(final_book_for_api['_id'])
+        final_book_for_api.pop('_id', None)
 
-        # Remove MongoDB's ObjectID value
-        book_for_response.pop("_id", None)
-
-        return jsonify(book_for_response), 201
+        return jsonify(final_book_for_api), 201
 
     # ----------- GET section ------------------
     @app.route("/books", methods=["GET"])
