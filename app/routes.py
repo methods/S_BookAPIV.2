@@ -2,10 +2,10 @@
 
 import copy
 
+from bson import ObjectId
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
-from bson import ObjectId
 
 from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import insert_book_to_mongo
@@ -37,10 +37,11 @@ def register_routes(app):  # pylint: disable=too-many-statements
         if not isinstance(new_book_data, dict):
             return jsonify({"error": "JSON payload must be a dictionary"}), 400
 
-
         # VALIDATION II
         required_fields = ["title", "synopsis", "author"]
-        missing_fields = [field for field in required_fields if field not in new_book_data]
+        missing_fields = [
+            field for field in required_fields if field not in new_book_data
+        ]
         if missing_fields:
             return {
                 "error": f"Missing required fields: {', '.join(missing_fields)}"
@@ -76,10 +77,8 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         # Update the document in MongoDB to add the links
         books_collection.update_one(
-            {"_id": new_book_id},
-            {"$set": {"links": links_to_store}}
+            {"_id": new_book_id}, {"$set": {"links": links_to_store}}
         )
-
 
         # PREPARE RESPONSE FROM API
         # Fetch the complete, updated document from the DB
@@ -91,10 +90,10 @@ def register_routes(app):  # pylint: disable=too-many-statements
         # Send the host and new book_id to the helper function to generate links
         final_book_for_api = append_hostname(book_from_db, host)
         print("final_book_for_api", final_book_for_api)
-        
+
         # Transform _id to id and remove the internal _id
-        final_book_for_api['id'] = str(final_book_for_api['_id'])
-        final_book_for_api.pop('_id', None)
+        final_book_for_api["id"] = str(final_book_for_api["_id"])
+        final_book_for_api.pop("_id", None)
 
         return jsonify(final_book_for_api), 201
 
