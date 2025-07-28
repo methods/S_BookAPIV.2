@@ -3,7 +3,6 @@ import runpy
 import sys
 from unittest.mock import MagicMock, patch
 
-from app.datastore.mongo_helper import insert_book_to_mongo
 from scripts.create_books import main, populate_books, run_population
 
 
@@ -234,8 +233,6 @@ def test_run_population_correctly_upserts_a_batch_of_books(
     of new and existing books, resulting in a fully updated collection.
     """
     # ARRANGE
-    # common_id = "550e8400-e29b-41d4-a716-446655440000"
-    # A. Define a STABLE, PREDICTABLE ID that we control. This is the key.
     common_id = "book-to-be-updated-123"
     new_book_id = "new-book-abc-789"
 
@@ -319,7 +316,10 @@ def test_run_population_correctly_upserts_a_batch_of_books(
     assert inserted_book is not None
     assert inserted_book["title"] == "Brave New World"
 
-def test_insert_book_to_mongo_replaces_document_when_id_exists(mock_books_collection):
+
+def test_insert_book_to_mongo_replaces_document_when_id_exists(
+    mock_books_collection, monkeypatch
+):
     """
     UNIT TEST: Verifies that insert_book_to_mongo performs a replacement
     on a single document if the ID already exists.
@@ -342,24 +342,34 @@ def test_insert_book_to_mongo_replaces_document_when_id_exists(mock_books_collec
         "state": "active",
     }
     mock_books_collection.insert_one(old_book_version)
-    assert mock_books_collection.count_documents({}) == 1
 
     # Define new version of book
-    new_book = {
-        "id": common_id,
-        "title": "The Age of Surveillance Capitalism",
-        "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
-        "author": "Shoshana Zuboff",
-        "links": {
-            "self": "/books/550e8400-e29b-41d4-a716-446655440003",
-            "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
-        },
-        "state": "active",
-    }
+    new_book = [
+        {
+            "id": common_id,
+            "title": "The Age of Surveillance Capitalism",
+            "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
+            "author": "Shoshana Zuboff",
+            "links": {
+                "self": "/books/550e8400-e29b-41d4-a716-446655440003",
+                "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
+                "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
+            },
+            "state": "active",
+        }
+    ]
 
-    # ACT: Call the function under test directly
-    insert_book_to_mongo(new_book, mock_books_collection)
+    # Monkeypatch the helper functions to isolate test
+    monkeypatch.setattr(
+        "scripts.create_books.get_book_collection", lambda: mock_books_collection
+    )
+    monkeypatch.setattr("scripts.create_books.load_books_json", lambda: new_book)
+
+    # Sanity check: confim the database starts with exactly one document
+    assert mock_books_collection.count_documents({}) == 1
+
+    # Act
+    run_population()
 
     # ASSERT
     assert mock_books_collection.count_documents({}) == 1

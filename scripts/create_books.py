@@ -7,6 +7,7 @@ from app.datastore.mongo_db import get_book_collection
 from app.datastore.mongo_helper import upsert_book_from_file
 from utils.db_helpers import load_books_json
 
+
 # ---------------------- Book upsert helper ---------------------------
 def populate_books(collection, data):
     """

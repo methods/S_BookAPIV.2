@@ -1,9 +1,9 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import ANY, MagicMock, patch
-from bson.objectid import ObjectId
 
 import pytest
+from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from app import create_app
@@ -67,7 +67,7 @@ def test_add_book_creates_and_returns_new_book(client, _insert_book_to_db, monke
     # Mock the full book document that 'find_one' will return
     mock_book_from_db = test_book.copy()
     mock_book_from_db["_id"] = mock_insert_result.inserted_id
-    mock_book_from_db["links"] = { "self": f"/books/{mock_insert_result.inserted_id}" }
+    mock_book_from_db["links"] = {"self": f"/books/{mock_insert_result.inserted_id}"}
 
     # Mock the entire db collection object and its methods
     mock_collection = MagicMock()
@@ -78,7 +78,7 @@ def test_add_book_creates_and_returns_new_book(client, _insert_book_to_db, monke
 
     # Apply all the patches
     monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
-    monkeypatch.setattr("app.routes.insert_book_to_mongo",mock_insert_helper)
+    monkeypatch.setattr("app.routes.insert_book_to_mongo", mock_insert_helper)
     monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
 
     # Define the valid headers, including the API key that matches conftest.py
@@ -593,6 +593,7 @@ def test_update_book_sent_with_missing_required_fields(client):
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
+
 def test_add_book_response_contains_absolute_urls(client, monkeypatch):
     # Arrange
     test_book_payload = {
@@ -611,7 +612,7 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
     #    It has an `_id` and RELATIVE links.
     mock_book_from_db = test_book_payload.copy()
     mock_book_from_db["_id"] = mock_insert_result.inserted_id
-    mock_book_from_db["links"] = { "self": f"/books/{book_id_str}" }
+    mock_book_from_db["links"] = {"self": f"/books/{book_id_str}"}
 
     # C. Mock the collection object
     mock_collection = MagicMock()
@@ -638,9 +639,10 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
     expected_link_start = f"http://localhost/books/{book_id_str}"
     actual_link = response_data["links"]["self"]
 
-    assert actual_link == expected_link_start, f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'"
+    assert (
+        actual_link == expected_link_start
+    ), f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'"
     assert actual_link is not None, "Response JSON must contain a 'links' object"
-
 
 
 @patch("app.services.book_service.find_books")
