@@ -317,7 +317,7 @@ def test_run_population_correctly_upserts_a_batch_of_books(
     assert inserted_book["title"] == "Brave New World"
 
 
-def test_insert_book_to_mongo_replaces_document_when_id_exists(
+def test_upsert_book_to_mongo_replaces_document_when_id_exists(
     mock_books_collection, monkeypatch
 ):
     # --- ARRANGE ---
