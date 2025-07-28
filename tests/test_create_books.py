@@ -320,10 +320,6 @@ def test_run_population_correctly_upserts_a_batch_of_books(
 def test_insert_book_to_mongo_replaces_document_when_id_exists(
     mock_books_collection, monkeypatch
 ):
-    """
-    UNIT TEST: Verifies that insert_book_to_mongo performs a replacement
-    on a single document if the ID already exists.
-    """
     # --- ARRANGE ---
     common_id = "550e8400-e29b-41d4-a716-446655440000"
 
