@@ -641,8 +641,9 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
 
     assert (
         actual_link == expected_link_start
-    ), f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'"
+    ), f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'" # pylint: disable=line-too-long
     assert actual_link is not None, "Response JSON must contain a 'links' object"
+
 
 
 @patch("app.services.book_service.find_books")

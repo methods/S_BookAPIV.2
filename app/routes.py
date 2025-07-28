@@ -2,7 +2,6 @@
 
 import copy
 
-from bson import ObjectId
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
