@@ -361,15 +361,61 @@ def test_get_books_handles_database_connection_error(mock_get_collection, client
 
 # -------- Tests for GET a single resource ----------------
 
+def test_get_book_happy_path_unit_test(client, monkeypatch):
+    # Arrange:
+    fake_book_id = ObjectId()
+    fake_book_id_str = str(fake_book_id)
+    fake_book_from_db = {
+        "_id": fake_book_id,
+        "title": "A Mocked Book",
+        "author": "The Mockist",
+        "synopsis": "A tale of fakes and stubs.",
+        "state": "active",
+        "links": {} # This will be populated by the append_hostname helper
+    }
 
-def test_get_book_returns_specified_book(client):
-    # Test GET request using the book ID
-    get_response = client.get("/books/1")
+    # intercept the call to the service fucntion
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = fake_book_from_db
+
+    # use monkeypatch to replace the get_book_collection
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+
+    # ACT
+    get_response = client.get(f"/books/{fake_book_id_str}")
+
+    # ASSERT
     assert get_response.status_code == 200
-    assert get_response.content_type == "application/json"
-    returned_book = get_response.get_json()
-    assert returned_book["id"] == "1"
-    assert returned_book["title"] == "The Great Adventure"
+    response_data = get_response.get_json()
+    assert response_data["title"] == "A Mocked Book"
+    assert response_data["id"] == fake_book_id_str
+    mock_collection.find_one.assert_called_once()
+    mock_collection.find_one.assert_called_once_with({"_id": fake_book_id, "state": {"$ne": "deleted"}})
+
+# def test_get_book_returns_specified_book(client):
+
+#     """This is be an INTEGRATION test"""
+#     collection = get_book_collection()
+#     sample_book = {
+#         "_id": ObjectId(),  # Generate a new valid ObjectId
+#         "title": "Test Driven Development",
+#         "author": "Kent Beck",
+#         "synopsis": "A guide to TDD.",
+#         "state": "active",
+#         "links": {} # can be empty for this test
+#     }
+#     collection.insert_one(sample_book)
+#     book_id_str = str(sample_book["_id"])
+
+
+#     # ACT
+#     get_response = client.get(f"/books/{book_id_str}")
+#     assert get_response.status_code == 200
+#     assert get_response.content_type == "application/json"
+#     response_data = get_response.get_json()
+#     assert response_data["id"] == book_id_str
+#     assert response_data["title"] == "Test Driven Development"
+#     assert response_data["author"] == "Kent Beck"
 
 
 def test_get_book_not_found_returns_404(client):
