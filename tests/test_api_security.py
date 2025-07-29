@@ -3,8 +3,10 @@
 Tests for API security features, such as API key authentication.
 """
 import logging
+from unittest.mock import MagicMock
 
 import pytest
+from bson.objectid import ObjectId
 
 # A dictionary for headers to keep things clean
 HEADERS = {
@@ -64,16 +66,41 @@ def test_add_book_fails_with_missing_key(client, monkeypatch):
 
 
 def test_add_book_succeeds_with_valid_key(client, monkeypatch):
-    # Patch the database
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
+    # Arrange
+    # Create a fake result for the insert operation.
+    mock_insert_result = MagicMock()
+    mock_insert_result.inserted_id = ObjectId()  # A new, fake ObjectId
+
+    # Create a fake book document that would be returned by .find_one()
+    mock_book_from_db = DUMMY_PAYLOAD.copy()
+    mock_book_from_db["_id"] = mock_insert_result.inserted_id
+    mock_book_from_db["links"] = {"self": "/books/..."}
+
+    # Create a fake collection object with mocked methods.
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = mock_book_from_db
+
+    # Patch get_book_collection to return our fake collection
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    # Patch insert_book_to_mongo to return our fake insert result
     monkeypatch.setattr(
-        "app.routes.insert_book_to_mongo", lambda book, collection: None
+        "app.routes.insert_book_to_mongo", lambda book, collection: mock_insert_result
     )
     monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
 
+    # Act
     response = client.post("/books", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
 
+    # Assert
     assert response.status_code == 201
+    mock_collection.update_one.assert_called_once()
+    mock_collection.find_one.assert_called_once()
+
+    # Check the response body
+    response_data = response.get_json()
+    assert "id" in response_data
+    assert "_id" not in response_data
+    assert response_data["title"] == DUMMY_PAYLOAD["title"]
 
 
 def test_add_book_fails_with_invalid_key(client):

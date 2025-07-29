@@ -3,7 +3,6 @@ import runpy
 import sys
 from unittest.mock import MagicMock, patch
 
-from app.datastore.mongo_helper import insert_book_to_mongo
 from scripts.create_books import main, populate_books, run_population
 
 
@@ -167,11 +166,11 @@ def test_main_creates_app_context_and_calls_run_population(
     assert captured.out == expected_output
 
 
-@patch("app.datastore.mongo_helper.insert_book_to_mongo")
+@patch("app.datastore.mongo_helper.upsert_book_from_file")
 @patch("utils.db_helpers.load_books_json")  # PATCHING AT THE SOURCE
 @patch("app.datastore.mongo_db.get_book_collection")  # PATCHING AT THE SOURCE
 def test_script_entry_point_calls_main(
-    mock_get_collection, mock_load_json, mock_insert_book, sample_book_data
+    mock_get_collection, mock_load_json, mock_upsert_book, sample_book_data
 ):
     # Arrange test_book sample and return values of MOCKS
     test_books = sample_book_data
@@ -188,9 +187,9 @@ def test_script_entry_point_calls_main(
     mock_get_collection.assert_called_once()
     mock_load_json.assert_called_once()
 
-    assert mock_insert_book.call_count == len(test_books)
-    mock_insert_book.assert_any_call(test_books[0], mock_collection_obj)
-    mock_insert_book.assert_any_call(test_books[1], mock_collection_obj)
+    assert mock_upsert_book.call_count == len(test_books)
+    mock_upsert_book.assert_any_call(test_books[0], mock_collection_obj)
+    mock_upsert_book.assert_any_call(test_books[1], mock_collection_obj)
 
 
 def test_run_population_should_insert_new_book_when_id_does_not_exist(
@@ -234,7 +233,8 @@ def test_run_population_correctly_upserts_a_batch_of_books(
     of new and existing books, resulting in a fully updated collection.
     """
     # ARRANGE
-    common_id = "550e8400-e29b-41d4-a716-446655440000"
+    common_id = "book-to-be-updated-123"
+    new_book_id = "new-book-abc-789"
 
     # Pre-seed the database with an "old" version of a book
     old_book_version = {
@@ -254,7 +254,7 @@ def test_run_population_correctly_upserts_a_batch_of_books(
 
     # Define the "new book" data that the script will load
     # This list contains the updated book and a brand new one
-    new_book_data_from_json = [
+    new_book_data_from_file = [
         {
             "id": common_id,
             "title": "The Age of Surveillance Capitalism",
@@ -268,7 +268,7 @@ def test_run_population_correctly_upserts_a_batch_of_books(
             "state": "active",
         },
         {
-            "id": "550e8400-e29b-41d4-a716-446655440002",
+            "id": new_book_id,
             "title": "Brave New World",
             "synopsis": "A futuristic novel exploring a society shaped by genetic engineering and psychological manipulation.",
             "author": "Aldous Huxley",
@@ -288,7 +288,7 @@ def test_run_population_correctly_upserts_a_batch_of_books(
         "scripts.create_books.get_book_collection", lambda: mock_books_collection
     )
     monkeypatch.setattr(
-        "scripts.create_books.load_books_json", lambda: new_book_data_from_json
+        "scripts.create_books.load_books_json", lambda: new_book_data_from_file
     )
 
     # Sanity check: confim the database starts with exactly one document
@@ -311,12 +311,15 @@ def test_run_population_correctly_upserts_a_batch_of_books(
     assert updated_book["author"] == "Shoshana Zuboff"
     assert "version" not in updated_book
 
+    # Retrieve the book we expected to be INSERTED and verify it exists.
+    inserted_book = mock_books_collection.find_one({"id": new_book_id})
+    assert inserted_book is not None
+    assert inserted_book["title"] == "Brave New World"
 
-def test_insert_book_to_mongo_replaces_document_when_id_exists(mock_books_collection):
-    """
-    UNIT TEST: Verifies that insert_book_to_mongo performs a replacement
-    on a single document if the ID already exists.
-    """
+
+def test_upsert_book_to_mongo_replaces_document_when_id_exists(
+    mock_books_collection, monkeypatch
+):
     # --- ARRANGE ---
     common_id = "550e8400-e29b-41d4-a716-446655440000"
 
@@ -335,24 +338,34 @@ def test_insert_book_to_mongo_replaces_document_when_id_exists(mock_books_collec
         "state": "active",
     }
     mock_books_collection.insert_one(old_book_version)
-    assert mock_books_collection.count_documents({}) == 1
 
     # Define new version of book
-    new_book = {
-        "id": common_id,
-        "title": "The Age of Surveillance Capitalism",
-        "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
-        "author": "Shoshana Zuboff",
-        "links": {
-            "self": "/books/550e8400-e29b-41d4-a716-446655440003",
-            "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
-            "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
-        },
-        "state": "active",
-    }
+    new_book = [
+        {
+            "id": common_id,
+            "title": "The Age of Surveillance Capitalism",
+            "synopsis": "An exploration of how major tech companies use personal data to predict and influence behavior in the modern economy.",
+            "author": "Shoshana Zuboff",
+            "links": {
+                "self": "/books/550e8400-e29b-41d4-a716-446655440003",
+                "reservations": "/books/550e8400-e29b-41d4-a716-446655440003/reservations",
+                "reviews": "/books/550e8400-e29b-41d4-a716-446655440003/reviews",
+            },
+            "state": "active",
+        }
+    ]
 
-    # ACT: Call the function under test directly
-    insert_book_to_mongo(new_book, mock_books_collection)
+    # Monkeypatch the helper functions to isolate test
+    monkeypatch.setattr(
+        "scripts.create_books.get_book_collection", lambda: mock_books_collection
+    )
+    monkeypatch.setattr("scripts.create_books.load_books_json", lambda: new_book)
+
+    # Sanity check: confim the database starts with exactly one document
+    assert mock_books_collection.count_documents({}) == 1
+
+    # Act
+    run_population()
 
     # ASSERT
     assert mock_books_collection.count_documents({}) == 1

@@ -5,6 +5,21 @@ from pymongo.cursor import Cursor
 
 def insert_book_to_mongo(book_data, collection):
     """
+    Inserts a new book document into the collection.
+    MongoDB will automatically generate a unique _id for it.
+    """
+
+    result = collection.insert_one(book_data)
+
+    # # Check the result for logging/feedback.
+    if result.inserted_id:
+        print(f"✅ INSERTED new book with id: {result.inserted_id}")
+
+    return result
+
+
+def upsert_book_from_file(book_data, collection):
+    """
     Inserts a new book or replaces an existing one based on its 'id'.
     This is an "upsert" (update/insert) operation.
 
@@ -19,11 +34,6 @@ def insert_book_to_mongo(book_data, collection):
     query_filter = {"id": book_data["id"]}
 
     # Use replace_one() with upsert=True.
-    #    - Parameter 1: The filter to find the document to replace.
-    #    - Parameter 2: The new document that will replace the old one.
-    #    - Parameter 3: upsert=True tells MongoDB:
-    #      - "If you find a document matching the filter, REPLACE it with the new data."
-    #      - "If you DON'T find a document, INSERT the new data as a new document."
     result = collection.replace_one(query_filter, book_data, upsert=True)
 
     # Check the result for logging/feedback.
