@@ -428,6 +428,22 @@ def test_get_book_returns_specified_book(
         assert response_data["author"] == "Kent Beck"
 
 
+def test_get_book_with_invalid_id_format_returns_400(client, db_setup):  # pylint: disable=unused-argument
+    # Arrange
+    # an ID that is clearly not a valid MongoDB ObjectId
+    invalid_book_id = "this-is-not-a-valid-id"
+
+    # Act
+    response = client.get(f"/books/{invalid_book_id}")
+
+    # Assert
+    assert response.status_code == 400
+    assert response.content_type == "application/json"
+
+    # Check that the JSON error message is exactly what the code returns
+    expected_error = {"error": "Invalid book ID format"}
+    assert response.get_json() == expected_error
+
 def test_get_book_not_found_returns_404(client, monkeypatch):
     """
     WHEN given a well-formed but non-existent ObjectId,
