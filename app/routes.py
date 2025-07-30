@@ -172,7 +172,6 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         return jsonify(formatted_book), 200
 
-
     # ----------- DELETE section ------------------
     @app.route("/books/<string:book_id>", methods=["DELETE"])
     @require_api_key
