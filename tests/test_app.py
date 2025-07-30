@@ -375,7 +375,7 @@ def test_get_book_happy_path_unit_test(client, monkeypatch):
         "links": {},  # This will be populated by the append_hostname helper
     }
 
-    # intercept the call to the service fucntion
+    # intercept the call to the service function
     mock_collection = MagicMock()
     mock_collection.find_one.return_value = fake_book_from_db
 
@@ -399,7 +399,7 @@ def test_get_book_happy_path_unit_test(client, monkeypatch):
 def test_get_book_returns_specified_book(
     client, db_setup
 ):  # pylint: disable=unused-argument
-    """This is be an INTEGRATION test"""
+    """This is an INTEGRATION test"""
     # The 'db_setup' fixture has already cleaned the db
     # and provided the app.context
 
@@ -430,7 +430,7 @@ def test_get_book_returns_specified_book(
 
 def test_get_book_not_found_returns_404(client, monkeypatch):
     """
-    WHEN given a well‑formed but non‑existent ObjectId,
+    WHEN given a well-formed but non-existent ObjectId,
     Returns a 404 error
     """
     # Arrange
