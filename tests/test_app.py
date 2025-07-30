@@ -6,7 +6,7 @@ import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
-from app import create_app
+from app import create_app, routes
 from app.datastore.mongo_db import get_book_collection
 
 # Mock book database object
@@ -428,9 +428,55 @@ def test_get_book_returns_specified_book(
         assert response_data["author"] == "Kent Beck"
 
 
-def test_get_book_not_found_returns_404(client):
-    # Test GET request using invalid book ID
-    response = client.get("/books/12341234")
+def test_get_book_not_found_returns_404(client, monkeypatch):
+    """
+    WHEN given a well‑formed but non‑existent ObjectId,
+    Returns a 404 error
+    """
+    # Arrange
+    valid_but_missing_id = ObjectId()
+    valid_id_str = str(valid_but_missing_id)
+
+    # Mock the collection to return None (book not in DB)
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = None
+    monkeypatch.setattr(routes, "get_book_collection", lambda: mock_collection)
+
+    # ACT: Test GET request using invalid book ID
+    response = client.get(f"/books/{valid_id_str}")
+
+    assert response.status_code == 404
+    assert response.content_type == "application/json"
+    assert "Book not found" in response.get_json()["error"]
+
+
+def test_book_database_is_initialized_for_specific_book_route(client, monkeypatch):
+    """
+    WHEN get_book_collection() returns None
+    THEN the /books/<id> route should return HTTP 500
+    """
+    # Arrange
+    valid_id = ObjectId()
+    valid_id_str = str(valid_id)
+
+    monkeypatch.setattr(routes, "get_book_collection", lambda: None)
+
+    response = client.get(f"/books/{valid_id_str}")
+    assert response.status_code == 500
+    assert "Book collection not found" in response.get_json()["error"]
+
+
+def test_get_book_returns_404_if_state_equals_deleted(client, monkeypatch):
+    # Arrange
+    valid_id = ObjectId()
+    valid_id_str = str(valid_id)
+
+    # Mock the collection to return None (book state deleted)
+    mock_collection = MagicMock()
+    mock_collection.find_one.return_value = None
+    monkeypatch.setattr(routes, "get_book_collection", lambda: mock_collection)
+
+    response = client.get(f"/books/{valid_id_str}")
     assert response.status_code == 404
     assert response.content_type == "application/json"
     assert "Book not found" in response.get_json()["error"]
@@ -442,21 +488,6 @@ def test_invalid_urls_return_404(client):
     assert response.status_code == 404
     assert response.content_type == "application/json"
     assert "404 Not Found" in response.get_json()["error"]
-
-
-def test_book_database_is_initialized_for_specific_book_route(client):
-    with patch("app.routes.books", None):
-        response = client.get("/books/1")
-        assert response.status_code == 500
-        assert "Book collection not initialized" in response.get_json()["error"]
-
-
-def test_get_book_returns_404_if_state_equals_deleted(client):
-    book_id = "3"
-    response = client.get(f"/books/{book_id}")
-    assert response.status_code == 404
-    assert response.content_type == "application/json"
-    assert "Book not found" in response.get_json()["error"]
 
 
 # ------------------------ Tests for DELETE --------------------------------------------
@@ -741,33 +772,77 @@ def test_append_host_to_links_in_get(mock_find_books, client):
         assert book["links"]["self"].endswith(f"books/{new_book_id}")
 
 
-def test_append_host_to_links_in_get_book(client):
+def test_append_host_to_links_in_get_book(client, monkeypatch):
+    """
+    GIVEN a request for a book ID
+    WHEN the database and helper functions are mocked
+    THEN the route handler correctly calls its dependencies and formats the final JSON response.
+    """
+    # Arrange: define constants and mock return values
+    book_id = ObjectId()
+    book_id_str = str(book_id)
+    book_from_db = {
+        "_id": book_id,
+        "title": "Some Title",
+        "author": "Some Author",
+        "synopsis": "Foo bar.",
+        "state": "active",
+        "links": {},
+    }
+    # Mock the external dependencies
+    fake_collection = MagicMock()
+    fake_collection.find_one.return_value = book_from_db
+    # Patch the function that the route uses to get the collection
+    monkeypatch.setattr(routes, "get_book_collection", lambda: fake_collection)
 
-    response = client.get("/books/1")
+    # mock append_hostname helper, define its output
+    mock_appender = MagicMock(
+        return_value={
+            **book_from_db,
+            "links": {
+                "self": f"http://localhost/books/{book_id_str}",
+                "reservations": f"http://localhost/books/{book_id_str}",
+                "reviews": f"http://localhost/books/{book_id_str}",
+            },
+        }
+    )
+    monkeypatch.setattr(routes, "append_hostname", mock_appender)
 
+    # ACT
+    response = client.get(f"/books/{book_id_str}")
+
+    # Assert
     assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
-
-    # Get the response data, the ID and links
     response_data = response.get_json()
-    book_id = response_data.get("id")
-    links = response_data.get("links")
+    assert response_data["id"] == book_id_str
+    assert "links" in response_data
+    # Assert the final JSON is correct (based on the mock_appender's return value)
+    assert (
+        response_data.get("links", {}).get("self")
+        == f"http://localhost/books/{book_id_str}"
+    )
 
-    assert book_id is not None, "Response JSON must contain an 'id'"
-    assert links is not None, "Response JSON must contain a 'links' object"
+    # Now specifically check the 'self' link
+    self_link = response_data["links"]["self"]
+    reservations_link = response_data["links"]["reservations"]
+    reviews_link = response_data["links"]["reviews"]
+    assert self_link, "Expected a 'self' link in the response"
+    assert reservations_link
+    assert reviews_link
 
-    self_link = links.get("self")
-    assert self_link is not None, "'links' object must contain a 'self' link"
-
-    expected_link_start = "http://localhost"
+    # By default Flask's test_client serves on http://localhost/
     assert self_link.startswith(
-        expected_link_start
-    ), f"Link should start with the test server's hostname '{expected_link_start}'"
+        "http://localhost"
+    ), f"Expected the link to start with 'http://localhost', got {self_link!r}"
 
-    expected_path = f"/books/{book_id}"
+    # And it must end with the resource path
     assert self_link.endswith(
-        expected_path
-    ), f"Link should end with the resource path '{expected_path}'"
+        f"/books/{book_id_str}"
+    ), f"Expected link to end with '/books/{book_id_str}', got {self_link!r}"
+    # Assert the internal behavior was correct
+    expected_query = {"_id": book_id, "state": {"$ne": "deleted"}}
+    fake_collection.find_one.assert_called_once_with(expected_query)
+    mock_appender.assert_called_once_with(book_from_db, ANY)
 
 
 def test_append_host_to_links_in_put(client):
