@@ -135,6 +135,15 @@ components:
       required:
         - error
     
+    SimpleError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: A brief error message.
+      required:
+        - error
+
   # API Error: Reusable responses for common errors  
   responses:
     BadRequest:
@@ -263,10 +272,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookOutput' 
+        '400':
+          description: |-
+            Bad Request. The provided book_id is not a valid 24-character hexadecimal string.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Invalid book ID format"
         '404': 
-          $ref: '#/components/responses/NotFound' 
-        '500': 
-          $ref: '#/components/responses/InternalServerError' 
+          description: A book with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book not found" 
+        '500':
+          description: |-
+            Service Unavailable. The server cannot connect to the database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book collection not found" 
      # --------------------------------------------
 
     put:
