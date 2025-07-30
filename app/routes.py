@@ -2,6 +2,7 @@
 
 import copy
 
+from bson.objectid import ObjectId
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
@@ -88,7 +89,6 @@ def register_routes(app):  # pylint: disable=too-many-statements
         host = request.host_url
         # Send the host and new book_id to the helper function to generate links
         final_book_for_api = append_hostname(book_from_db, host)
-        print("final_book_for_api", final_book_for_api)
 
         # Transform _id to id and remove the internal _id
         final_book_for_api["id"] = str(final_book_for_api["_id"])
@@ -141,20 +141,36 @@ def register_routes(app):  # pylint: disable=too-many-statements
         """
         Retrieve a specific book by its unique ID.
         """
-        if not books:
-            return jsonify({"error": "Book collection not initialized"}), 500
+        # get the collection
+        collection = get_book_collection()
 
-        # extract host from the request
+        if collection is None:
+            return jsonify({"error": "Book collection not found"}), 500
+
+        # sanity check book_id
+        if not ObjectId.is_valid(book_id):
+            return jsonify({"error": "Invalid book ID format"}), 400
+        obj_id = ObjectId(book_id)
+
+        # Query db for a non-deleted book
+        query = {"_id": obj_id, "state": {"$ne": "deleted"}}
+        # look it up in MongoDB
+        book = collection.find_one(query)
+        # also equivalent to Key version
+        # book = raw_books.find_one(_id=obj_id, state={"$ne": "deleted"})
+
+        if book is None:
+            return jsonify({"error": "Book not found"}), 404
+
+        # Format for API response
         host = request.host_url
+        formatted_book = append_hostname(book, host)
 
-        for book in books:
-            if book.get("id") == book_id and book.get("state") != "deleted":
-                # copy the book
-                book_copy = copy.deepcopy(book)
-                book_copy.pop("state", None)
-                # Add the hostname to the book_copy object and return it
-                return jsonify(append_hostname(book_copy, host)), 200
-        return jsonify({"error": "Book not found"}), 404
+        formatted_book["id"] = str(formatted_book["_id"])
+        formatted_book.pop("state", None)
+        formatted_book.pop("_id", None)
+
+        return jsonify(formatted_book), 200
 
     # ----------- DELETE section ------------------
     @app.route("/books/<string:book_id>", methods=["DELETE"])

@@ -10,6 +10,7 @@ import mongomock
 import pytest
 
 from app import create_app
+from app.datastore.mongo_db import get_book_collection
 
 
 @pytest.fixture(name="_insert_book_to_db")
@@ -84,3 +85,23 @@ def test_app():
 def client(test_app):  # pylint: disable=redefined-outer-name
     """A test client for the app."""
     return test_app.test_client()
+
+
+@pytest.fixture(scope="function")
+def db_setup(test_app):  # pylint: disable=redefined-outer-name
+    """
+    Sets up and tears down the database for a test.
+    Scope is "function" to ensure a clean DB for each test.
+    """
+    # Use app_context to access the database
+    with test_app.app_context():
+        collection = get_book_collection()
+
+        collection.delete_many({})
+    # Pass control to the test function
+    yield
+
+    # Teardown: code runs after the test is finished
+    with test_app.app_context():
+        collection = get_book_collection()
+        collection.delete_many({})
