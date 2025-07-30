@@ -361,6 +361,7 @@ def test_get_books_handles_database_connection_error(mock_get_collection, client
 
 # -------- Tests for GET a single resource ----------------
 
+
 def test_get_book_happy_path_unit_test(client, monkeypatch):
     # Arrange:
     fake_book_id = ObjectId()
@@ -371,7 +372,7 @@ def test_get_book_happy_path_unit_test(client, monkeypatch):
         "author": "The Mockist",
         "synopsis": "A tale of fakes and stubs.",
         "state": "active",
-        "links": {} # This will be populated by the append_hostname helper
+        "links": {},  # This will be populated by the append_hostname helper
     }
 
     # intercept the call to the service fucntion
@@ -390,32 +391,41 @@ def test_get_book_happy_path_unit_test(client, monkeypatch):
     assert response_data["title"] == "A Mocked Book"
     assert response_data["id"] == fake_book_id_str
     mock_collection.find_one.assert_called_once()
-    mock_collection.find_one.assert_called_once_with({"_id": fake_book_id, "state": {"$ne": "deleted"}})
-
-# def test_get_book_returns_specified_book(client):
-
-#     """This is be an INTEGRATION test"""
-#     collection = get_book_collection()
-#     sample_book = {
-#         "_id": ObjectId(),  # Generate a new valid ObjectId
-#         "title": "Test Driven Development",
-#         "author": "Kent Beck",
-#         "synopsis": "A guide to TDD.",
-#         "state": "active",
-#         "links": {} # can be empty for this test
-#     }
-#     collection.insert_one(sample_book)
-#     book_id_str = str(sample_book["_id"])
+    mock_collection.find_one.assert_called_once_with(
+        {"_id": fake_book_id, "state": {"$ne": "deleted"}}
+    )  # pylint: disable=line-too-long
 
 
-#     # ACT
-#     get_response = client.get(f"/books/{book_id_str}")
-#     assert get_response.status_code == 200
-#     assert get_response.content_type == "application/json"
-#     response_data = get_response.get_json()
-#     assert response_data["id"] == book_id_str
-#     assert response_data["title"] == "Test Driven Development"
-#     assert response_data["author"] == "Kent Beck"
+def test_get_book_returns_specified_book(
+    client, db_setup
+):  # pylint: disable=unused-argument
+    """This is be an INTEGRATION test"""
+    # The 'db_setup' fixture has already cleaned the db
+    # and provided the app.context
+
+    with client.application.app_context():
+        # GIVEN: Setup the db
+        collection = get_book_collection()
+
+        sample_book = {
+            "_id": ObjectId(),  # Generate a new valid ObjectId
+            "title": "Test Driven Development",
+            "author": "Kent Beck",
+            "synopsis": "A guide to TDD.",
+            "state": "active",
+            "links": {},  # can be empty for this test
+        }
+        collection.insert_one(sample_book)
+        book_id_str = str(sample_book["_id"])
+
+        # ACT
+        get_response = client.get(f"/books/{book_id_str}")
+        assert get_response.status_code == 200
+        assert get_response.content_type == "application/json"
+        response_data = get_response.get_json()
+        assert response_data["id"] == book_id_str
+        assert response_data["title"] == "Test Driven Development"
+        assert response_data["author"] == "Kent Beck"
 
 
 def test_get_book_not_found_returns_404(client):
