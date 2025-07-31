@@ -350,7 +350,7 @@ paths:
       summary: Delete a book by ID
       security:
         - ApiKeyAuth: []
-      description: Soft deletes a book by setting its state to 'deleted'.
+      description: Soft deletes a book by setting its state to 'deleted'. This operation is idempotent.
       operationId: deleteBookById
       parameters:
         - name: book_id
@@ -365,9 +365,24 @@ paths:
         '204':
           description: Book deleted successfully.
           content: {}
+        '400':
+          description: Bad Request. The provided book_id is not in a valid 24-character hexadecimal format.
+          content:
+            application/json:
+              schema:
+                # You have a great SimpleError component we can reuse!
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Invalid Book ID format"
         '401':
           $ref: '#/components/responses/Unauthorized' 
         '404':
-          $ref: '#/components/responses/NotFound' 
+          description: A book with the specified ID was not found or was already deleted.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book not found"
         '500':
           $ref: '#/components/responses/InternalServerError' 
