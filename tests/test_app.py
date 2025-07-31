@@ -598,8 +598,6 @@ def test_returns_404_if_helper_function_result_is_none(client):
         assert "Book not found" in response_data["error"]
 
 
-
-
 # ------------------------ Tests for PUT --------------------------------------------
 
 
