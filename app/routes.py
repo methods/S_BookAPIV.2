@@ -8,7 +8,7 @@ from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import insert_book_to_mongo
+from app.datastore.mongo_helper import insert_book_to_mongo, delete_book_by_id
 from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
@@ -179,14 +179,16 @@ def register_routes(app):  # pylint: disable=too-many-statements
         """
         Soft delete a book by setting its state to 'deleted' or return error if not found.
         """
-        if not books:
+        book_collection = get_book_collection()
+        if book_collection is None:
             return jsonify({"error": "Book collection not initialized"}), 500
 
-        for book in books:
-            if book.get("id") == book_id:
-                book["state"] = "deleted"
-                return "", 204
-        return jsonify({"error": "Book not found"}), 404
+        delete_result = delete_book_by_id(book_collection, book_id)
+
+        if delete_result is None:
+            return jsonify({"error": "Book not found"}), 404
+
+        return "", 204
 
     # ----------- PUT section ------------------
 
