@@ -70,7 +70,7 @@ def delete_book_by_id(book_collection, book_id):
     Soft delete book with given id
     Returns: The original document if found and updated, otherwise None.
     """
-    # turn str into ObjectId
+    # Convert string ID to ObjectId
     object_id_to_update = ObjectId(book_id)
 
     # UPDATE operation
