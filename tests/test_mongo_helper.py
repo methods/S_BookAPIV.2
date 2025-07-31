@@ -1,9 +1,11 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import MagicMock
+
 from bson import ObjectId
 
-from app.datastore.mongo_helper import find_books, insert_book_to_mongo, delete_book_by_id
+from app.datastore.mongo_helper import (delete_book_by_id, find_books,
+                                        insert_book_to_mongo)
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -104,12 +106,12 @@ def test_delete_book_by_id_happy_path():
     mock_collection.find_one_and_update.assert_called_once()
     assert result == fake_book_from_db
     # Was the method called with the EXACT right arguments?
-    expected_filter = {'_id': valid_id, 'state': {'$ne':'deleted'}}
-    expected_update = {'$set': {'state': 'deleted'}}
+    expected_filter = {"_id": valid_id, "state": {"$ne": "deleted"}}
+    expected_update = {"$set": {"state": "deleted"}}
     mock_collection.find_one_and_update.assert_called_once_with(
-        expected_filter,
-        expected_update
+        expected_filter, expected_update
     )
+
 
 def test_soft_delete_already_deleted_book_returns_none():
     # Arrange
@@ -122,12 +124,11 @@ def test_soft_delete_already_deleted_book_returns_none():
     # Act
     result = delete_book_by_id(mock_collection, fake_book_id_str)
 
-    # Assert 
+    # Assert
     assert result is None
     mock_collection.find_one_and_update.assert_called_once()
-    expected_filter = {'_id': valid_id, 'state': {'$ne': 'deleted'}}
-    expected_update = {'$set': {'state': 'deleted'}}
+    expected_filter = {"_id": valid_id, "state": {"$ne": "deleted"}}
+    expected_update = {"$set": {"state": "deleted"}}
     mock_collection.find_one_and_update.assert_called_with(
-        expected_filter,
-        expected_update
+        expected_filter, expected_update
     )

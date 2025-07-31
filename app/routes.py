@@ -8,7 +8,7 @@ from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import insert_book_to_mongo, delete_book_by_id
+from app.datastore.mongo_helper import delete_book_by_id, insert_book_to_mongo
 from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
