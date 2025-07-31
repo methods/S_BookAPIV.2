@@ -1,5 +1,6 @@
 """Module containing pymongo helper functions."""
 
+from bson.objectid import ObjectId
 from pymongo.cursor import Cursor
 
 
@@ -62,3 +63,21 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
     if limit is not None and limit > 0:
         cursor = cursor.limit(limit)
     return cursor
+
+
+def delete_book_by_id(book_collection, book_id):
+    """
+    Soft delete book with given id
+    Returns: The original document if found and updated, otherwise None.
+    """
+    # Convert string ID to ObjectId
+    object_id_to_update = ObjectId(book_id)
+
+    # UPDATE operation
+    update_operation = {"$set": {"state": "deleted"}}
+
+    filter_query = {"_id": object_id_to_update, "state": {"$ne": "deleted"}}
+
+    result = book_collection.find_one_and_update(filter_query, update_operation)
+
+    return result

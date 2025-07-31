@@ -428,7 +428,9 @@ def test_get_book_returns_specified_book(
         assert response_data["author"] == "Kent Beck"
 
 
-def test_get_book_with_invalid_id_format_returns_400(client, db_setup):  # pylint: disable=unused-argument
+def test_get_book_with_invalid_id_format_returns_400(
+    client, db_setup
+):  # pylint: disable=unused-argument
     # Arrange
     # an ID that is clearly not a valid MongoDB ObjectId
     invalid_book_id = "this-is-not-a-valid-id"
@@ -443,6 +445,7 @@ def test_get_book_with_invalid_id_format_returns_400(client, db_setup):  # pylin
     # Check that the JSON error message is exactly what the code returns
     expected_error = {"error": "Invalid book ID format"}
     assert response.get_json() == expected_error
+
 
 def test_get_book_not_found_returns_404(client, monkeypatch):
     """
@@ -508,18 +511,35 @@ def test_invalid_urls_return_404(client):
 
 # ------------------------ Tests for DELETE --------------------------------------------
 
+VALID_OID_STRING = "635c02a7a5f6e1e2b3f4d5e6"
+
 
 def test_book_is_soft_deleted_on_delete_request(client):
-    with patch("app.routes.books", books_database):
-        # Send DELETE request with valid API header
-        book_id = "1"
-        headers = {"X-API-KEY": "test-key-123"}
-        response = client.delete(f"/books/{book_id}", headers=headers)
+    """
+    GIVEN a valid book ID and API key
+    WHEN a DELETE request is made
+    THEN the view function should call the database helper correctly and return 204.
+
+    This test verifies the integration between the Flask route and the data layer.
+    """
+    with patch("app.routes.delete_book_by_id") as mock_delete_helper:
+        # Arrange
+        # Configure the mock to simulate a successful deletion
+        mock_delete_helper.return_value = {"_id": VALID_OID_STRING}
+
+        # Mock get_book_collection to avoid a real DB connection
+        with patch("app.routes.get_book_collection", return_value="fake_collection"):
+            # --- Act ---
+            # Send the DELETE request using a valid API header.
+            headers = {"X-API-KEY": "test-key-123"}
+            response = client.delete(f"/books/{VALID_OID_STRING}", headers=headers)
 
         assert response.status_code == 204
-        assert response.data == b""
-        # check that the book's state has changed to deleted
-        assert books_database[0]["state"] == "deleted"
+        mock_delete_helper.assert_called_once()
+        mock_delete_helper.assert_called_once_with(
+            "fake_collection",  # The (mocked) collection object
+            VALID_OID_STRING,  # The ID passed from the URL
+        )
 
 
 def test_delete_empty_book_id(client):
@@ -531,19 +551,51 @@ def test_delete_empty_book_id(client):
 
 
 def test_delete_invalid_book_id(client):
-    headers = {"X-API-KEY": "test-key-123"}
-    response = client.delete("/books/12341234", headers=headers)
-    assert response.status_code == 404
+    """
+    GIVEN a malformed book ID (not a valid ObjectId format)
+    WHEN a DELETE request is made
+    THEN the response should be 400 InvalidId Error.
+    """
+    invalid_id = "1234-this-is-not-a-valid-id"
+
+    # Mock get_book_collection to avoid a real DB connection
+    with patch("app.routes.get_book_collection", return_value="fake_collection"):
+        # --- Act ---
+        # Send the DELETE request using a valid API header.
+        headers = {"X-API-KEY": "test-key-123"}
+        response = client.delete(f"/books/{invalid_id}", headers=headers)
+
+    assert response.status_code == 400
     assert response.content_type == "application/json"
-    assert "Book not found" in response.get_json()["error"]
+    response_data = response.get_json()
+    assert "error" in response_data
+    assert "Invalid Book ID format" in response_data["error"]
 
 
 def test_book_database_is_initialized_for_delete_book_route(client):
-    with patch("app.routes.books", None):
+    with patch("app.routes.get_book_collection") as mock_get_collection:
+        mock_get_collection.return_value = None
+
         headers = {"X-API-KEY": "test-key-123"}
-        response = client.delete("/books/1", headers=headers)
+        response = client.delete(f"/books/{VALID_OID_STRING}", headers=headers)
+
         assert response.status_code == 500
-        assert "Book collection not initialized" in response.get_json()["error"]
+        response_data = response.get_json()
+        assert "error" in response_data
+        assert "Book collection not initialized" in response_data["error"]
+
+
+def test_returns_404_if_helper_function_result_is_none(client):
+    with patch("app.routes.delete_book_by_id") as mock_delete_book:
+        mock_delete_book.return_value = None
+
+        headers = {"X-API-KEY": "test-key-123"}
+        response = client.delete(f"/books/{VALID_OID_STRING}", headers=headers)
+
+        assert response.status_code == 404
+        response_data = response.get_json()
+        assert "error" in response_data
+        assert "Book not found" in response_data["error"]
 
 
 # ------------------------ Tests for PUT --------------------------------------------
