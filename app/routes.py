@@ -2,7 +2,7 @@
 
 import copy
 
-from bson.objectid import ObjectId
+from bson.objectid import InvalidId, ObjectId
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
@@ -179,16 +179,19 @@ def register_routes(app):  # pylint: disable=too-many-statements
         """
         Soft delete a book by setting its state to 'deleted' or return error if not found.
         """
-        book_collection = get_book_collection()
-        if book_collection is None:
-            return jsonify({"error": "Book collection not initialized"}), 500
+        try:
+            book_collection = get_book_collection()
+            if book_collection is None:
+                return jsonify({"error": "Book collection not initialized"}), 500
 
-        delete_result = delete_book_by_id(book_collection, book_id)
+            delete_result = delete_book_by_id(book_collection, book_id)
 
-        if delete_result is None:
-            return jsonify({"error": "Book not found"}), 404
+            if delete_result is None:
+                return jsonify({"error": "Book not found"}), 404
 
-        return "", 204
+            return "", 204
+        except InvalidId:
+            return jsonify({"error": "Invalid Book ID format"}), 400
 
     # ----------- PUT section ------------------
 
