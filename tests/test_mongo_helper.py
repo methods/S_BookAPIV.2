@@ -110,3 +110,24 @@ def test_delete_book_by_id_happy_path():
         expected_filter,
         expected_update
     )
+
+def test_soft_delete_already_deleted_book_returns_none():
+    # Arrange
+    valid_id = ObjectId()
+    fake_book_id_str = str(valid_id)
+
+    mock_collection = MagicMock()
+    mock_collection.find_one_and_update.return_value = None
+
+    # Act
+    result = delete_book_by_id(mock_collection, fake_book_id_str)
+
+    # Assert 
+    assert result is None
+    mock_collection.find_one_and_update.assert_called_once()
+    expected_filter = {'_id': valid_id, 'state': {'$ne': 'deleted'}}
+    expected_update = {'$set': {'state': 'deleted'}}
+    mock_collection.find_one_and_update.assert_called_with(
+        expected_filter,
+        expected_update
+    )
