@@ -585,6 +585,21 @@ def test_book_database_is_initialized_for_delete_book_route(client):
         assert "Book collection not initialized" in response_data["error"]
 
 
+def test_returns_404_if_helper_function_result_is_none(client):
+    with patch("app.routes.delete_book_by_id") as mock_delete_book:
+        mock_delete_book.return_value = None
+
+        headers = {"X-API-KEY": "test-key-123"}
+        response = client.delete(f"/books/{VALID_OID_STRING}", headers=headers)
+
+        assert response.status_code == 404
+        response_data = response.get_json()
+        assert "error" in response_data
+        assert "Book not found" in response_data["error"]
+
+
+
+
 # ------------------------ Tests for PUT --------------------------------------------
 
 
