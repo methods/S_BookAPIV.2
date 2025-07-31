@@ -93,7 +93,6 @@ def test_delete_book_by_id_happy_path():
         "author": "The Mockist",
         "synopsis": "A tale of fakes and stubs.",
         "state": "active",
-        "links": {},  # This will be populated by the append_hostname helper
     }
 
     mock_collection = MagicMock()
