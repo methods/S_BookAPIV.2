@@ -1,8 +1,9 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import MagicMock
+from bson import ObjectId
 
-from app.datastore.mongo_helper import find_books, insert_book_to_mongo
+from app.datastore.mongo_helper import find_books, insert_book_to_mongo, delete_book_by_id
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -77,3 +78,35 @@ def test_find_books_applies_limit_when_provided():
 
     # 3. Check that the function returned the FINAL cursor from the chain.
     assert result_cursor == mock_limited_cursor
+
+
+def test_delete_book_by_id_happy_path():
+    """Given a valid book_id, soft deletes the book"""
+    # Arrange
+    valid_id = ObjectId()
+    fake_book_id_str = str(valid_id)
+    fake_book_from_db = {
+        "_id": valid_id,
+        "title": "A Mocked Book",
+        "author": "The Mockist",
+        "synopsis": "A tale of fakes and stubs.",
+        "state": "active",
+        "links": {},  # This will be populated by the append_hostname helper
+    }
+
+    mock_collection = MagicMock()
+    mock_collection.find_one_and_update.return_value = fake_book_from_db
+
+    # Act
+    result = delete_book_by_id(mock_collection, fake_book_id_str)
+
+    # Assert
+    mock_collection.find_one_and_update.assert_called_once()
+    assert result == fake_book_from_db
+    # Was the method called with the EXACT right arguments?
+    expected_filter = {'_id': valid_id, 'state': {'$ne':'deleted'}}
+    expected_update = {'$set': {'state': 'deleted'}}
+    mock_collection.find_one_and_update.assert_called_once_with(
+        expected_filter,
+        expected_update
+    )
