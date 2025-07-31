@@ -196,12 +196,23 @@ def test_delete_book_fails_with_invalid_api_key(client):
 
 def test_delete_book_succeeds_with_valid_api_key(client, monkeypatch):
     """
-    WHEN a DELETE request is made with a valid API key
-    THEN it should return 200 OK (or appropriate response)
+    GIVEN a valid API key
+    WHEN a DELETE request is made to a valid book ID
+    THEN the response should be 204 No Content
     """
-    monkeypatch.setattr("app.routes.books", [{"id": "some-id"}])
+    # Define what a successful result from the DB helper is
+    successful_db_result = {"_id": "some-id", "state": "active"}
 
-    response = client.delete("/books/some-id", headers=HEADERS["VALID"])
+    monkeypatch.setattr(
+        "app.routes.delete_book_by_id", lambda collection, book_id: successful_db_result
+    )
+
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: "a fake collection")
+
+    # Act
+    valid_oid_string = "635c02a7a5f6e1e2b3f4d5e6"
+    response = client.delete(f"/books/{valid_oid_string}", headers=HEADERS["VALID"])
+
     assert response.status_code == 204
 
 
