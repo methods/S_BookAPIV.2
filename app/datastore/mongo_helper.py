@@ -97,13 +97,14 @@ def validate_book_put_payload(payload: dict):
 
     required_fields = {"title", "synopsis", "author"}
     payload_keys = set(payload.keys())
-    print(payload_keys)
 
     # Check 1: any missing fields?
     missing_fields = required_fields - payload_keys
     if missing_fields:
+        # Convert the set to a list and sort it.
+        sorted_missing = sorted(list(missing_fields))
         return False, {
-            "error": f"Missing required fields: {', '.join(sorted(list(missing_fields)))}"
+            "error": f"Missing required fields: {', '.join(sorted_missing)}"
         }
 
     # Check 2: Any extra, unexpected fields?
