@@ -83,21 +83,23 @@ def delete_book_by_id(book_collection: dict, book_id: str):
     return result
 
 
-def update_book_by_id(book_collection, book_id, data):
+def replace_book_by_id(book_collection, book_id, new_data):
 
-    """Updates an ENTIRE book document in the database"""
+    """
+    Updates an ENTIRE book document in the database.
+    Returns True on success, False if book not found.
+    """
     try:
-        # convert string ID to ObjectId
         object_id_to_update = ObjectId(book_id)
 
     except InvalidId:
-        return None
+        return False
 
     # use $set operator to update the fields OR
     # create them if they don't exist
-    result = book_collection.update_one(
+    result = book_collection.replace_one(
         {'_id': object_id_to_update},
-        {'$set': data}
+        new_data
     )
 
-    return result.matched_count
+    return result.matched_count > 0
