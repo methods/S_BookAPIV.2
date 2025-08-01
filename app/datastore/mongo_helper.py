@@ -83,6 +83,40 @@ def delete_book_by_id(book_collection: dict, book_id: str):
     return result
 
 
+def validate_book_put_payload(payload: dict):
+    """
+    Validates the payload for a PUT request.
+    A PUT must contain all required fields and no extra fields
+
+    Returns:
+        A tuple: (is_valid, error_dictionary)
+        If valid, error_dictionary is None.
+    """
+    if not isinstance(payload, dict):
+        return False, {"error": "JSON payload must be a dictionary"}
+
+    required_fields = {"title", "synopsis", "author"}
+    payload_keys = set(payload.keys())
+    print(payload_keys)
+
+    # Check 1: any missing fields?
+    missing_fields = required_fields - payload_keys
+    if missing_fields:
+        return False, {
+            "error": f"Missing required fields: {', '.join(sorted(list(missing_fields)))}"
+        }
+
+    # Check 2: Any extra, unexpected fields?
+    extra_fields = payload_keys - required_fields
+    if extra_fields:
+        return False, {
+            "error": f"Unexpected fields provided: {', '.join(sorted(list(extra_fields)))}"
+        }
+
+    # If all checks pass:
+    return True, None
+
+
 def replace_book_by_id(book_collection, book_id, new_data):
 
     """
