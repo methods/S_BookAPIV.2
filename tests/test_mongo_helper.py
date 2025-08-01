@@ -4,8 +4,11 @@ from unittest.mock import MagicMock
 
 from bson import ObjectId
 
-from app.datastore.mongo_helper import (delete_book_by_id, find_books,
-                                        insert_book_to_mongo, update_book_by_id)
+from app.datastore.mongo_helper import (
+    delete_book_by_id, find_books,
+    insert_book_to_mongo,
+    replace_book_by_id
+)
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -133,8 +136,8 @@ def test_soft_delete_already_deleted_book_returns_none():
     )
 
 
-def test_update_book_by_id_happy_path():
-    """Given a valid book_id, update_book_by_id returns a matched_count of 1."""
+def test_replace_book_by_id_happy_path():
+    """Given a valid book_id, replace_book_by_id returns a matched_count of 1."""
     # Arrange
     valid_id_str = str(ObjectId())
     new_book_data = {
@@ -144,28 +147,28 @@ def test_update_book_by_id_happy_path():
     }
 
     # Create mock to represent Pymongo result inc. the matched_count attribute
-    mock_update_result = MagicMock()
-    mock_update_result.matched_count = 1
+    mock_pymongo_result = MagicMock()
+    mock_pymongo_result.matched_count = 1
 
     # Create mock collection
     mock_collection = MagicMock()
-    mock_collection.update_one.return_value = mock_update_result
+    mock_collection.replace_one.return_value = mock_pymongo_result
 
     # Act
-    result = update_book_by_id(mock_collection, valid_id_str, new_book_data)
+    result = replace_book_by_id(mock_collection, valid_id_str, new_book_data)
 
     # Assert
-    assert result == 1
-    mock_collection.update_one.assert_called_once()
-    mock_collection.update_one.assert_called_once_with(
+    assert result is True
+    mock_collection.replace_one.assert_called_once()
+    mock_collection.replace_one.assert_called_once_with(
         {'_id': ObjectId(valid_id_str)},
-        {'$set': new_book_data}
+        new_book_data
     )
 
-def test_update_book_by_id_invalid_id_returns_none():
+def test_replace_book_by_id_invalid_id_returns_false():
     """
     Given an invalidly formatted book_id string,
-    update_book_by_id should return None.
+    update_book_by_id should return False.
     """
     # Arrange
     invalid_id = "1234-this-is-not-a-valid-id"
@@ -177,8 +180,8 @@ def test_update_book_by_id_invalid_id_returns_none():
     mock_collection = MagicMock()
 
     # Act
-    result = update_book_by_id(mock_collection, invalid_id, new_book_data)
+    result = replace_book_by_id(mock_collection, invalid_id, new_book_data)
 
     # Assert
-    assert result is None
+    assert result is False
     mock_collection.update_one.assert_not_called()
