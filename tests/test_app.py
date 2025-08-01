@@ -780,6 +780,53 @@ def test_update_book_sent_with_missing_required_fields(client):
     expected_error = "Missing required fields: synopsis, title"
     assert response_data["error"] == expected_error
 
+def test_update_book_fails_with_malformed_json_body(client):
+    # --- ARRANGE ---
+    malformed_json_string = '{"title": "A Test Book", }'
+
+    headers_with_bad_body = {
+        "Content-Type": "application/json",
+        "X-API-KEY": "test-key-123" 
+    }
+    # --- ACT ---
+    # Use the `data` argument to send the raw, broken string.
+    # If we used `json=`, the test client would fix it for us!
+    response = client.put(
+        "/books/some_id", 
+        data=malformed_json_string,
+        headers=headers_with_bad_body
+    )
+    # --- ASSERT ---
+    assert response.status_code == 400
+    response_data = response.get_json()
+    assert response_data["error"] == "Request must be valid JSON"
+
+
+def test_update_book_fails_with_wrong_content_type(client):
+    """
+    GIVEN a request with a non-JSON content-type (e.g., 'text/plain')
+    WHEN a PUT request is made
+    THEN the API should return a 400 Bad Request error.
+    """
+    # --- ARRANGE ---
+    headers_with_wrong_type = {
+        "Content-Type": "text/plain", # The wrong type
+        "X-API-KEY": "test-key-123"
+    }
+
+    # --- ACT ---
+    response = client.put(
+        "/books/some_id",
+        data="This is just plain text",
+        headers=headers_with_wrong_type
+    )
+
+    # --- ASSERT ---
+    assert response.status_code == 400
+    response_data = response.get_json()
+    assert response_data["error"] == "Request must be valid JSON"
+
+
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
@@ -975,9 +1022,9 @@ def test_append_host_to_links_in_put(monkeypatch, client):
 
         assert response.status_code == 200
         mock_append_hostname.assert_called_once()
-        call_args, call_kwargs = (
+        call_args, call_kwargs = ( # pylint: disable=unused-variable
             mock_append_hostname.call_args
-        )  # pylint: disable=unused-variable
+        )
         book_arg = call_args[0]
         host_arg = call_args[1]
 
