@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 from bson import ObjectId
 
 from app.datastore.mongo_helper import (delete_book_by_id, find_books,
-                                        insert_book_to_mongo)
+                                        insert_book_to_mongo, update_book_by_id)
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -130,4 +130,34 @@ def test_soft_delete_already_deleted_book_returns_none():
     expected_update = {"$set": {"state": "deleted"}}
     mock_collection.find_one_and_update.assert_called_with(
         expected_filter, expected_update
+    )
+
+
+def test_update_book_by_id_happy_path():
+    """Given a valid book_id, update_book_by_id returns a matched_count of 1."""
+    # Arrange
+    valid_id_str = str(ObjectId())
+    new_book_data = {
+        "title": "A Mocked Book: After",
+        "author": "The Mockist: After",
+        "synopsis": "A tale of fakes and stubs.",
+    }
+
+    # Create mock to represent Pymongo result inc. the matched_count attribute
+    mock_update_result = MagicMock()
+    mock_update_result.matched_count = 1
+
+    # Create mock collection
+    mock_collection = MagicMock()
+    mock_collection.update_one.return_value = mock_update_result
+
+    # Act
+    result = update_book_by_id(mock_collection, valid_id_str, new_book_data)
+
+    # Assert
+    assert result == 1
+    mock_collection.update_one.assert_called_once()
+    mock_collection.update_one.assert_called_once_with(
+        {'_id': ObjectId(valid_id_str)},
+        {'$set': new_book_data}
     )
