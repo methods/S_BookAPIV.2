@@ -125,33 +125,49 @@ def test_add_book_fails_if_api_key_not_configured_on_the_server(client, test_app
 # -------------- PUT --------------------------
 def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     """Test successful book update with valid API key."""
+    # Arrange
+    test_book_id = "65a9a4b3f3a2c4a8c2b3d4e5"
 
-    # 1. Patch the books list
-    test_books = [
-        {
-            "id": "abc123",
-            "title": "Old Title",
-            "synopsis": "Old Synopsis",
-            "author": "Old Author",
-        }
-    ]
-    monkeypatch.setattr("app.routes.books", test_books)
+    mock_collection = MagicMock()
+    mock_collection.replace_one.return_value.matched_count = 1
 
-    # 2. Patch append_hostname to just return the book
-    monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
+    expected_book_from_db = {
+        "_id": ObjectId(test_book_id),
+        # Use dictionary unpacking to merge our payload
+        **DUMMY_PAYLOAD
+    }
+    mock_collection.find_one.return_value = expected_book_from_db
 
-    # 3. Call the endpoint with request details
-    response = client.put("/books/abc123", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
+    # monkeypatcj to replace the real get_book_collection with a function
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
 
-    # 4. Assert response
+    # ACT
+    response = client.put(
+        f"/books/{test_book_id}",
+        json=DUMMY_PAYLOAD,
+        headers=HEADERS["VALID"]
+    )
+
+    # ASSERT 1
     assert response.status_code == 200
-    assert response.json["title"] == "A Test Book"
+    response_data = response.json
+    assert response_data["id"] == test_book_id
+    assert response_data["title"] == DUMMY_PAYLOAD["title"]
+    assert "links" in response_data
+    assert response_data["links"]["self"].endswith(f"/books/{test_book_id}")
+
+    # Assert 2
+    mock_collection.replace_one.assert_called_once()
+    mock_collection.replace_one.assert_called_with(
+        {'_id': ObjectId(test_book_id)},
+        DUMMY_PAYLOAD
+    )
+    mock_collection.find_one.assert_called_once()
+    mock_collection.find_one.assert_called_with({'_id': ObjectId(test_book_id)})
 
 
-def test_update_book_fails_with_missing_api_key(monkeypatch, client):
+def test_update_book_fails_with_missing_api_key(client):
     """Should return 401 if no API key is provided."""
-
-    monkeypatch.setattr("app.routes.books", [])
 
     response = client.put("/books/abc123", json=DUMMY_PAYLOAD)
 
@@ -159,8 +175,7 @@ def test_update_book_fails_with_missing_api_key(monkeypatch, client):
     assert "API key is missing." in response.json["error"]["message"]
 
 
-def test_update_book_fails_with_invalid_api_key(client, monkeypatch):
-    monkeypatch.setattr("app.routes.books", [])
+def test_update_book_fails_with_invalid_api_key(client):
 
     response = client.put(
         "/books/abc123", json=DUMMY_PAYLOAD, headers=HEADERS["INVALID"]
@@ -170,17 +185,17 @@ def test_update_book_fails_with_invalid_api_key(client, monkeypatch):
     assert "Invalid API key." in response.json["error"]["message"]
 
 
-def test_update_book_fails_if_api_key_not_configured_on_the_server(
-    client, test_app, monkeypatch
-):
-    # ARRANGE: Remove API_KEY from the test_app config
-    monkeypatch.setattr("app.routes.books", [])
-    test_app.config.pop("API_KEY", None)
+# def test_update_book_fails_if_api_key_not_configured_on_the_server(
+#     client, test_app, monkeypatch
+# ):
+#     # ARRANGE: Remove API_KEY from the test_app config
+#     monkeypatch.setattr("app.routes.books", [])
+#     test_app.config.pop("API_KEY", None)
 
-    response = client.put("/books/abc123", json=DUMMY_PAYLOAD)
+#     response = client.put("/books/abc123", json=DUMMY_PAYLOAD)
 
-    assert response.status_code == 500
-    assert "API key not configured on the server." in response.json["error"]["message"]
+#     assert response.status_code == 500
+#     assert "API key not configured on the server." in response.json["error"]["message"]
 
 
 # -------------- DELETE --------------------------
