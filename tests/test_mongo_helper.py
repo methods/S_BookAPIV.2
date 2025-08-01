@@ -161,3 +161,24 @@ def test_update_book_by_id_happy_path():
         {'_id': ObjectId(valid_id_str)},
         {'$set': new_book_data}
     )
+
+def test_update_book_by_id_invalid_id_returns_none():
+    """
+    Given an invalidly formatted book_id string,
+    update_book_by_id should return None.
+    """
+    # Arrange
+    invalid_id = "1234-this-is-not-a-valid-id"
+    new_book_data = {
+        "title": "A Mocked Book: After",
+        "author": "The Mockist: After",
+        "synopsis": "A tale of fakes and stubs.",
+    }
+    mock_collection = MagicMock()
+
+    # Act
+    result = update_book_by_id(mock_collection, invalid_id, new_book_data)
+
+    # Assert
+    assert result is None
+    mock_collection.update_one.assert_not_called()
