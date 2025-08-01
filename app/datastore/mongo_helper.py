@@ -1,6 +1,6 @@
 """Module containing pymongo helper functions."""
 
-from bson.objectid import ObjectId
+from bson.objectid import ObjectId, InvalidId
 from pymongo.cursor import Cursor
 
 
@@ -65,7 +65,7 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
     return cursor
 
 
-def delete_book_by_id(book_collection, book_id):
+def delete_book_by_id(book_collection: dict, book_id: str):
     """
     Soft delete book with given id
     Returns: The original document if found and updated, otherwise None.
@@ -81,3 +81,23 @@ def delete_book_by_id(book_collection, book_id):
     result = book_collection.find_one_and_update(filter_query, update_operation)
 
     return result
+
+
+def update_book_by_id(book_collection, book_id, data):
+
+    """Updates an ENTIRE book document in the database"""
+    try:
+        # convert string ID to ObjectId
+        object_id_to_update = ObjectId(book_id)
+
+    except InvalidId:
+        return None
+
+    # use $set operator to update the fields OR
+    # create them if they don't exist
+    result = book_collection.update_one(
+        {'_id': object_id_to_update},
+        {'$set': data}
+    )
+
+    return result.matched_count
