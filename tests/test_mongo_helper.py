@@ -6,7 +6,8 @@ from bson import ObjectId
 
 from app.datastore.mongo_helper import (delete_book_by_id, find_books,
                                         insert_book_to_mongo,
-                                        replace_book_by_id)
+                                        replace_book_by_id,
+                                        validate_book_put_payload)
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -183,3 +184,41 @@ def test_replace_book_by_id_invalid_id_returns_false():
     # Assert
     assert result is False
     mock_collection.update_one.assert_not_called()
+
+
+def test_validate_payload_fails_with_extra_fields():
+    payload_with_extra_field = {
+        "title": "Valid Title",
+        "author": "Valid Author",
+        "synopsis": "A valid synopsis.",
+        "rating": 5  # This is the unexpected, extra field
+    }
+
+    is_valid, error_dict = validate_book_put_payload(payload_with_extra_field)
+
+    assert is_valid is False
+    assert isinstance(error_dict, dict)
+    assert "error" in error_dict
+
+    expected_error_message = "Unexpected fields provided: rating"
+    assert error_dict["error"] == expected_error_message
+
+def test_validate_payload_fails_with_multiple_extra_fields():
+    """
+    GIVEN a payload with multiple extra fields
+    WHEN validate_book_put_payload is called
+    THEN the error message should list all extra fields in alphabetical order.
+    """
+    payload_with_extra_fields = {
+        "title": "Valid Title",
+        "author": "Valid Author",
+        "synopsis": "A valid synopsis.",
+        "year": 2024,          # Extra field
+        "isbn": "123-456"      # Extra field
+    }
+
+    is_valid, error_dict = validate_book_put_payload(payload_with_extra_fields)
+
+    assert is_valid is False
+    expected_error_message = "Unexpected fields provided: isbn, year"
+    assert error_dict["error"] == expected_error_message
