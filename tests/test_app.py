@@ -49,6 +49,20 @@ books_database = [
     },
 ]
 
+# A dictionary for headers to keep things clean
+HEADERS = {
+    "VALID": {"X-API-KEY": "test-key-123"},
+    "INVALID": {"X-API-KEY": "This-is-the-wrong-key-12345"},
+    "MISSING": {},
+}
+
+# A sample payload for POST/PUT requests
+DUMMY_PAYLOAD = {
+    "title": "A Test Book",
+    "synopsis": "A test synopsis.",
+    "author": "Tester McTestFace",
+}
+
 # ------------------- Tests for POST ---------------------------------------------
 
 
@@ -601,44 +615,65 @@ def test_returns_404_if_helper_function_result_is_none(client):
 # ------------------------ Tests for PUT --------------------------------------------
 
 
-def test_update_book_request_returns_correct_status_and_content_type(client):
-    with patch("app.routes.books", books_database):
+# THIS MAY ALREADY BE COVERED BY THE INTEGRATION TEST- DOUBLE check
+# def test_update_book_request_returns_correct_status_and_content_type(client):
+#     with patch("app.routes.books", books_database):
 
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
+#         test_book = {
+#             "title": "Test Book",
+#             "author": "AN Other",
+#             "synopsis": "Test Synopsis",
+#         }
+#         # Define the valid headers, including the API key that matches conftest.py
+#         valid_headers = {"X-API-KEY": "test-key-123"}
 
-        # send PUT request
-        response = client.put("/books/1", json=test_book, headers=valid_headers)
+#         # send PUT request
+#         response = client.put("/books/1", json=test_book, headers=valid_headers)
 
-        # Check response status code and content type
-        assert response.status_code == 200
-        assert response.content_type == "application/json"
+#         # Check response status code and content type
+#         assert response.status_code == 200
+#         assert response.content_type == "application/json"
 
 
-def test_update_book_request_returns_required_fields(client):
-    with patch("app.routes.books", books_database):
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
+def test_update_book_response_contains_all_required_fields(monkeypatch, client):
+    """
+    GIVEN a successful PUT request
+    WHEN the response is received
+    THEN it should be a 200 OK and the JSON body must contain all required fields.
+    """
+    test_book_id = str(ObjectId())
 
-        # Send PUT request
-        response = client.put("/books/1", json=test_book, headers=valid_headers)
-        response_data = response.get_json()
+    book_doc_from_db = {
+        "_id": ObjectId(test_book_id),
+        **DUMMY_PAYLOAD
+    }
 
-        # Check that required fields are in the response data
-        required_fields = ["title", "synopsis", "author", "links"]
-        for field in required_fields:
-            assert field in response_data, f"{field} not in response_data"
+    # Create and configure our mock collection
+    mock_collection = MagicMock()
+    mock_collection.replace_one.return_value.matched_count = 1
+    mock_collection.find_one.return_value = book_doc_from_db
 
+    # Patch the function that provides the database collection
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+
+    # ACT
+    # Send the PUT request to the endpoint
+    response = client.put(
+        f"/books/{test_book_id}",
+        json=DUMMY_PAYLOAD,
+        headers=HEADERS["VALID"]
+    )
+
+    # Assert
+    assert response.status_code == 200
+    response_data = response.get_json()
+    # Check that ALL required fields are in the response data
+    required_fields = ["id", "title", "synopsis", "author", "links"]
+    for field in required_fields:
+        assert field in response_data, f"Required field '{field}' is missing from the response"
+
+    assert response_data["id"] == test_book_id
+    assert isinstance(response_data["links"], dict)
 
 def test_update_book_replaces_whole_object(client):
     book_to_be_changed = {
