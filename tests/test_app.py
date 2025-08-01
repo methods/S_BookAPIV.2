@@ -643,10 +643,7 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     """
     test_book_id = str(ObjectId())
 
-    book_doc_from_db = {
-        "_id": ObjectId(test_book_id),
-        **DUMMY_PAYLOAD
-    }
+    book_doc_from_db = {"_id": ObjectId(test_book_id), **DUMMY_PAYLOAD}
 
     # Create and configure our mock collection
     mock_collection = MagicMock()
@@ -659,9 +656,7 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     # ACT
     # Send the PUT request to the endpoint
     response = client.put(
-        f"/books/{test_book_id}",
-        json=DUMMY_PAYLOAD,
-        headers=HEADERS["VALID"]
+        f"/books/{test_book_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
     )
 
     # Assert
@@ -670,10 +665,13 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     # Check that ALL required fields are in the response data
     required_fields = ["id", "title", "synopsis", "author", "links"]
     for field in required_fields:
-        assert field in response_data, f"Required field '{field}' is missing from the response"
+        assert (
+            field in response_data
+        ), f"Required field '{field}' is missing from the response"
 
     assert response_data["id"] == test_book_id
     assert isinstance(response_data["links"], dict)
+
 
 def test_update_book_replaces_whole_object(monkeypatch, client):
 
@@ -685,10 +683,7 @@ def test_update_book_replaces_whole_object(monkeypatch, client):
     }
     # This is what the document should look like in the database *after*
     # the `replace_one` call.
-    book_doc_after_put = {
-        "_id": ObjectId(test_book_id),
-        **updated_payload
-    }
+    book_doc_after_put = {"_id": ObjectId(test_book_id), **updated_payload}
 
     # Set up our mock database collection.
     mock_collection = MagicMock()
@@ -701,9 +696,7 @@ def test_update_book_replaces_whole_object(monkeypatch, client):
 
     # ACT
     response = client.put(
-        f"/books/{test_book_id}",
-        json=updated_payload,
-        headers=HEADERS["VALID"]
+        f"/books/{test_book_id}", json=updated_payload, headers=HEADERS["VALID"]
     )
 
     # Assert
@@ -717,7 +710,9 @@ def test_update_book_replaces_whole_object(monkeypatch, client):
     assert response_data["id"] == test_book_id
     assert "links" in response_data
     assert response_data["links"]["self"].endswith(f"/books/{test_book_id}")
-    assert response_data["links"]["reservations"].endswith(f"/books/{test_book_id}/reservations")
+    assert response_data["links"]["reservations"].endswith(
+        f"/books/{test_book_id}/reservations"
+    )
     assert response_data["links"]["reviews"].endswith(f"/books/{test_book_id}/reviews")
 
 
@@ -731,9 +726,7 @@ def test_update_book_sent_with_invalid_book_id(monkeypatch, client):
     monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
 
     response = client.put(
-        f"/books/{non_existent_id}", 
-        json=DUMMY_PAYLOAD, 
-        headers=HEADERS["VALID"]
+        f"/books/{non_existent_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
     )
 
     assert response.status_code == 404
@@ -746,11 +739,7 @@ def test_update_book_sent_with_invalid_book_id(monkeypatch, client):
 
 def test_book_database_is_initialized_for_update_book_route(monkeypatch, client):
     monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
-    response = client.put(
-        "/books/123", 
-        json=DUMMY_PAYLOAD,
-        headers=HEADERS["VALID"]
-    )
+    response = client.put("/books/123", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
     assert response.status_code == 500
     response_data = response.get_json()
     assert "Book collection not initialized" in response_data["error"]
@@ -773,7 +762,6 @@ def test_update_book_check_request_header_is_json(client):
     assert "JSON payload must be a dictionary" in response.get_json()["error"]
 
 
-
 def test_update_book_sent_with_missing_required_fields(client):
     incomplete_payload = {
         "author": "AN Other"
@@ -782,7 +770,9 @@ def test_update_book_sent_with_missing_required_fields(client):
     valid_id = str(ObjectId())
 
     # ACT
-    response = client.put(f"/books/{valid_id}", json=incomplete_payload, headers=HEADERS["VALID"])
+    response = client.put(
+        f"/books/{valid_id}", json=incomplete_payload, headers=HEADERS["VALID"]
+    )
 
     assert response.status_code == 400
     response_data = response.get_json()
@@ -980,20 +970,20 @@ def test_append_host_to_links_in_put(monkeypatch, client):
 
         # --- 2. ACT ---
         response = client.put(
-            f"/books/{test_book_id}",
-            json=test_payload,
-            headers=HEADERS["VALID"]
+            f"/books/{test_book_id}", json=test_payload, headers=HEADERS["VALID"]
         )
 
         assert response.status_code == 200
         mock_append_hostname.assert_called_once()
-        call_args, call_kwargs = mock_append_hostname.call_args # pylint: disable=unused-variable
+        call_args, call_kwargs = (
+            mock_append_hostname.call_args
+        )  # pylint: disable=unused-variable
         book_arg = call_args[0]
         host_arg = call_args[1]
 
         assert "links" in book_arg
         assert book_arg["links"]["self"] == f"/books/{test_book_id}"
-        assert host_arg == "http://localhost" # Flask test client default
+        assert host_arg == "http://localhost"  # Flask test client default
 
 
 def test_get_book_collection_handles_connection_failure():

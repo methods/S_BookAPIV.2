@@ -134,7 +134,7 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     expected_book_from_db = {
         "_id": ObjectId(test_book_id),
         # Use dictionary unpacking to merge our payload
-        **DUMMY_PAYLOAD
+        **DUMMY_PAYLOAD,
     }
     mock_collection.find_one.return_value = expected_book_from_db
 
@@ -143,9 +143,7 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
 
     # ACT
     response = client.put(
-        f"/books/{test_book_id}",
-        json=DUMMY_PAYLOAD,
-        headers=HEADERS["VALID"]
+        f"/books/{test_book_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
     )
 
     # ASSERT 1
@@ -159,11 +157,10 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     # Assert 2
     mock_collection.replace_one.assert_called_once()
     mock_collection.replace_one.assert_called_with(
-        {'_id': ObjectId(test_book_id)},
-        DUMMY_PAYLOAD
+        {"_id": ObjectId(test_book_id)}, DUMMY_PAYLOAD
     )
     mock_collection.find_one.assert_called_once()
-    mock_collection.find_one.assert_called_with({'_id': ObjectId(test_book_id)})
+    mock_collection.find_one.assert_called_with({"_id": ObjectId(test_book_id)})
 
 
 def test_update_book_fails_with_missing_api_key(client):

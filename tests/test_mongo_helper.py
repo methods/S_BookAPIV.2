@@ -4,11 +4,9 @@ from unittest.mock import MagicMock
 
 from bson import ObjectId
 
-from app.datastore.mongo_helper import (
-    delete_book_by_id, find_books,
-    insert_book_to_mongo,
-    replace_book_by_id
-)
+from app.datastore.mongo_helper import (delete_book_by_id, find_books,
+                                        insert_book_to_mongo,
+                                        replace_book_by_id)
 
 
 def test_insert_book_to_mongo_calls_insert_one():
@@ -161,9 +159,9 @@ def test_replace_book_by_id_happy_path():
     assert result is True
     mock_collection.replace_one.assert_called_once()
     mock_collection.replace_one.assert_called_once_with(
-        {'_id': ObjectId(valid_id_str)},
-        new_book_data
+        {"_id": ObjectId(valid_id_str)}, new_book_data
     )
+
 
 def test_replace_book_by_id_invalid_id_returns_false():
     """

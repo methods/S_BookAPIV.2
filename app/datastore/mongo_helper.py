@@ -1,6 +1,6 @@
 """Module containing pymongo helper functions."""
 
-from bson.objectid import ObjectId, InvalidId
+from bson.objectid import InvalidId, ObjectId
 from pymongo.cursor import Cursor
 
 
@@ -103,9 +103,7 @@ def validate_book_put_payload(payload: dict):
     if missing_fields:
         # Convert the set to a list and sort it.
         sorted_missing = sorted(list(missing_fields))
-        return False, {
-            "error": f"Missing required fields: {', '.join(sorted_missing)}"
-        }
+        return False, {"error": f"Missing required fields: {', '.join(sorted_missing)}"}
 
     # Check 2: Any extra, unexpected fields?
     extra_fields = payload_keys - required_fields
@@ -119,7 +117,6 @@ def validate_book_put_payload(payload: dict):
 
 
 def replace_book_by_id(book_collection, book_id, new_data):
-
     """
     Updates an ENTIRE book document in the database.
     Returns True on success, False if book not found.
@@ -132,9 +129,6 @@ def replace_book_by_id(book_collection, book_id, new_data):
 
     # use $set operator to update the fields OR
     # create them if they don't exist
-    result = book_collection.replace_one(
-        {'_id': object_id_to_update},
-        new_data
-    )
+    result = book_collection.replace_one({"_id": object_id_to_update}, new_data)
 
     return result.matched_count > 0

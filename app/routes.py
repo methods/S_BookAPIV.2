@@ -6,12 +6,10 @@ from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import (
-    delete_book_by_id,
-    insert_book_to_mongo,
-    replace_book_by_id,
-    validate_book_put_payload
-)
+from app.datastore.mongo_helper import (delete_book_by_id,
+                                        insert_book_to_mongo,
+                                        replace_book_by_id,
+                                        validate_book_put_payload)
 from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
@@ -224,13 +222,13 @@ def register_routes(app):  # pylint: disable=too-many-statements
 
         # RESPONSE HANDLING: Format API response
         # replace_one doesn't return the document, so we must fetch it to return it.
-        updated_book = book_collection.find_one({'_id': ObjectId(book_id)})
+        updated_book = book_collection.find_one({"_id": ObjectId(book_id)})
         # Convert ObjectId to string for the JSON response
-        updated_book['id'] = str(updated_book['_id'])
+        updated_book["id"] = str(updated_book["_id"])
 
         # Add HATEOAS links
-        host = request.host_url.strip("/") # Use rstrip to avoid double slashes
-        book_obj_id = updated_book['id']
+        host = request.host_url.strip("/")  # Use rstrip to avoid double slashes
+        book_obj_id = updated_book["id"]
         updated_book["links"] = {
             "self": f"/books/{book_obj_id}",
             "reservations": f"/books/{book_obj_id}/reservations",
@@ -240,10 +238,9 @@ def register_routes(app):  # pylint: disable=too-many-statements
         updated_book_with_hostname = append_hostname(updated_book, host)
 
         # Remove internal '_id' field
-        del updated_book_with_hostname['_id']
+        del updated_book_with_hostname["_id"]
 
         return jsonify(updated_book_with_hostname), 200
-
 
     # ----------- CUSTOM ERROR HANDLERS ------------------
 
