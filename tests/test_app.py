@@ -6,8 +6,11 @@ import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
+from conftest import HEADERS, DUMMY_PAYLOAD
+
 from app import create_app, routes
 from app.datastore.mongo_db import get_book_collection
+
 
 # Mock book database object
 books_database = [
@@ -48,20 +51,6 @@ books_database = [
         "state": "deleted",
     },
 ]
-
-# A dictionary for headers to keep things clean
-HEADERS = {
-    "VALID": {"X-API-KEY": "test-key-123"},
-    "INVALID": {"X-API-KEY": "This-is-the-wrong-key-12345"},
-    "MISSING": {},
-}
-
-# A sample payload for POST/PUT requests
-DUMMY_PAYLOAD = {
-    "title": "A Test Book",
-    "synopsis": "A test synopsis.",
-    "author": "Tester McTestFace",
-}
 
 # ------------------- Tests for POST ---------------------------------------------
 

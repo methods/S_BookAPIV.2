@@ -8,19 +8,8 @@ from unittest.mock import MagicMock
 import pytest
 from bson.objectid import ObjectId
 
-# A dictionary for headers to keep things clean
-HEADERS = {
-    "VALID": {"X-API-KEY": "test-key-123"},
-    "INVALID": {"X-API-KEY": "This-is-the-wrong-key-12345"},
-    "MISSING": {},
-}
+from conftest import HEADERS, DUMMY_PAYLOAD
 
-# A sample payload for POST/PUT requests
-DUMMY_PAYLOAD = {
-    "title": "A Test Book",
-    "synopsis": "A test synopsis.",
-    "author": "Tester McTestFace",
-}
 
 # -------------- LOGGING --------------------------
 

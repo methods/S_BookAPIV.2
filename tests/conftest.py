@@ -13,6 +13,21 @@ from app import create_app
 from app.datastore.mongo_db import get_book_collection
 
 
+# A dictionary for headers to keep things clean
+HEADERS = {
+    "VALID": {"X-API-KEY": "test-key-123"},
+    "INVALID": {"X-API-KEY": "This-is-the-wrong-key-12345"},
+    "MISSING": {},
+}
+
+# A sample payload for POST/PUT requests
+DUMMY_PAYLOAD = {
+    "title": "A Test Book",
+    "synopsis": "A test synopsis.",
+    "author": "Tester McTestFace",
+}
+
+
 @pytest.fixture(name="_insert_book_to_db")
 def stub_insert_book():
     """Fixture that mocks insert_book_to_mongo() to prevent real DB writes during tests. Returns a mock with a fixed inserted_id."""
