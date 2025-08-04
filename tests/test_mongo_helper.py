@@ -183,7 +183,7 @@ def test_replace_book_by_id_invalid_id_returns_false():
 
     # Assert
     assert result is False
-    mock_collection.update_one.assert_not_called()
+    mock_collection.replace_one.assert_not_called()
 
 
 def test_validate_payload_fails_with_extra_fields():
