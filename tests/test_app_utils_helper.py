@@ -206,7 +206,7 @@ def test_append_host_to_links_in_put(monkeypatch, client):
 
         assert response.status_code == 200
         mock_append_hostname.assert_called_once()
-        call_args, call_kwargs = ( # pylint: disable=unused-variable
+        call_args, _ = ( # pylint: disable=unused-variable
             mock_append_hostname.call_args
         )
         book_arg = call_args[0]
