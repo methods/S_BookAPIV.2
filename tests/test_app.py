@@ -4,7 +4,6 @@ from unittest.mock import ANY, MagicMock, patch
 
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
-from pymongo.collection import Collection
 
 from tests.test_data import HEADERS, DUMMY_PAYLOAD
 
