@@ -82,6 +82,7 @@ def delete_book_by_id(book_collection: dict, book_id: str):
 
     return result
 
+# ------ PUT helpers ------------
 
 def validate_book_put_payload(payload: dict):
     """

@@ -1,4 +1,4 @@
-# pylint: disable=missing-docstring
+# pylint: disable=missing-docstring, duplicate-code
 
 from unittest.mock import ANY, MagicMock, patch
 
