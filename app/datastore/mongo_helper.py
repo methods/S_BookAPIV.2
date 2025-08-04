@@ -1,7 +1,8 @@
 """Module containing pymongo helper functions."""
 
-from bson.objectid import ObjectId
+from bson.objectid import InvalidId, ObjectId
 from pymongo.cursor import Cursor
+from pymongo.collection import Collection
 
 
 def insert_book_to_mongo(book_data, collection):
@@ -65,7 +66,7 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
     return cursor
 
 
-def delete_book_by_id(book_collection, book_id):
+def delete_book_by_id(book_collection: Collection, book_id: str):
     """
     Soft delete book with given id
     Returns: The original document if found and updated, otherwise None.
@@ -81,3 +82,55 @@ def delete_book_by_id(book_collection, book_id):
     result = book_collection.find_one_and_update(filter_query, update_operation)
 
     return result
+
+# ------ PUT helpers ------------
+
+def validate_book_put_payload(payload: dict):
+    """
+    Validates the payload for a PUT request.
+    A PUT must contain all required fields and no extra fields
+
+    Returns:
+        A tuple: (is_valid, error_dictionary)
+        If valid, error_dictionary is None.
+    """
+    if not isinstance(payload, dict):
+        return False, {"error": "JSON payload must be a dictionary"}
+
+    required_fields = {"title", "synopsis", "author"}
+    payload_keys = set(payload.keys())
+
+    # Check 1: any missing fields?
+    missing_fields = required_fields - payload_keys
+    if missing_fields:
+        # Convert the set to a list and sort it.
+        sorted_missing = sorted(list(missing_fields))
+        return False, {"error": f"Missing required fields: {', '.join(sorted_missing)}"}
+
+    # Check 2: Any extra, unexpected fields?
+    extra_fields = payload_keys - required_fields
+    if extra_fields:
+        return False, {
+            "error": f"Unexpected fields provided: {', '.join(sorted(list(extra_fields)))}"
+        }
+
+    # If all checks pass:
+    return True, None
+
+
+def replace_book_by_id(book_collection, book_id, new_data):
+    """
+    Updates an ENTIRE book document in the database.
+    Returns True on success, False if book not found.
+    """
+    try:
+        object_id_to_update = ObjectId(book_id)
+
+    except InvalidId:
+        return False
+
+    # use $set operator to update the fields OR
+    # create them if they don't exist
+    result = book_collection.replace_one({"_id": object_id_to_update}, new_data)
+
+    return result.matched_count > 0

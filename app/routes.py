@@ -1,18 +1,18 @@
 """Flask application module for managing a collection of books."""
 
-import copy
-
 from bson.objectid import InvalidId, ObjectId
 from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
 from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import delete_book_by_id, insert_book_to_mongo
+from app.datastore.mongo_helper import (delete_book_by_id,
+                                        insert_book_to_mongo,
+                                        replace_book_by_id,
+                                        validate_book_put_payload)
 from app.services.book_service import fetch_active_books, format_books_for_api
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
-from data import books
 
 
 def register_routes(app):  # pylint: disable=too-many-statements
@@ -200,52 +200,47 @@ def register_routes(app):  # pylint: disable=too-many-statements
     def update_book(book_id):
         """
         Update a book by its unique ID using JSON from the request body.
-        Returns a single dictionary with the updated book's details.
+        Finds, replaces, and returns the single updated document.
         """
-        if not books:
+        # VALIDATION
+        request_body = request.get_json(silent=True)
+        if request_body is None:
+            return jsonify({"error": "Request must be valid JSON"}), 400
+
+        is_valid, error = validate_book_put_payload(request_body)
+        if not is_valid:
+            return jsonify(error), 400
+
+        # DATABASE INTERACTION
+        book_collection = get_book_collection()
+        if not book_collection:
             return jsonify({"error": "Book collection not initialized"}), 500
 
-        # check if request is json
-        if not request.is_json:
-            return jsonify({"error": "Request must be JSON"}), 415
+        was_replaced = replace_book_by_id(book_collection, book_id, request_body)
+        if not was_replaced:
+            return jsonify({"error": f"Book with ID '{book_id}' not found"}), 404
 
-        # check request body is valid
-        request_body = request.get_json()
-        if not isinstance(request_body, dict):
-            return jsonify({"error": "JSON payload must be a dictionary"}), 400
+        # RESPONSE HANDLING: Format API response
+        # replace_one doesn't return the document, so we must fetch it to return it.
+        updated_book = book_collection.find_one({"_id": ObjectId(book_id)})
+        # Convert ObjectId to string for the JSON response
+        updated_book["id"] = str(updated_book["_id"])
 
-        # check request body contains required fields
-        required_fields = ["title", "synopsis", "author"]
-        missing_fields = [
-            field for field in required_fields if field not in request_body
-        ]
-        if missing_fields:
-            return {
-                "error": f"Missing required fields: {', '.join(missing_fields)}"
-            }, 400
+        # Add HATEOAS links
+        host = request.host_url.strip("/")  # Use rstrip to avoid double slashes
+        book_obj_id = updated_book["id"]
+        updated_book["links"] = {
+            "self": f"/books/{book_obj_id}",
+            "reservations": f"/books/{book_obj_id}/reservations",
+            "reviews": f"/books/{book_obj_id}/reviews",
+        }
 
-        host = request.host_url
+        updated_book_with_hostname = append_hostname(updated_book, host)
 
-        # now that we have a book object that is valid, loop through books
-        for book in books:
-            if book.get("id") == book_id:
-                # update the book values to what is in the request
-                book["title"] = request.json.get("title")
-                book["synopsis"] = request.json.get("synopsis")
-                book["author"] = request.json.get("author")
+        # Remove internal '_id' field
+        del updated_book_with_hostname["_id"]
 
-                # Add links exists as paths only
-                book["links"] = {
-                    "self": f"/books/{book_id}",
-                    "reservations": f"/books/{book_id}/reservations",
-                    "reviews": f"/books/{book_id}/reviews",
-                }
-                # make a deepcopy of the modified book
-                book_copy = copy.deepcopy(book)
-                book_with_hostname = append_hostname(book_copy, host)
-                return jsonify(book_with_hostname), 200
-
-        return jsonify({"error": "Book not found"}), 404
+        return jsonify(updated_book_with_hostname), 200
 
     # ----------- CUSTOM ERROR HANDLERS ------------------
 

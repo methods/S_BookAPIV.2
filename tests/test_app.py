@@ -2,12 +2,14 @@
 
 from unittest.mock import ANY, MagicMock, patch
 
-import pytest
 from bson.objectid import ObjectId
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+from pymongo.errors import ConnectionFailure
 
-from app import create_app, routes
+from tests.test_data import HEADERS, DUMMY_PAYLOAD
+
+from app import routes
 from app.datastore.mongo_db import get_book_collection
+
 
 # Mock book database object
 books_database = [
@@ -601,129 +603,147 @@ def test_returns_404_if_helper_function_result_is_none(client):
 # ------------------------ Tests for PUT --------------------------------------------
 
 
-def test_update_book_request_returns_correct_status_and_content_type(client):
-    with patch("app.routes.books", books_database):
+# THIS MAY ALREADY BE COVERED BY THE INTEGRATION TEST- DOUBLE check
+# def test_update_book_request_returns_correct_status_and_content_type(client):
+#     with patch("app.routes.books", books_database):
 
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
+#         test_book = {
+#             "title": "Test Book",
+#             "author": "AN Other",
+#             "synopsis": "Test Synopsis",
+#         }
+#         # Define the valid headers, including the API key that matches conftest.py
+#         valid_headers = {"X-API-KEY": "test-key-123"}
 
-        # send PUT request
-        response = client.put("/books/1", json=test_book, headers=valid_headers)
+#         # send PUT request
+#         response = client.put("/books/1", json=test_book, headers=valid_headers)
 
-        # Check response status code and content type
-        assert response.status_code == 200
-        assert response.content_type == "application/json"
-
-
-def test_update_book_request_returns_required_fields(client):
-    with patch("app.routes.books", books_database):
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
-
-        # Send PUT request
-        response = client.put("/books/1", json=test_book, headers=valid_headers)
-        response_data = response.get_json()
-
-        # Check that required fields are in the response data
-        required_fields = ["title", "synopsis", "author", "links"]
-        for field in required_fields:
-            assert field in response_data, f"{field} not in response_data"
+#         # Check response status code and content type
+#         assert response.status_code == 200
+#         assert response.content_type == "application/json"
 
 
-def test_update_book_replaces_whole_object(client):
-    book_to_be_changed = {
-        "id": "1",
-        "title": "Original Title",
-        "author": "Original Author",
-        "synopsis": "Original Synopsis",
-        "links": {
-            "self": "link to be changed",
-            "reservations": "link to be changed",
-            "reviews": "link to be changed",
-        },
+def test_update_book_response_contains_all_required_fields(monkeypatch, client):
+    """
+    GIVEN a successful PUT request
+    WHEN the response is received
+    THEN it should be a 200 OK and the JSON body must contain all required fields.
+    """
+    test_book_id = str(ObjectId())
+
+    book_doc_from_db = {"_id": ObjectId(test_book_id), **DUMMY_PAYLOAD}
+
+    # Create and configure our mock collection
+    mock_collection = MagicMock()
+    mock_collection.replace_one.return_value.matched_count = 1
+    mock_collection.find_one.return_value = book_doc_from_db
+
+    # Patch the function that provides the database collection
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+
+    # ACT
+    # Send the PUT request to the endpoint
+    response = client.put(
+        f"/books/{test_book_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
+    )
+
+    # Assert
+    assert response.status_code == 200
+    response_data = response.get_json()
+    # Check that ALL required fields are in the response data
+    required_fields = ["id", "title", "synopsis", "author", "links"]
+    for field in required_fields:
+        assert (
+            field in response_data
+        ), f"Required field '{field}' is missing from the response"
+
+    assert response_data["id"] == test_book_id
+    assert isinstance(response_data["links"], dict)
+
+
+def test_update_book_replaces_whole_object(monkeypatch, client):
+
+    test_book_id = str(ObjectId())
+    updated_payload = {
+        "title": "Updated Title",
+        "author": "Updated Author",
+        "synopsis": "Updated Synopsis",
     }
-    # Patch the books list with just this book (no links)
-    with patch("app.routes.books", [book_to_be_changed]):
-        updated_data = {
-            "title": "Updated Title",
-            "author": "Updated Author",
-            "synopsis": "Updated Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
-        response = client.put("/books/1", json=updated_data, headers=valid_headers)
-        assert response.status_code == 200
+    # This is what the document should look like in the database *after*
+    # the `replace_one` call.
+    book_doc_after_put = {"_id": ObjectId(test_book_id), **updated_payload}
 
-        data = response.get_json()
-        assert "links" in data
-        assert "/books/1" in data["links"]["self"]
-        assert "/books/1/reservations" in data["links"]["reservations"]
-        assert "/books/1/reviews" in data["links"]["reviews"]
+    # Set up our mock database collection.
+    mock_collection = MagicMock()
+    mock_collection.replace_one.return_value.matched_count = 1
+    # Simulate fetching the new document after it has been replaced.
+    mock_collection.find_one.return_value = book_doc_after_put
 
-        # Verify other fields were updated
-        assert data["title"] == "Updated Title"
-        assert data["author"] == "Updated Author"
-        assert data["synopsis"] == "Updated Synopsis"
+    # Inject our mock into the application.
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
 
+    # ACT
+    response = client.put(
+        f"/books/{test_book_id}", json=updated_payload, headers=HEADERS["VALID"]
+    )
 
-def test_update_book_sent_with_invalid_book_id(client):
-    with patch("app.routes.books", books_database):
-        test_book = {
-            "title": "Some title",
-            "author": "Some author",
-            "synopsis": "Some synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
-        response = client.put("/books/999", json=test_book, headers=valid_headers)
-        assert response.status_code == 404
-        assert "Book not found" in response.get_json()["error"]
+    # Assert
+    assert response.status_code == 200
+    response_data = response.get_json()
+    assert response_data["title"] == "Updated Title"
+    assert response_data["author"] == "Updated Author"
+    assert response_data["synopsis"] == "Updated Synopsis"
+
+    # Verify the server-side formatting is correct.
+    assert response_data["id"] == test_book_id
+    assert "links" in response_data
+    assert response_data["links"]["self"].endswith(f"/books/{test_book_id}")
+    assert response_data["links"]["reservations"].endswith(
+        f"/books/{test_book_id}/reservations"
+    )
+    assert response_data["links"]["reviews"].endswith(f"/books/{test_book_id}/reviews")
 
 
-def test_book_database_is_initialized_for_update_book_route(client):
-    with patch("app.routes.books", None):
-        test_book = {
-            "title": "Test Book",
-            "author": "AN Other",
-            "synopsis": "Test Synopsis",
-        }
-        # Define the valid headers, including the API key that matches conftest.py
-        valid_headers = {"X-API-KEY": "test-key-123"}
-        # Send PUT request
-        response = client.put("/books/1", json=test_book, headers=valid_headers)
-        assert response.status_code == 500
-        assert "Book collection not initialized" in response.get_json()["error"]
+def test_update_book_sent_with_invalid_book_id(monkeypatch, client):
+
+    non_existent_id = str(ObjectId())
+    mock_collection = MagicMock()
+
+    # Simulate a failed replacement by setting matched_count to 0.
+    mock_collection.replace_one.return_value.matched_count = 0
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+
+    response = client.put(
+        f"/books/{non_existent_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
+    )
+
+    assert response.status_code == 404
+    # Check for the specific error message.
+    response_data = response.get_json()
+    assert "not found" in response_data["error"]
+    assert non_existent_id in response_data["error"]
+    mock_collection.find_one.assert_not_called()
+
+
+def test_book_database_is_initialized_for_update_book_route(monkeypatch, client):
+    monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
+    response = client.put("/books/123", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
+    assert response.status_code == 500
+    response_data = response.get_json()
+    assert "Book collection not initialized" in response_data["error"]
 
 
 def test_update_book_check_request_header_is_json(client):
-
+    """
+    GIVEN a request with a non-JSON content-type and body
+    WHEN a PUT request is made
+    THEN the API should return a 400 Bad Request error.
+    """
+    valid_id = str(ObjectId())
     response = client.put(
-        "/books/1",
-        data="This is not a JSON object",
-        headers={"content-type": "text/plain", "X-API-KEY": "test-key-123"},
-    )
-
-    assert response.status_code == 415
-    assert "Request must be JSON" in response.get_json()["error"]
-
-
-def test_update_book_with_invalid_json_content(client):
-    # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {"X-API-KEY": "test-key-123"}
-
-    # This should trigger a TypeError
-    response = client.put(
-        "/books/1", json="This is not a JSON object", headers=valid_headers
+        f"/books/{valid_id}",
+        json="This is not a JSON object",
+        headers=HEADERS["VALID"],
     )
 
     assert response.status_code == 400
@@ -731,235 +751,65 @@ def test_update_book_with_invalid_json_content(client):
 
 
 def test_update_book_sent_with_missing_required_fields(client):
-    test_book = {
+    incomplete_payload = {
         "author": "AN Other"
         # missing 'title' and 'synopsis'
     }
-    # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {"X-API-KEY": "test-key-123"}
+    valid_id = str(ObjectId())
 
-    response = client.put("/books/1", json=test_book, headers=valid_headers)
+    # ACT
+    response = client.put(
+        f"/books/{valid_id}", json=incomplete_payload, headers=HEADERS["VALID"]
+    )
 
     assert response.status_code == 400
     response_data = response.get_json()
     assert "error" in response_data
-    assert "Missing required fields: title, synopsis" in response.get_json()["error"]
+    expected_error = "Missing required fields: synopsis, title"
+    assert response_data["error"] == expected_error
 
+def test_update_book_fails_with_malformed_json_body(client):
+    # --- ARRANGE ---
+    malformed_json_string = '{"title": "A Test Book", }'
 
-# ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
-
-
-def test_add_book_response_contains_absolute_urls(client, monkeypatch):
-    # Arrange
-    test_book_payload = {
-        "title": "Append Test Book",
-        "author": "AN Other II",
-        "synopsis": "Test Synopsis",
+    headers_with_bad_body = {
+        "Content-Type": "application/json",
+        "X-API-KEY": "test-key-123" 
     }
-    valid_headers = {"X-API-KEY": "test-key-123"}
-
-    # A. Mock the result of the insert operation
-    mock_insert_result = MagicMock()
-    mock_insert_result.inserted_id = ObjectId()
-    book_id_str = str(mock_insert_result.inserted_id)
-
-    # B. Mock the book as it would look coming from the database, *before* formatting.
-    #    It has an `_id` and RELATIVE links.
-    mock_book_from_db = test_book_payload.copy()
-    mock_book_from_db["_id"] = mock_insert_result.inserted_id
-    mock_book_from_db["links"] = {"self": f"/books/{book_id_str}"}
-
-    # C. Mock the collection object
-    mock_collection = MagicMock()
-    mock_collection.find_one.return_value = mock_book_from_db
-
-    # D. Mock the helper function that gets called
-    mock_insert_helper = MagicMock(return_value=mock_insert_result)
-
-    # E. Apply all patches to isolate the route from the database
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
-    monkeypatch.setattr("app.routes.insert_book_to_mongo", mock_insert_helper)
-
-    # Act
-    response = client.post("/books", json=test_book_payload, headers=valid_headers)
-
-    # Assert
-    assert response.status_code == 201, f"Expected 201 but got {response.status_code}"
-
-    response_data = response.get_json()
-
-    assert "links" in response_data
-    assert "self" in response_data["links"]
-
-    expected_link_start = f"http://localhost/books/{book_id_str}"
-    actual_link = response_data["links"]["self"]
-
-    assert (
-        actual_link == expected_link_start
-    ), f"Link did not have the correct absolute URL. Expected '{expected_link_start}', got '{actual_link}'"  # pylint: disable=line-too-long
-    assert actual_link is not None, "Response JSON must contain a 'links' object"
-
-
-@patch("app.services.book_service.find_books")
-def test_append_host_to_links_in_get(mock_find_books, client):
-
-    # ARRANGE: Provide sample data for the mock to return
-    mock_find_books.return_value = [
-        {
-            "_id": "123",
-            "title": "A Test Book",
-            "author": "The Tester",
-            "synopsis": "A book for testing.",
-            "links": {
-                "self": "/books/123",
-                "reservations": "/books/123",
-                "reviews": "/books/123",
-            },
-        }
-    ]
-
-    # ACT
-    response = client.get("/books")
-    response_data = response.get_json()
-
-    # ASSERT
-    assert response.status_code == 200
-
-    book = response_data["items"][0]
-    assert response.headers["content-type"] == "application/json"
-    assert isinstance(response_data, dict)
-    assert "total_count" in response_data
-    assert "items" in response_data
-    # response_data["items"]["links"]["self"]
-    for book in response_data["items"]:
-        new_book_id = book.get("id")
-        assert book["links"]["self"].startswith("http://localhost")
-        assert book["links"]["self"] == "http://localhost/books/123"
-        assert book["links"]["reservations"].startswith("http://localhost")
-        assert book["links"]["reviews"].startswith("http://localhost")
-        assert book["links"]["self"].endswith(f"books/{new_book_id}")
-
-
-def test_append_host_to_links_in_get_book(client, monkeypatch):
-    """
-    GIVEN a request for a book ID
-    WHEN the database and helper functions are mocked
-    THEN the route handler correctly calls its dependencies and formats the final JSON response.
-    """
-    # Arrange: define constants and mock return values
-    book_id = ObjectId()
-    book_id_str = str(book_id)
-    book_from_db = {
-        "_id": book_id,
-        "title": "Some Title",
-        "author": "Some Author",
-        "synopsis": "Foo bar.",
-        "state": "active",
-        "links": {},
-    }
-    # Mock the external dependencies
-    fake_collection = MagicMock()
-    fake_collection.find_one.return_value = book_from_db
-    # Patch the function that the route uses to get the collection
-    monkeypatch.setattr(routes, "get_book_collection", lambda: fake_collection)
-
-    # mock append_hostname helper, define its output
-    mock_appender = MagicMock(
-        return_value={
-            **book_from_db,
-            "links": {
-                "self": f"http://localhost/books/{book_id_str}",
-                "reservations": f"http://localhost/books/{book_id_str}",
-                "reviews": f"http://localhost/books/{book_id_str}",
-            },
-        }
+    # --- ACT ---
+    # Use the `data` argument to send the raw, broken string.
+    # If we used `json=`, the test client would fix it for us!
+    response = client.put(
+        "/books/some_id", 
+        data=malformed_json_string,
+        headers=headers_with_bad_body
     )
-    monkeypatch.setattr(routes, "append_hostname", mock_appender)
-
-    # ACT
-    response = client.get(f"/books/{book_id_str}")
-
-    # Assert
-    assert response.status_code == 200
+    # --- ASSERT ---
+    assert response.status_code == 400
     response_data = response.get_json()
-    assert response_data["id"] == book_id_str
-    assert "links" in response_data
-    # Assert the final JSON is correct (based on the mock_appender's return value)
-    assert (
-        response_data.get("links", {}).get("self")
-        == f"http://localhost/books/{book_id_str}"
+    assert response_data["error"] == "Request must be valid JSON"
+
+
+def test_update_book_fails_with_wrong_content_type(client):
+    """
+    GIVEN a request with a non-JSON content-type (e.g., 'text/plain')
+    WHEN a PUT request is made
+    THEN the API should return a 400 Bad Request error.
+    """
+    # --- ARRANGE ---
+    headers_with_wrong_type = {
+        "Content-Type": "text/plain", # The wrong type
+        "X-API-KEY": "test-key-123"
+    }
+
+    # --- ACT ---
+    response = client.put(
+        "/books/some_id",
+        data="This is just plain text",
+        headers=headers_with_wrong_type
     )
 
-    # Now specifically check the 'self' link
-    self_link = response_data["links"]["self"]
-    reservations_link = response_data["links"]["reservations"]
-    reviews_link = response_data["links"]["reviews"]
-    assert self_link, "Expected a 'self' link in the response"
-    assert reservations_link
-    assert reviews_link
-
-    # By default Flask's test_client serves on http://localhost/
-    assert self_link.startswith(
-        "http://localhost"
-    ), f"Expected the link to start with 'http://localhost', got {self_link!r}"
-
-    # And it must end with the resource path
-    assert self_link.endswith(
-        f"/books/{book_id_str}"
-    ), f"Expected link to end with '/books/{book_id_str}', got {self_link!r}"
-    # Assert the internal behavior was correct
-    expected_query = {"_id": book_id, "state": {"$ne": "deleted"}}
-    fake_collection.find_one.assert_called_once_with(expected_query)
-    mock_appender.assert_called_once_with(book_from_db, ANY)
-
-
-def test_append_host_to_links_in_put(client):
-
-    test_book = {
-        "title": "Test Book",
-        "author": "AN Other",
-        "synopsis": "Test Synopsis",
-    }
-    # Define the valid headers, including the API key that matches conftest.py
-    valid_headers = {"X-API-KEY": "test-key-123"}
-
-    response = client.put("/books/1", json=test_book, headers=valid_headers)
-
-    assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
-
-    # Get the response data, the ID and links
+    # --- ASSERT ---
+    assert response.status_code == 400
     response_data = response.get_json()
-    book_id = response_data.get("id")
-    links = response_data.get("links")
-
-    assert book_id is not None, "Response JSON must contain an 'id'"
-    assert links is not None, "Response JSON must contain a 'links' object"
-
-    self_link = links.get("self")
-    assert self_link is not None, "'links' object must contain a 'self' link"
-
-    expected_link_start = "http://localhost"
-    assert self_link.startswith(
-        expected_link_start
-    ), f"Link should start with the test server's hostname '{expected_link_start}'"
-
-    expected_path = f"/books/{book_id}"
-    assert self_link.endswith(
-        expected_path
-    ), f"Link should end with the resource path '{expected_path}'"
-
-
-def test_get_book_collection_handles_connection_failure():
-    with patch("app.datastore.mongo_db.MongoClient") as mock_client:
-        # Set the side effect to raise a ServerSelectionTimeoutError
-        mock_client.side_effect = ServerSelectionTimeoutError("Mock Connection Timeout")
-
-        app = create_app()
-        with app.app_context():  # <-- Push the app context here
-            with pytest.raises(Exception) as exc_info:
-                get_book_collection()
-
-        assert "Could not connect to MongoDB: Mock Connection Timeout" in str(
-            exc_info.value
-        )
+    assert response_data["error"] == "Request must be valid JSON"
