@@ -65,7 +65,7 @@ def find_books(collection, query_filter=None, projection=None, limit=None) -> Cu
     return cursor
 
 
-def delete_book_by_id(book_collection: dict, book_id: str):
+def delete_book_by_id(book_collection: Collection, book_id: str):
     """
     Soft delete book with given id
     Returns: The original document if found and updated, otherwise None.
