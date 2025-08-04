@@ -2,6 +2,7 @@
 
 from bson.objectid import InvalidId, ObjectId
 from pymongo.cursor import Cursor
+from pymongo.collection import Collection
 
 
 def insert_book_to_mongo(book_data, collection):
