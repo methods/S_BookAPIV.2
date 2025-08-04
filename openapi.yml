@@ -303,10 +303,10 @@ paths:
     put:
       tags:
         - Books
-      summary: Update a book
+      summary: Update a book by replacement
       security:
         - ApiKeyAuth: []
-      description: Updates an existing book by its unique ID. The entire book object must be provided in the request body.
+      description: Updates an existing book by its unique ID. This is a full replacement operation (HTTP PUT). The request body must contain all required fields (`title`, `synopsis`, `author`) and no extra fields.
       operationId: updateBook
       parameters:
         - name: book_id
@@ -318,7 +318,7 @@ paths:
             pattern: '^[a-f\d]{24}$'
             example: "635f3a7e3a8e3bcfc8e6a1e0"
       requestBody:
-        description: Book object that needs to be updated.
+        description: A complete Book object to replace the existing one.
         required: true
         content:
           application/json:
@@ -332,15 +332,55 @@ paths:
               schema:
                 $ref: '#/components/schemas/BookOutput'
         '400':
-          $ref: '#/components/responses/BadRequest' 
+          description: |-
+            Bad Request. The request is invalid for one of the following reasons:
+            - The request body is not valid JSON.
+            - The JSON payload is missing required fields.
+            - The JSON payload contains unexpected fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                missingFields:
+                  summary: Missing Fields Error
+                  value:
+                    error: "Missing required fields: author, synopsis"
+                extraFields:
+                  summary: Extra Fields Error
+                  value:
+                    error: "Unexpected fields provided: publication_year"
+                invalidJsonBody:
+                  summary: Invalid JSON
+                  value:
+                    error: "Request must be valid JSON"
         '401':
           $ref: '#/components/responses/Unauthorized' 
         '404':
-          $ref: '#/components/responses/NotFound' 
+          description: The book with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book with ID '635f3a7e3a8e3bcfc8e6a1e1' not found" 
         '415':
-          $ref: '#/components/responses/UnsupportedMediaType' 
+          description: |-
+            Unsupported Media Type. The client sent a request with a Content-Type header other than `application/json`.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Request must have Content-Type: application/json"
         '500':
-          $ref: '#/components/responses/InternalServerError' 
+          description: An internal server error occurred, likely related to the database connection.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book collection not initialized"
 
     # --------------------------------------------
     
