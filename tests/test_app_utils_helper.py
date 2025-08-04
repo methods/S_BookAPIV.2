@@ -6,7 +6,7 @@ import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ServerSelectionTimeoutError
 
-from conftest import HEADERS, DUMMY_PAYLOAD
+from tests.test_data import HEADERS, DUMMY_PAYLOAD
 
 from app import create_app, routes
 from app.datastore.mongo_db import get_book_collection

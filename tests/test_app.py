@@ -5,7 +5,7 @@ from unittest.mock import ANY, MagicMock, patch
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
 
-from conftest import HEADERS, DUMMY_PAYLOAD
+from tests.test_data import HEADERS, DUMMY_PAYLOAD
 
 from app import routes
 from app.datastore.mongo_db import get_book_collection

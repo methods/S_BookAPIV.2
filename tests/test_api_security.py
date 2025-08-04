@@ -8,7 +8,7 @@ from unittest.mock import MagicMock
 import pytest
 from bson.objectid import ObjectId
 
-from conftest import HEADERS, DUMMY_PAYLOAD
+from tests.test_data import HEADERS, DUMMY_PAYLOAD
 
 
 # -------------- LOGGING --------------------------
