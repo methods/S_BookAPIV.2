@@ -183,8 +183,75 @@ components:
           schema:
             $ref: '#/components/schemas/StandardError'
 # --------------------------------------------
+
 # Paths
 paths:
+# --------------------------------------------
+  /books/{id}/reservations:
+    /post:
+      summary: Create a reservation for a book
+      description: Adds a new reservation to the specified book.
+      tags:
+        - Reservations
+      parameters:
+        - name: bookId 
+          in: path
+          required: true
+          description: The ID of the book to reserve.
+          schema:
+            type: string
+            format: ObjectId
+      requestBody:
+        description: The reservation details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/reservationInput'
+      responses:
+        '201':
+          description: Reservation created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reservation'
+        '400':
+          # PLACEHOLDER details for now
+          description: Invalid input provided.
+        '401':
+          description: Authentication has failed.
+        '404':
+          description: Resource not found.
+        '415':
+          description: Unsupported media type.
+        '500':
+          description: Internal Server Error. 
+        '503':
+          description: Service Unavailable
+
+    # ----------------------------------------
+    /get:
+      tags:
+        - reservations
+      summary: Retrieve the list of reservations for the book with the book {id}
+      description: Add more detail...
+      operationId: get_reservation_with_id
+      responses:
+        '200': 
+          description: A list of all reservations.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/????'
+                properties:
+                  total_count:
+                    type: integer
+                    description: The number of books returned.
+                    example: 3
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/BookOutput'
 # --------------------------------------------
   /books:
 # --------------------------------------------
