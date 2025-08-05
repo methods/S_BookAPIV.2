@@ -9,7 +9,7 @@ from unittest.mock import patch
 import mongomock
 import pytest
 
-from app import create_app
+from app import create_app, mongo
 from app.datastore.mongo_db import get_book_collection
 
 
@@ -105,3 +105,20 @@ def db_setup(test_app):  # pylint: disable=redefined-outer-name
     with test_app.app_context():
         collection = get_book_collection()
         collection.delete_many({})
+
+# Fixture for tests/test_auth.py
+@pytest.fixture(scope="function")
+def users_db_setup(test_app): # pylint: disable=redefined-outer-name
+    """
+    Sets up and tears down the 'users' collection for a test.
+    """
+    with test_app.app_context():
+        # Now, the 'mongo' variable is defined and linked to the test_app
+        users_collection = mongo.db.users
+        users_collection.delete_many({})
+    
+    yield
+
+    with test_app.app_context():
+        users_collection = mongo.db.users
+        users_collection.delete_many({})
