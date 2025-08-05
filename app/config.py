@@ -3,7 +3,7 @@
 """
 The central, organized place for  the application's settings.
 
-Loads environment variables (and other sensitive values) from a .env file and 
+Loads environment variables (and other sensitive values) from a .env file and
 Defines the Config class to be used.
 
 """

@@ -106,9 +106,10 @@ def db_setup(test_app):  # pylint: disable=redefined-outer-name
         collection = get_book_collection()
         collection.delete_many({})
 
+
 # Fixture for tests/test_auth.py
 @pytest.fixture(scope="function")
-def users_db_setup(test_app): # pylint: disable=redefined-outer-name
+def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
     """
     Sets up and tears down the 'users' collection for a test.
     """
@@ -116,7 +117,7 @@ def users_db_setup(test_app): # pylint: disable=redefined-outer-name
         # Now, the 'mongo' variable is defined and linked to the test_app
         users_collection = mongo.db.users
         users_collection.delete_many({})
-    
+
     yield
 
     with test_app.app_context():

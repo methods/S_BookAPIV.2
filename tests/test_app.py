@@ -5,11 +5,9 @@ from unittest.mock import ANY, MagicMock, patch
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
 
-from tests.test_data import HEADERS, DUMMY_PAYLOAD
-
 from app import routes
 from app.datastore.mongo_db import get_book_collection
-
+from tests.test_data import DUMMY_PAYLOAD, HEADERS
 
 # Mock book database object
 books_database = [
@@ -768,21 +766,20 @@ def test_update_book_sent_with_missing_required_fields(client):
     expected_error = "Missing required fields: synopsis, title"
     assert response_data["error"] == expected_error
 
+
 def test_update_book_fails_with_malformed_json_body(client):
     # --- ARRANGE ---
     malformed_json_string = '{"title": "A Test Book", }'
 
     headers_with_bad_body = {
         "Content-Type": "application/json",
-        "X-API-KEY": "test-key-123" 
+        "X-API-KEY": "test-key-123",
     }
     # --- ACT ---
     # Use the `data` argument to send the raw, broken string.
     # If we used `json=`, the test client would fix it for us!
     response = client.put(
-        "/books/some_id", 
-        data=malformed_json_string,
-        headers=headers_with_bad_body
+        "/books/some_id", data=malformed_json_string, headers=headers_with_bad_body
     )
     # --- ASSERT ---
     assert response.status_code == 400
@@ -798,15 +795,15 @@ def test_update_book_fails_with_wrong_content_type(client):
     """
     # --- ARRANGE ---
     headers_with_wrong_type = {
-        "Content-Type": "text/plain", # The wrong type
-        "X-API-KEY": "test-key-123"
+        "Content-Type": "text/plain",  # The wrong type
+        "X-API-KEY": "test-key-123",
     }
 
     # --- ACT ---
     response = client.put(
         "/books/some_id",
         data="This is just plain text",
-        headers=headers_with_wrong_type
+        headers=headers_with_wrong_type,
     )
 
     # --- ASSERT ---

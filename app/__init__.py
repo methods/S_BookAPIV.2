@@ -12,6 +12,7 @@ from app.config import Config
 # This way, we can import it in other files
 mongo = PyMongo()
 
+
 def create_app(test_config=None):
     """Application factory pattern."""
 

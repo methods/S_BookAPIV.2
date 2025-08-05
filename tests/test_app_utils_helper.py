@@ -6,11 +6,9 @@ import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ServerSelectionTimeoutError
 
-from tests.test_data import HEADERS, DUMMY_PAYLOAD
-
 from app import create_app, routes
 from app.datastore.mongo_db import get_book_collection
-
+from tests.test_data import DUMMY_PAYLOAD, HEADERS
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
@@ -206,9 +204,7 @@ def test_append_host_to_links_in_put(monkeypatch, client):
 
         assert response.status_code == 200
         mock_append_hostname.assert_called_once()
-        call_args, _ = ( # pylint: disable=unused-variable
-            mock_append_hostname.call_args
-        )
+        call_args, _ = mock_append_hostname.call_args  # pylint: disable=unused-variable
         book_arg = call_args[0]
         host_arg = call_args[1]
 

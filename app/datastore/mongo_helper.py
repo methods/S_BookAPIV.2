@@ -1,8 +1,8 @@
 """Module containing pymongo helper functions."""
 
 from bson.objectid import InvalidId, ObjectId
-from pymongo.cursor import Cursor
 from pymongo.collection import Collection
+from pymongo.cursor import Cursor
 
 
 def insert_book_to_mongo(book_data, collection):
@@ -83,7 +83,9 @@ def delete_book_by_id(book_collection: Collection, book_id: str):
 
     return result
 
+
 # ------ PUT helpers ------------
+
 
 def validate_book_put_payload(payload: dict):
     """
