@@ -8,3 +8,4 @@ python-dotenv
 mongomock
 black
 isort
+flask_pymongo
