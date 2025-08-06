@@ -15,7 +15,7 @@ from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 
 
-def register_routes(app):  # pylint: disable=too-many-statements
+def register_legacy_routes(app):  # pylint: disable=too-many-statements
     """
     Register all Flask routes with the given app instance.
 
