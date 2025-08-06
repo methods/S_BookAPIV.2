@@ -78,7 +78,13 @@ def test_app():
             "COLLECTION_NAME": "test_books",
         }
     )
-    # PATCH mongodb context to be mock db object
+    # The application now uses the Flask-PyMongo extension,
+    # which requires initialization via `init_app`.
+    # In the test environment, the connection to a real database fails,
+    # leaving `mongo.db` as None.
+    # Fix: Manually patch the global `mongo` object's connection with a `mongomock` client.
+    # This ensures all tests run against a fast, in-memory mock database AND
+    # are isolated from external services."
     with app.app_context():
         mongo.cx = mongomock.MongoClient()
         mongo.db = mongo.cx[app.config["DB_NAME"]]

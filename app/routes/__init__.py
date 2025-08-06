@@ -1,5 +1,6 @@
 """Make into package and house helper functions"""
 
+
 def register_routes(app):
     """
     CENTRAL CONTROLLER
@@ -8,9 +9,12 @@ def register_routes(app):
     """
 
     # Register the OLD, non-Blueprint routes
-    from .legacy_routes import register_legacy_routes # pylint: disable=import-outside-toplevel
+    from .legacy_routes import \
+        register_legacy_routes  # pylint: disable=import-outside-toplevel
+
     register_legacy_routes(app)
 
     # Register the NEW, Bluerprint-based routes
-    from .auth_routes import auth_bp # pylint: disable=import-outside-toplevel
+    from .auth_routes import auth_bp  # pylint: disable=import-outside-toplevel
+
     app.register_blueprint(auth_bp)

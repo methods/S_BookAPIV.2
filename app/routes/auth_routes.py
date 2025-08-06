@@ -2,8 +2,8 @@
 
 from flask import Blueprint
 
+auth_bp = Blueprint("auth", __name__, url_prefix="/books")
 
-auth_bp = Blueprint('auth', __name__, url_prefix="/books")
 
 @auth_bp.route("auth/register", methods=["POST"])
 def register_user():

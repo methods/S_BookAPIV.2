@@ -43,7 +43,9 @@ def test_add_book_fails_with_missing_key(client, monkeypatch):
     monkeypatch.setattr(
         "app.routes.legacy_routes.insert_book_to_mongo", lambda book, collection: None
     )
-    monkeypatch.setattr("app.routes.legacy_routes.append_hostname", lambda book, host: book)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.append_hostname", lambda book, host: book
+    )
 
     # Hit the endpoint without Authorization header
     response = client.post("/books", json=DUMMY_PAYLOAD)
@@ -69,12 +71,17 @@ def test_add_book_succeeds_with_valid_key(client, monkeypatch):
     mock_collection.find_one.return_value = mock_book_from_db
 
     # Patch get_book_collection to return our fake collection
-    monkeypatch.setattr("app.routes.legacy_routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
     # Patch insert_book_to_mongo to return our fake insert result
     monkeypatch.setattr(
-        "app.routes.legacy_routes.insert_book_to_mongo", lambda book, collection: mock_insert_result
+        "app.routes.legacy_routes.insert_book_to_mongo",
+        lambda book, collection: mock_insert_result,
     )
-    monkeypatch.setattr("app.routes.legacy_routes.append_hostname", lambda book, host: book)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.append_hostname", lambda book, host: book
+    )
 
     # Act
     response = client.post("/books", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
@@ -127,7 +134,9 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     mock_collection.find_one.return_value = expected_book_from_db
 
     # monkeypatcj to replace the real get_book_collection with a function
-    monkeypatch.setattr("app.routes.legacy_routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
     # ACT
     response = client.put(
@@ -204,10 +213,13 @@ def test_delete_book_succeeds_with_valid_api_key(client, monkeypatch):
     successful_db_result = {"_id": "some-id", "state": "active"}
 
     monkeypatch.setattr(
-        "app.routes.legacy_routes.delete_book_by_id", lambda collection, book_id: successful_db_result
+        "app.routes.legacy_routes.delete_book_by_id",
+        lambda collection, book_id: successful_db_result,
     )
 
-    monkeypatch.setattr("app.routes.legacy_routes.get_book_collection", lambda: "a fake collection")
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: "a fake collection"
+    )
 
     # Act
     valid_oid_string = "635c02a7a5f6e1e2b3f4d5e6"
