@@ -17,7 +17,7 @@ from app.datastore.mongo_db import get_book_collection
 def stub_insert_book():
     """Fixture that mocks insert_book_to_mongo() to prevent real DB writes during tests. Returns a mock with a fixed inserted_id."""
 
-    with patch("app.routes.insert_book_to_mongo") as mock_insert_book:
+    with patch("app.routes.legacy_routes.insert_book_to_mongo") as mock_insert_book:
         mock_insert_book.return_value.inserted_id = "12345"
         yield mock_insert_book
 
@@ -78,6 +78,11 @@ def test_app():
             "COLLECTION_NAME": "test_books",
         }
     )
+    # PATCH mongodb context to be mock db object
+    with app.app_context():
+        mongo.cx = mongomock.MongoClient()
+        mongo.db = mongo.cx[app.config["DB_NAME"]]
+
     yield app
 
 
