@@ -1,6 +1,7 @@
 """Tests for auth/JWT upgrade"""
 
 import bcrypt
+import pytest
 
 from app import mongo
 
@@ -66,11 +67,10 @@ def test_register_fails_with_empty_json(client, users_db_setup):
     response = client.post(
         "/auth/register", 
         json=json_body,
-        content_type="application/json"
     )
 
     assert response.status_code == 400
-    assert "request body cannot be empty" in response.get_json()["error"].lower()
+    assert "request body cannot be empty" in response.get_json()["message"].lower()
 
 def test_request_fails_with_invalid_json(client, users_db_setup):
     """
@@ -90,3 +90,27 @@ def test_request_fails_with_invalid_json(client, users_db_setup):
 
     assert response.status_code == 400
     assert "invalid json format" in response.get_json()["message"].lower()
+
+
+@pytest.mark.parametrize(
+    "payload, expected_message", # Define the names of the variables for the test
+    [
+        ({"password": "a-password"}, "Email and password are required"), # 1st test
+        ({"email": "test@example.com"}, "Email and password are required"), # 2nd test
+        ({}, "Request body cannot be empty") # 3rd test
+    ]
+)
+def test_request_fails_with_missing_fields(client, users_db_setup, payload, expected_message):
+    """
+    GIVEN a payload that is missing a required field (email or password)
+    WHEN a POST request is sent to /auth/register
+    THEN the response should be 400 Bad Request with an appropriate error message.
+    """
+    _ = users_db_setup  # pylint: disable=unused-variable
+
+    # Act
+    response = client.post("/auth/register", json=payload)
+
+    assert response.status_code == 400
+    response_data = response.get_json()
+    assert expected_message in response_data["message"]
