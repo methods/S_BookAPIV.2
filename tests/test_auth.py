@@ -51,3 +51,42 @@ def test_register_with_duplicate_email(client, users_db_setup):
     # Assert
     assert response.status_code == 409
     assert "email is already registered" in response.get_json()["message"].lower()
+
+def test_register_fails_with_empty_json(client, users_db_setup):
+    """
+    When a POST is sent with an empty JSON,
+    it returns a 400 and an error message
+    """
+    _ = users_db_setup  # pylint: disable=unused-variable
+
+    # Arrange
+    json_body = ""
+
+    # Act
+    response = client.post(
+        "/auth/register", 
+        json=json_body,
+        content_type="application/json"
+    )
+
+    assert response.status_code == 400
+    assert "request body cannot be empty" in response.get_json()["error"].lower()
+
+def test_request_fails_with_invalid_json(client, users_db_setup):
+    """
+    When a POST is sent with an empty JSON,
+    it returns a 400 and an error message
+    """
+    _ = users_db_setup  # pylint: disable=unused-variable
+
+    # Arrange
+    invalid_json_string = "this is not json"
+
+    # Act
+    response = client.post(
+        "/auth/register", data=invalid_json_string,
+        content_type="application/json"
+    )
+
+    assert response.status_code == 400
+    assert "invalid json format" in response.get_json()["message"].lower()
