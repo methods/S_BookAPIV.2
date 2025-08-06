@@ -21,7 +21,7 @@ def register_user():
     try:
         data = request.get_json()
         if not data:
-            return jsonify({"error": "Request body cannot be empty"}), 400
+            return jsonify({"message": "Request body cannot be empty"}), 400
 
         email = data.get("email")
         password = data.get("password")
