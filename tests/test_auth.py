@@ -53,6 +53,7 @@ def test_register_with_duplicate_email(client, users_db_setup):
     assert response.status_code == 409
     assert "email is already registered" in response.get_json()["message"].lower()
 
+
 def test_register_fails_with_empty_json(client, users_db_setup):
     """
     When a POST is sent with an empty JSON,
@@ -65,12 +66,13 @@ def test_register_fails_with_empty_json(client, users_db_setup):
 
     # Act
     response = client.post(
-        "/auth/register", 
+        "/auth/register",
         json=json_body,
     )
 
     assert response.status_code == 400
     assert "request body cannot be empty" in response.get_json()["message"].lower()
+
 
 def test_request_fails_with_invalid_json(client, users_db_setup):
     """
@@ -84,8 +86,7 @@ def test_request_fails_with_invalid_json(client, users_db_setup):
 
     # Act
     response = client.post(
-        "/auth/register", data=invalid_json_string,
-        content_type="application/json"
+        "/auth/register", data=invalid_json_string, content_type="application/json"
     )
 
     assert response.status_code == 400
@@ -93,14 +94,16 @@ def test_request_fails_with_invalid_json(client, users_db_setup):
 
 
 @pytest.mark.parametrize(
-    "payload, expected_message", # Define the names of the variables for the test
+    "payload, expected_message",  # Define the names of the variables for the test
     [
-        ({"password": "a-password"}, "Email and password are required"), # 1st test
-        ({"email": "test@example.com"}, "Email and password are required"), # 2nd test
-        ({}, "Request body cannot be empty") # 3rd test
-    ]
+        ({"password": "a-password"}, "Email and password are required"),  # 1st test
+        ({"email": "test@example.com"}, "Email and password are required"),  # 2nd test
+        ({}, "Request body cannot be empty"),  # 3rd test
+    ],
 )
-def test_request_fails_with_missing_fields(client, users_db_setup, payload, expected_message):
+def test_request_fails_with_missing_fields(
+    client, users_db_setup, payload, expected_message
+):
     """
     GIVEN a payload that is missing a required field (email or password)
     WHEN a POST request is sent to /auth/register

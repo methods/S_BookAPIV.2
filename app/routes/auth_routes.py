@@ -1,8 +1,9 @@
 """Routes for authorrization for the JWT upgrade"""
 
-from flask import Blueprint, request, jsonify
 import bcrypt
+from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
+
 # import mongo instance from main app package
 from app import mongo
 
@@ -12,10 +13,10 @@ auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
 @auth_bp.route("/register", methods=["POST"])
 def register_user():
     """
-    Registers a new user. 
+    Registers a new user.
     Takes a JSON payload with "email" and "password".
     It verfies it is not a duplicate email,
-    Hashes the password and stores the new user in the database. 
+    Hashes the password and stores the new user in the database.
     """
     # VALIDATION the incoming data/request payload
     try:
@@ -37,25 +38,28 @@ def register_user():
     if mongo.db.users.find_one({"email": email}):
         return jsonify({"message": "Email is already registered"}), 409
 
-
     # Password Hashing
     # Generate a salt and hash the password
     # result is a byte object representing the final hash
     hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
 
     # Database Insertion
-    user_id = mongo.db.users.insert_one({
-        "email": email,
-        # The hash is stored as a string in the DB
-        "password_hash": hashed_password.decode('utf-8')
-    }).inserted_id
+    user_id = mongo.db.users.insert_one(
+        {
+            "email": email,
+            # The hash is stored as a string in the DB
+            "password_hash": hashed_password.decode("utf-8"),
+        }
+    ).inserted_id
     print(user_id)
 
     # Prepare response
-    return jsonify({
-        "message": "User registered successfully",
-        "user": {
-            "id": str(user_id),
-            "email": email
-        }
-    }), 201
+    return (
+        jsonify(
+            {
+                "message": "User registered successfully",
+                "user": {"id": str(user_id), "email": email},
+            }
+        ),
+        201,
+    )
