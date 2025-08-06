@@ -9,3 +9,4 @@ mongomock
 black
 isort
 flask_pymongo
+flask-bcrypt
