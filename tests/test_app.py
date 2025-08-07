@@ -647,9 +647,9 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     WHEN the response is received
     THEN it should be a 200 OK and the JSON body must contain all required fields.
     """
-    test_book_id = str(ObjectId())
+    test_book_obj_id = str(ObjectId())
 
-    book_doc_from_db = {"_id": ObjectId(test_book_id), **DUMMY_PAYLOAD}
+    book_doc_from_db = {"_id": ObjectId(test_book_obj_id), **DUMMY_PAYLOAD}
 
     # Create and configure our mock collection
     mock_collection = MagicMock()
@@ -664,7 +664,7 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     # ACT
     # Send the PUT request to the endpoint
     response = client.put(
-        f"/books/{test_book_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
+        f"/books/{test_book_obj_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
     )
 
     # Assert
@@ -677,7 +677,7 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
             field in response_data
         ), f"Required field '{field}' is missing from the response"
 
-    assert response_data["id"] == test_book_id
+    assert response_data["id"] == test_book_obj_id
     assert isinstance(response_data["links"], dict)
 
 

@@ -133,7 +133,7 @@ def test_update_book_succeeds_with_valid_api_key(monkeypatch, client):
     }
     mock_collection.find_one.return_value = expected_book_from_db
 
-    # monkeypatcj to replace the real get_book_collection with a function
+    # monkeypatch to replace the real get_book_collection with a function
     monkeypatch.setattr(
         "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
     )
