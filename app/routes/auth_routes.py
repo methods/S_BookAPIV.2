@@ -1,4 +1,4 @@
-"""Routes for authorrization for the JWT upgrade"""
+"""Routes for authorization for the JWT upgrade"""
 
 import bcrypt
 from flask import Blueprint, jsonify, request

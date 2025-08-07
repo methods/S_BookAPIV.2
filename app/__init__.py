@@ -26,8 +26,10 @@ def create_app(test_config=None):
     mongo.init_app(app)
 
     # Import blueprints inside the factory
-    from app.routes.legacy_routes import register_legacy_routes # pylint: disable=import-outside-toplevel
-    from app.routes.auth_routes import auth_bp # pylint: disable=import-outside-toplevel
+    from app.routes.auth_routes import \
+        auth_bp  # pylint: disable=import-outside-toplevel
+    from app.routes.legacy_routes import \
+        register_legacy_routes  # pylint: disable=import-outside-toplevel
 
     # Register routes with app instance
     register_legacy_routes(app)
