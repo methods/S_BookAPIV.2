@@ -117,3 +117,36 @@ def test_request_fails_with_missing_fields(
     assert response.status_code == 400
     response_data = response.get_json()
     assert expected_message in response_data["message"]
+
+@pytest.mark.parametrize("invalid_email", [
+    "not-an-email",           # Just a string
+    "test@.com",              # Missing domain name
+    "test@domain.",           # Missing top-level domain
+    "test@domaincom",         # Missing dot in domain
+    "test @ domain.com"       # Contains spaces
+])
+def test_register_fails_with_invalid_email(client, users_db_setup, invalid_email):
+    """
+    GIVEN a Flask application client
+    WHEN a POST request is made to /auth/register with an invalid email format
+    THEN the response status code should be 400 (Bad Request)
+    AND the response JSON should contain an appropriate error message.
+    """
+    _ = users_db_setup  # pylint: disable=unused-variable
+
+    # Arrange
+    new_user_data = {
+        "email": invalid_email, 
+        "password": "a-secure-password"
+    }
+    # ACT
+    response = client.post("/auth/register", json=new_user_data)
+
+    # assert
+    assert response.status_code == 400
+    data = response.get_json()
+    assert isinstance(data, dict), "Expected JSON body"
+    assert "message" in data
+    assert "invalid email address" in response.get_json()["message"].lower()
+    msg = data["message"].lower()
+    assert ("invalid" in msg) or ("email" in msg)
