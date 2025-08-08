@@ -118,13 +118,17 @@ def test_request_fails_with_missing_fields(
     response_data = response.get_json()
     assert expected_message in response_data["message"]
 
-@pytest.mark.parametrize("invalid_email", [
-    "not-an-email",           # Just a string
-    "test@.com",              # Missing domain name
-    "test@domain.",           # Missing top-level domain
-    "test@domaincom",         # Missing dot in domain
-    "test @ domain.com"       # Contains spaces
-])
+
+@pytest.mark.parametrize(
+    "invalid_email",
+    [
+        "not-an-email",  # Just a string
+        "test@.com",  # Missing domain name
+        "test@domain.",  # Missing top-level domain
+        "test@domaincom",  # Missing dot in domain
+        "test @ domain.com",  # Contains spaces
+    ],
+)
 def test_register_fails_with_invalid_email(client, users_db_setup, invalid_email):
     """
     GIVEN a Flask application client
@@ -135,10 +139,7 @@ def test_register_fails_with_invalid_email(client, users_db_setup, invalid_email
     _ = users_db_setup  # pylint: disable=unused-variable
 
     # Arrange
-    new_user_data = {
-        "email": invalid_email, 
-        "password": "a-secure-password"
-    }
+    new_user_data = {"email": invalid_email, "password": "a-secure-password"}
     # ACT
     response = client.post("/auth/register", json=new_user_data)
 

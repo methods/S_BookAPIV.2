@@ -2,10 +2,9 @@
 """Routes for authorization for the JWT upgrade"""
 
 import bcrypt
+from email_validator import EmailNotValidError, validate_email
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
-
-from email_validator import validate_email, EmailNotValidError
 
 from app.extensions import mongo
 
