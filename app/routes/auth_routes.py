@@ -4,6 +4,7 @@
 import bcrypt
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
+
 from app.extensions import mongo
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
