@@ -29,7 +29,7 @@ tags:
       url: example.com
 
   - name: Authentication
-    description: Operations related to user registraion and login
+    description: Operations related to user registration and login
 
 # --------------------------------------------
 # Components
