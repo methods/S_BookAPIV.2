@@ -28,6 +28,9 @@ tags:
       description: Find out more
       url: example.com
 
+  - name: Authentication
+    description: Operations related to user registration and login
+
 # --------------------------------------------
 # Components
 components:
@@ -108,6 +111,57 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/BookOutput'
+    
+  # ----- AUTH schemas -------------
+
+    # Schema for the data client POSTs to register a user
+    UserRegistrationInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: The user's email address.
+          example: "newuser@example.com"
+        password:
+          type: string
+          format: password # This format is a hint for UI tools to obscure the input
+          description: The user's desired password.
+          minLength: 8 # It's good practice to suggest a minimum length
+          example: "a-very-secure-password"
+      required:
+        - email
+        - password
+
+    # Schema for the User object as returned by the server on success
+    UserOutput:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique 24-character hexadecimal identifier for the user (MongoDB ObjectId).
+          readOnly: true
+          example: "635f3a7e3a8e3bcfc8e6a1e0"
+        email:
+          type: string
+          format: email
+          readOnly: true
+          example: "newuser@example.com"
+
+    # Schema for the successful registration response
+    RegistrationSuccess:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "User registered successfully"
+        user:
+          $ref: '#/components/schemas/UserOutput'
+
+
+
+
+  # ------ ERROR schemas ----------
 
     # Generic Error schema
     StandardError:
@@ -143,6 +197,16 @@ components:
           description: A brief error message.
       required:
         - error
+
+    # Schema for a simple message response (useful for errors)
+    MessageError:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A brief error message.
+      required:
+        - message
 
   # API Error: Reusable responses for common errors  
   responses:
@@ -426,3 +490,50 @@ paths:
                 error: "Book not found"
         '500':
           $ref: '#/components/responses/InternalServerError' 
+# --------------------------------------------
+  /auth/register:
+# --------------------------------------------
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: >-
+        Creates a new user account. The server will hash the password and store the user details, returning a unique ID for the new user.
+      operationId: registerUser
+      requestBody:
+        description: User's email and password for registration.
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: '#/components/schemas/UserRegistrationInput'
+        responses:
+          '201':
+          description: User registered successfully.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistrationSuccess'
+          '400':
+          description: Bad Request. The request body is missing, not valid JSON, or is missing required fields.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageError'
+              examples:
+                missingFields:
+                  summary: Missing Fields
+                  value:
+                    message: "Email and password are required"
+                emptyBody:
+                  summary: Empty Body
+                  value:
+                    message: "Request body cannot be empty"
+          '409':
+          description: Conflict. The provided email is already registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageError' # Reuse the error schema again!
+              example:
+                message: "Email is already registered"

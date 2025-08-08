@@ -1,10 +1,11 @@
 # pylint: disable=too-few-public-methods
 
 """
-Application configuration module for Flask.
+The central, organized place for  the application's settings.
 
-Loads environment variables from a .env file and defines the Config class
-used to configure Flask and database connection settings.
+Loads environment variables (and other sensitive values) from a .env file and
+Defines the Config class to be used.
+
 """
 
 import os

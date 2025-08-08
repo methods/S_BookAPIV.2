@@ -3,25 +3,32 @@
 import os
 
 from flask import Flask
+from flask_pymongo import PyMongo
 
 from app.config import Config
+from app.extensions import mongo
 
 
 def create_app(test_config=None):
     """Application factory pattern."""
 
     app = Flask(__name__)
-
-    # 1. Load the default configuration from the Config object.
     app.config.from_object(Config)
 
     if test_config:  # Override with test specifics
         app.config.from_mapping(test_config)
 
-    # Import routes
-    from app.routes import \
-        register_routes  # pylint: disable=import-outside-toplevel
+    # Connect Pymongo to our specific app instance
+    mongo.init_app(app)
 
-    register_routes(app)
+    # Import blueprints inside the factory
+    from app.routes.auth_routes import \
+        auth_bp  # pylint: disable=import-outside-toplevel
+    from app.routes.legacy_routes import \
+        register_legacy_routes  # pylint: disable=import-outside-toplevel
+
+    # Register routes with app instance
+    register_legacy_routes(app)
+    app.register_blueprint(auth_bp)
 
     return app

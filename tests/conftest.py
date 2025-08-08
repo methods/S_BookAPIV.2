@@ -9,7 +9,7 @@ from unittest.mock import patch
 import mongomock
 import pytest
 
-from app import create_app
+from app import create_app, mongo
 from app.datastore.mongo_db import get_book_collection
 
 
@@ -17,7 +17,7 @@ from app.datastore.mongo_db import get_book_collection
 def stub_insert_book():
     """Fixture that mocks insert_book_to_mongo() to prevent real DB writes during tests. Returns a mock with a fixed inserted_id."""
 
-    with patch("app.routes.insert_book_to_mongo") as mock_insert_book:
+    with patch("app.routes.legacy_routes.insert_book_to_mongo") as mock_insert_book:
         mock_insert_book.return_value.inserted_id = "12345"
         yield mock_insert_book
 
@@ -78,6 +78,17 @@ def test_app():
             "COLLECTION_NAME": "test_books",
         }
     )
+    # The application now uses the Flask-PyMongo extension,
+    # which requires initialization via `init_app`.
+    # In the test environment, the connection to a real database fails,
+    # leaving `mongo.db` as None.
+    # Fix: Manually patch the global `mongo` object's connection with a `mongomock` client.
+    # This ensures all tests run against a fast, in-memory mock database AND
+    # are isolated from external services."
+    with app.app_context():
+        mongo.cx = mongomock.MongoClient()
+        mongo.db = mongo.cx[app.config["DB_NAME"]]
+
     yield app
 
 
@@ -105,3 +116,21 @@ def db_setup(test_app):  # pylint: disable=redefined-outer-name
     with test_app.app_context():
         collection = get_book_collection()
         collection.delete_many({})
+
+
+# Fixture for tests/test_auth.py
+@pytest.fixture(scope="function")
+def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
+    """
+    Sets up and tears down the 'users' collection for a test.
+    """
+    with test_app.app_context():
+        # Now, the 'mongo' variable is defined and linked to the test_app
+        users_collection = mongo.db.users
+        users_collection.delete_many({})
+
+    yield
+
+    with test_app.app_context():
+        users_collection = mongo.db.users
+        users_collection.delete_many({})

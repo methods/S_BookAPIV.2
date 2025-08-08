@@ -1,6 +1,5 @@
 """Constants which couldnt be added to conftest"""
 
-
 # A dictionary for headers to keep things clean
 HEADERS = {
     "VALID": {"X-API-KEY": "test-key-123"},

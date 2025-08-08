@@ -6,11 +6,9 @@ import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ServerSelectionTimeoutError
 
-from tests.test_data import HEADERS, DUMMY_PAYLOAD
-
 from app import create_app, routes
 from app.datastore.mongo_db import get_book_collection
-
+from tests.test_data import DUMMY_PAYLOAD, HEADERS
 
 # ------------------------ Tests for HELPER FUNCTIONS -------------------------------------
 
@@ -43,8 +41,12 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
     mock_insert_helper = MagicMock(return_value=mock_insert_result)
 
     # E. Apply all patches to isolate the route from the database
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
-    monkeypatch.setattr("app.routes.insert_book_to_mongo", mock_insert_helper)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.insert_book_to_mongo", mock_insert_helper
+    )
 
     # Act
     response = client.post("/books", json=test_book_payload, headers=valid_headers)
@@ -127,7 +129,9 @@ def test_append_host_to_links_in_get_book(client, monkeypatch):
     fake_collection = MagicMock()
     fake_collection.find_one.return_value = book_from_db
     # Patch the function that the route uses to get the collection
-    monkeypatch.setattr(routes, "get_book_collection", lambda: fake_collection)
+    monkeypatch.setattr(
+        routes.legacy_routes, "get_book_collection", lambda: fake_collection
+    )
 
     # mock append_hostname helper, define its output
     mock_appender = MagicMock(
@@ -140,7 +144,7 @@ def test_append_host_to_links_in_get_book(client, monkeypatch):
             },
         }
     )
-    monkeypatch.setattr(routes, "append_hostname", mock_appender)
+    monkeypatch.setattr(routes.legacy_routes, "append_hostname", mock_appender)
 
     # ACT
     response = client.get(f"/books/{book_id_str}")
@@ -194,9 +198,11 @@ def test_append_host_to_links_in_put(monkeypatch, client):
     mock_collection = MagicMock()
     mock_collection.replace_one.return_value.matched_count = 1
     mock_collection.find_one.return_value = book_doc_from_db
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
-    with patch("app.routes.append_hostname") as mock_append_hostname:
+    with patch("app.routes.legacy_routes.append_hostname") as mock_append_hostname:
         mock_append_hostname.side_effect = lambda book, host: book
 
         # --- 2. ACT ---
@@ -206,9 +212,7 @@ def test_append_host_to_links_in_put(monkeypatch, client):
 
         assert response.status_code == 200
         mock_append_hostname.assert_called_once()
-        call_args, _ = ( # pylint: disable=unused-variable
-            mock_append_hostname.call_args
-        )
+        call_args, _ = mock_append_hostname.call_args  # pylint: disable=unused-variable
         book_arg = call_args[0]
         host_arg = call_args[1]
 

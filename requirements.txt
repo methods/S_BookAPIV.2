@@ -8,3 +8,6 @@ python-dotenv
 mongomock
 black
 isort
+flask_pymongo
+flask-bcrypt
+email-validator
