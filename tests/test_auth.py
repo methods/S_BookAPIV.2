@@ -9,7 +9,7 @@ from app import mongo
 def test_register_with_valid_data(client, users_db_setup):
     """GIVEN a clean users collection
     WHEN a POST request is sent to /auth/register with new user data
-    THEN the repsonse should be 201 CREATED and the user should exist in the DB"""
+    THEN the response should be 201 CREATED and the user should exist in the DB"""
     _ = users_db_setup  # pylint: disable=unused-variable
 
     # Arrange
