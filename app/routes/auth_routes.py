@@ -5,6 +5,8 @@ import bcrypt
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
 
+from email_validator import validate_email, EmailNotValidError
+
 from app.extensions import mongo
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
@@ -30,6 +32,15 @@ def register_user():
 
         if not email or not password:
             return jsonify({"message": "Email and password are required"}), 400
+
+        # email-validator
+        try:
+            valid = validate_email(email, check_deliverability=False)
+
+            # use the normalized email for all subsequent operations
+            email = valid.normalized
+        except EmailNotValidError as e:
+            return jsonify({"message": str(e)}), 400
 
     except BadRequest:
         return jsonify({"message": "Invalid JSON format"}), 400
