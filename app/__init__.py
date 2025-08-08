@@ -6,11 +6,7 @@ from flask import Flask
 from flask_pymongo import PyMongo
 
 from app.config import Config
-
-# Create PyMongo extension object outside the factory
-# in the global scope, creating an "empty" extension object
-# This way, we can import it in other files
-mongo = PyMongo()
+from app.extensions import mongo
 
 
 def create_app(test_config=None):

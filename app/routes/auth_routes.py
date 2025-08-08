@@ -1,11 +1,10 @@
+# pylint: disable=cyclic-import
 """Routes for authorization for the JWT upgrade"""
 
 import bcrypt
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
-
-# import mongo instance from main app package
-from app import mongo
+from app.extensions import mongo
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
 
@@ -18,6 +17,7 @@ def register_user():
     It verfies it is not a duplicate email,
     Hashes the password and stores the new user in the database.
     """
+
     # VALIDATION the incoming data/request payload
     try:
         data = request.get_json()
