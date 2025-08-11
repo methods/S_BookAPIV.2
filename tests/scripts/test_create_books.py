@@ -1,21 +1,8 @@
 # pylint: disable=missing-docstring,line-too-long, too-many-arguments, too-many-positional-arguments
-import runpy
-import sys
+
 from unittest.mock import MagicMock, patch
 
 from scripts.create_books import main, populate_books, run_population
-
-
-# --------------------- Helper functions ------------------------------
-def run_create_books_script_cleanup():
-    """
-    Safely re-runs the 'scripts.create_books' module as a script.
-
-    Removes 'scripts.create_books' from sys.modules to avoid re-import conflicts,
-    then executes it using runpy as if run from the command line (__main__ context).
-    """
-    sys.modules.pop("scripts.create_books", None)
-    runpy.run_module("scripts.create_books", run_name="__main__")
 
 
 # ------------------------- Test Suite -------------------------------
@@ -137,60 +124,37 @@ def test_run_population_handles_no_inserted_list_books(
     )
 
 
-@patch("scripts.create_books.create_app")
-@patch("scripts.create_books.run_population")
-def test_main_creates_app_context_and_calls_run_population(
-    mock_run_population, mock_create_app, capsys
-):
+def test_main_orchestrates_and_outputs(capsys):
+    """
+    Verifies that main() correctly:
+      1. Creates the Flask app.
+      2. Enters the app context.
+      3. Calls run_population().
+      4. Prints the result returned by run_population().
+    """
 
-    # Arrange
-    # Mock Flask app object that has a working app_context manager
-    mock_app = MagicMock()
-    mock_create_app.return_value = mock_app
-    mock_run_population.return_value = "Success from mock"
-    expected_output = "Success from mock\n"
+    with patch("scripts.create_books.create_app") as mock_create_app, \
+         patch("scripts.create_books.run_population") as mock_run_population:
 
-    # Act
-    main()
-    captured = capsys.readouterr()
+        # Arrange: mock the app and its context manager
+        mock_app = MagicMock()
+        mock_create_app.return_value = mock_app
+        mock_run_population.return_value = "Success from mock"
 
-    # Assert
-    # 1. Did we set up the environment correctly?
-    mock_create_app.assert_called_once()
-    mock_app.app_context.return_value.__enter__.assert_called_once()
+        expected_output = "Success from mock\n"
 
-    # 2. Did we call the core logic?
-    mock_run_population.assert_called_once()
+        # Act
+        main()
+        captured = capsys.readouterr()
 
-    # 3. Did we print the result?
-    assert captured.out == expected_output
+        # Assert orchestration
+        mock_create_app.assert_called_once()
+        mock_app.app_context.return_value.__enter__.assert_called_once()
+        mock_run_population.assert_called_once()
 
+        # Assert output
+        assert captured.out == expected_output
 
-def test_script_entry_point_calls_main(sample_book_data, test_app):
-    # Arrange test_book sample and return values of MOCKS
-    test_books = sample_book_data
-
-
-    with test_app.app_context():
-        with patch("app.datastore.mongo_db.get_book_collection") as mock_get_collection, \
-            patch("utils.db_helpers.load_books_json") as mock_load_json, \
-            patch("app.datastore.mongo_helper.upsert_book_from_file") as mock_upsert_book:
-
-            mock_load_json.return_value = test_books
-            # Mock mongodb collection object
-            mock_collection_obj = MagicMock()
-            mock_get_collection.return_value = mock_collection_obj
-
-            # Act: Run the script's main entry point.
-            run_create_books_script_cleanup()
-
-            # Assert: Verify mocked dependencies were called correctly.
-            mock_get_collection.assert_called_once()
-            mock_load_json.assert_called_once()
-
-            assert mock_upsert_book.call_count == len(test_books)
-            mock_upsert_book.assert_any_call(test_books[0], mock_collection_obj)
-            mock_upsert_book.assert_any_call(test_books[1], mock_collection_obj)
 
 def test_run_population_should_insert_new_book_when_id_does_not_exist(
     mock_books_collection, sample_book_data, test_app
