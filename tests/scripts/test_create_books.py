@@ -166,68 +166,66 @@ def test_main_creates_app_context_and_calls_run_population(
     assert captured.out == expected_output
 
 
-@patch("app.datastore.mongo_helper.upsert_book_from_file")
-@patch("utils.db_helpers.load_books_json")  # PATCHING AT THE SOURCE
-@patch("app.datastore.mongo_db.get_book_collection")  # PATCHING AT THE SOURCE
-def test_script_entry_point_calls_main(
-    mock_get_collection, mock_load_json, mock_upsert_book, sample_book_data
-):
+def test_script_entry_point_calls_main(sample_book_data, test_app):
     # Arrange test_book sample and return values of MOCKS
     test_books = sample_book_data
 
-    mock_load_json.return_value = test_books
-    # Mock mongodb collection object
-    mock_collection_obj = MagicMock()
-    mock_get_collection.return_value = mock_collection_obj
 
-    # Act: Run the script's main entry point.
-    run_create_books_script_cleanup()
+    with test_app.app_context():
+        with patch("app.datastore.mongo_db.get_book_collection") as mock_get_collection, \
+            patch("utils.db_helpers.load_books_json") as mock_load_json, \
+            patch("app.datastore.mongo_helper.upsert_book_from_file") as mock_upsert_book:
 
-    # Assert: Verify mocked dependencies were called correctly.
-    mock_get_collection.assert_called_once()
-    mock_load_json.assert_called_once()
+            mock_load_json.return_value = test_books
+            # Mock mongodb collection object
+            mock_collection_obj = MagicMock()
+            mock_get_collection.return_value = mock_collection_obj
 
-    assert mock_upsert_book.call_count == len(test_books)
-    mock_upsert_book.assert_any_call(test_books[0], mock_collection_obj)
-    mock_upsert_book.assert_any_call(test_books[1], mock_collection_obj)
+            # Act: Run the script's main entry point.
+            run_create_books_script_cleanup()
 
+            # Assert: Verify mocked dependencies were called correctly.
+            mock_get_collection.assert_called_once()
+            mock_load_json.assert_called_once()
+
+            assert mock_upsert_book.call_count == len(test_books)
+            mock_upsert_book.assert_any_call(test_books[0], mock_collection_obj)
+            mock_upsert_book.assert_any_call(test_books[1], mock_collection_obj)
 
 def test_run_population_should_insert_new_book_when_id_does_not_exist(
-    monkeypatch, mock_books_collection, sample_book_data
+    mock_books_collection, sample_book_data, test_app
 ):
     # Arrange
-    mock_db_collection_func = MagicMock(return_value=mock_books_collection)
-    monkeypatch.setattr(
-        "scripts.create_books.get_book_collection", mock_db_collection_func
-    )
-
-    mock_load_data = MagicMock(return_value=sample_book_data)
-    monkeypatch.setattr("scripts.create_books.load_books_json", mock_load_data)
-
     assert mock_books_collection.count_documents({}) == 0
 
-    # Act
-    # Call the function with the new list_of_books and the MONGODB COLLECTION instance
-    result_message = run_population()
+    with test_app.app_context():
+        # Use 'with patch' to safely contain the mocks
+        with patch("scripts.create_books.get_book_collection") as mock_get_collection, \
+            patch("scripts.create_books.load_books_json") as mock_load_data:
 
-    # Assert
-    mock_db_collection_func.assert_called_once()
-    mock_load_data.assert_called_once()
+            # Configure mocks inside the 'with' block
+            mock_get_collection.return_value = mock_books_collection
+            mock_load_data.return_value = sample_book_data
 
-    # Check for specific book to be sure the data is right
-    book_a_from_db = mock_books_collection.find_one(
-        {"id": "550e8400-e29b-41d4-a716-446655440000"}
-    )
-    assert book_a_from_db is not None
-    assert book_a_from_db["title"] == "To Kill a Mockingbird"
+            # Act
+            result_message = run_population()
 
-    # Verify that the function returned the correct status message
-    assert result_message == "Inserted 2 books"
+            # Assert
+            mock_get_collection.assert_called_once()
+            mock_load_data.assert_called_once()
+
+            # Check for specific book to be sure the data is right
+            book_a_from_db = mock_books_collection.find_one(
+                {"id": "550e8400-e29b-41d4-a716-446655440000"}
+            )
+            assert book_a_from_db is not None
+            assert book_a_from_db["title"] == "To Kill a Mockingbird"
+
+            # Verify that the function returned the correct status message
+            assert result_message == "Inserted 2 books"
 
 
-def test_run_population_correctly_upserts_a_batch_of_books(
-    mock_books_collection, monkeypatch
-):
+def test_run_population_correctly_upserts_a_batch_of_books(mock_books_collection, test_app):
     """
     BEHAVIORAL TEST: Verifies that run_population correctly handles a mix
     of new and existing books, resulting in a fully updated collection.
@@ -281,44 +279,45 @@ def test_run_population_correctly_upserts_a_batch_of_books(
         },
     ]
 
-    # Monkeypatch the helper functions to isolate test
-    # - make get_book_collection return our mockDB
-    # - make load_books_json return our hard-coded new data
-    monkeypatch.setattr(
-        "scripts.create_books.get_book_collection", lambda: mock_books_collection
-    )
-    monkeypatch.setattr(
-        "scripts.create_books.load_books_json", lambda: new_book_data_from_file
-    )
-
     # Sanity check: confim the database starts with exactly one document
     assert mock_books_collection.count_documents({}) == 1
 
-    # Act
-    run_population()
+    with test_app.app_context():
+        # Replace monkeypatch with the robust 'with patch' context manager
+        with patch("scripts.create_books.get_book_collection") as mock_get_collection, \
+            patch("scripts.create_books.load_books_json") as mock_load_json:
 
-    # Assert
-    # Check final state of database, total count == 2
-    assert (
-        mock_books_collection.count_documents({}) == 2
-    ), "The total document count should be 2"
+            # --- ARRANGE (Mock Setup) ---
+            # Configure mocks inside the 'with' block
+            mock_get_collection.return_value = mock_books_collection
+            mock_load_json.return_value = new_book_data_from_file
 
-    # Retrieve the book we expected to be replaced and verify its contents
-    updated_book = mock_books_collection.find_one({"id": common_id})
+            # Act
+            run_population()
 
-    assert updated_book is not None, "The updated book was not found in the database"
-    assert updated_book["title"] == "The Age of Surveillance Capitalism"
-    assert updated_book["author"] == "Shoshana Zuboff"
-    assert "version" not in updated_book
+            # Assert
+            mock_get_collection.assert_called_once()
+            mock_load_json.assert_called_once()
+            assert (
+                mock_books_collection.count_documents({}) == 2
+            ), "The total document count should be 2"
 
-    # Retrieve the book we expected to be INSERTED and verify it exists.
-    inserted_book = mock_books_collection.find_one({"id": new_book_id})
-    assert inserted_book is not None
-    assert inserted_book["title"] == "Brave New World"
+            # Retrieve the book we expected to be replaced and verify its contents
+            updated_book = mock_books_collection.find_one({"id": common_id})
+
+            assert updated_book is not None, "The updated book was not found in the database"
+            assert updated_book["title"] == "The Age of Surveillance Capitalism"
+            assert updated_book["author"] == "Shoshana Zuboff"
+            assert "version" not in updated_book
+
+            # Retrieve the book we expected to be INSERTED and verify it exists.
+            inserted_book = mock_books_collection.find_one({"id": new_book_id})
+            assert inserted_book is not None
+            assert inserted_book["title"] == "Brave New World"
 
 
 def test_upsert_book_to_mongo_replaces_document_when_id_exists(
-    mock_books_collection, monkeypatch
+    mock_books_collection, test_app
 ):
     # --- ARRANGE ---
     common_id = "550e8400-e29b-41d4-a716-446655440000"
@@ -340,7 +339,7 @@ def test_upsert_book_to_mongo_replaces_document_when_id_exists(
     mock_books_collection.insert_one(old_book_version)
 
     # Define new version of book
-    new_book = [
+    new_book_data = [
         {
             "id": common_id,
             "title": "The Age of Surveillance Capitalism",
@@ -355,24 +354,29 @@ def test_upsert_book_to_mongo_replaces_document_when_id_exists(
         }
     ]
 
-    # Monkeypatch the helper functions to isolate test
-    monkeypatch.setattr(
-        "scripts.create_books.get_book_collection", lambda: mock_books_collection
-    )
-    monkeypatch.setattr("scripts.create_books.load_books_json", lambda: new_book)
-
     # Sanity check: confim the database starts with exactly one document
     assert mock_books_collection.count_documents({}) == 1
 
-    # Act
-    run_population()
+    with test_app.app_context():
+        with patch("scripts.create_books.get_book_collection") as mock_get_collection, \
+            patch("scripts.create_books.load_books_json") as mock_load_json:
 
-    # ASSERT
-    assert mock_books_collection.count_documents({}) == 1
+            # Arrange
+            # Configure the mocks inside the 'with' block using .return_value
+            mock_get_collection.return_value = mock_books_collection
+            mock_load_json.return_value = new_book_data
 
-    # Fetch the document and verify its contents are new
-    updated_book = mock_books_collection.find_one({"id": common_id})
+            # Act
+            run_population()
 
-    assert updated_book is not None, "The updated book was not found in the database"
-    assert updated_book["title"] == "The Age of Surveillance Capitalism"
-    assert updated_book["author"] == "Shoshana Zuboff"
+            # ASSERT
+            mock_get_collection.assert_called_once()
+            mock_load_json.assert_called_once()
+            assert mock_books_collection.count_documents({}) == 1
+
+            # Fetch the document and verify its contents are new
+            updated_book = mock_books_collection.find_one({"id": common_id})
+
+            assert updated_book is not None, "The updated book was not found in the database"
+            assert updated_book["title"] == "The Age of Surveillance Capitalism"
+            assert updated_book["author"] == "Shoshana Zuboff"
