@@ -30,7 +30,7 @@ help: ## Show help
 	@echo "  make db-setup     Reset the database to a clean, seeded state. (Runs db-clean then db-seed)"
 	@echo "  make db-seed   Populate the database with initial data."
 	@echo "  make db-clean  Delete all book data from the database."
-	@echo "  make seed-users  Pupulate the database with initial user data."
+	@echo "  make seed-users  Populate the database with initial user data."
 
 install: $(PIP)
 
