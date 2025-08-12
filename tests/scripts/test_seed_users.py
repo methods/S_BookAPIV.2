@@ -1,13 +1,14 @@
 """ Test file for seeing database with user data"""
-import pytest
+
 import bcrypt
 from app.extensions import mongo
+from scripts.seed_users import seed_users
 
 
 def test_seed_users_successfully(test_app):
     """
     GIVEN an empty database and a list of user data
-    WHEN the seed_users fucntion is called
+    WHEN the seed_users function is called
     THEN the users should be created in the database with hashed passwords.
     """
     # Arrrange
@@ -17,18 +18,16 @@ def test_seed_users_successfully(test_app):
         {"email": "test.user@example.com", "password": "UserPassword456"},
     ]
 
+    # Enter application context and
     # Ensure the database is clean beofre the test
     with test_app.app_context():
         mongo.db.users.delete_many({})
 
-    # Act: call the function we are testing
-    result_message = seed_users(sample_users)
+        # Act: call the function we are testing
+        result_message = seed_users(sample_users)
 
-    # Assert
-    assert "Successfully seeded 2 users" in result_message
-    # Check the database state directly
-    with test_app.app_context():
-        assert mongo.db.user.count_documents({}) == 2
+        # Check the database state directly
+        assert mongo.db.users.count_documents({}) == 2
         admin_user = mongo.db.users.find_one({"email": "test.admin@example.com"})
         assert admin_user is not None
 
@@ -38,3 +37,4 @@ def test_seed_users_successfully(test_app):
             b"AdminPassword123",
             admin_user["password_hash"].encode("utf-8")
         )
+    assert "Successfully seeded 2 users" in result_message
