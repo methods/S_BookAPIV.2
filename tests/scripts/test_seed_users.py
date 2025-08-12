@@ -24,7 +24,7 @@ def test_seed_users_successfully(test_app):
     ]
 
     # Enter application context and
-    # Ensure the database is clean beofre the test
+    # Ensure the database is clean before the test
     with test_app.app_context():
         mongo.db.users.delete_many({})
 
