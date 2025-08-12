@@ -1,4 +1,4 @@
-"""Test file for seeing database with user data"""
+"""Test file for seeding database with user data"""
 
 import json
 from unittest.mock import mock_open, patch
