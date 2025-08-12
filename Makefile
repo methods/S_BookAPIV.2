@@ -10,7 +10,7 @@ PIP = $(VENV_DIR)/bin/pip
 .DEFAULT_GOAL := help
 
 # Phony Targets 
-.PHONY: run clean test help lint db-seed db-clean db-setup
+.PHONY: run clean test help lint db-seed db-clean db-setup seed-users
 
 # ==============================================================================
 # CORE COMMANDS - For everyday development
@@ -86,3 +86,8 @@ db-seed: install
 db-clean: install
 	@echo "--> ⚠️  Deleting all books from the database..."
 	PATH=$(VENV_DIR)/bin:$$PATH PYTHONPATH=. $(PYTHON) -m scripts.delete_books
+
+
+seed-users: install
+	@echo "--- Seeding the data with user data ---"
+	PATH=$(VENV_DIR)/bin:$$PATH PYTHONPATH=. $(PYTHON) -m scripts.seed_users
