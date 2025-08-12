@@ -30,6 +30,7 @@ help: ## Show help
 	@echo "  make db-setup     Reset the database to a clean, seeded state. (Runs db-clean then db-seed)"
 	@echo "  make db-seed   Populate the database with initial data."
 	@echo "  make db-clean  Delete all book data from the database."
+	@echo "  make seed-users  Pupulate the database with initial user data."
 
 install: $(PIP)
 
@@ -89,5 +90,5 @@ db-clean: install
 
 
 seed-users: install
-	@echo "--- Seeding the data with user data ---"
+	@echo "--- Seeding the database with user data ---"
 	PATH=$(VENV_DIR)/bin:$$PATH PYTHONPATH=. $(PYTHON) -m scripts.seed_users
