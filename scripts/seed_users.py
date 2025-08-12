@@ -1,12 +1,16 @@
 """ Seeding user_data script"""
 
+import json
 import bcrypt
+from app import create_app
 from app.extensions import mongo
 
 def seed_users(users_to_seed: list) -> str:
     """
     Processes a list of user data, hashes their passwords,
     and inserts them into the database. Skips existing users.
+
+    This function MUST be run within an active Flask application context.
     
     Args:
         users_to_seed: A list of dicts, each with 'email' and 'password'.
@@ -39,3 +43,34 @@ def seed_users(users_to_seed: list) -> str:
         print(f"Created user: {email}")
 
     return f"Successfully seeded {count} users"
+
+
+def main():
+    """
+    Main execution fucntion to run the seeding process.
+    handles app context, data loading, and calls the core seeding logic.
+    """
+    # Create the DEVELOPMENT app when run from the command line
+    app = create_app()
+    with app.app_context():
+
+        user_data_file = "scripts/sample_user_data.json"
+
+        try:
+            # You can define your default users here or import from another file
+            with open(user_data_file, "r", encoding="utf-8") as user_file:
+                default_users = json.load(user_file)
+
+            print("--- Starting user seeding ---")
+
+            message = seed_users(default_users)
+            print(f"--- {message} ---")
+            print("--- Seeding complete ---")
+
+        except FileNotFoundError:
+            print(f"Error: Data file not found at '{user_data_file}'.")
+        except json.JSONDecodeError:
+            print(f"Error: Could not decode JSON from '{user_data_file}'. Check for syntax errors.")
+
+if __name__ == "__main__":
+    main()
