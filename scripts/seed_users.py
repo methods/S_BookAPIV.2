@@ -1,9 +1,12 @@
-""" Seeding user_data script"""
+"""Seeding user_data script"""
 
 import json
+
 import bcrypt
+
 from app import create_app
 from app.extensions import mongo
+
 
 def seed_users(users_to_seed: list) -> str:
     """
@@ -11,7 +14,7 @@ def seed_users(users_to_seed: list) -> str:
     and inserts them into the database. Skips existing users.
 
     This function MUST be run within an active Flask application context.
-    
+
     Args:
         users_to_seed: A list of dicts, each with 'email' and 'password'.
 
@@ -30,15 +33,13 @@ def seed_users(users_to_seed: list) -> str:
 
         # hash the password
         hashed_password = bcrypt.hashpw(
-            user_data["password"].encode("utf-8"),
-            bcrypt.gensalt()
+            user_data["password"].encode("utf-8"), bcrypt.gensalt()
         )
 
         # insert to new user
-        mongo.db.users.insert_one({
-            "email": email,
-            "password_hash": hashed_password.decode("utf-8")
-        })
+        mongo.db.users.insert_one(
+            {"email": email, "password_hash": hashed_password.decode("utf-8")}
+        )
         count += 1
         print(f"Created user: {email}")
 
@@ -70,7 +71,10 @@ def main():
         except FileNotFoundError:
             print(f"Error: Data file not found at '{user_data_file}'.")
         except json.JSONDecodeError:
-            print(f"Error: Could not decode JSON from '{user_data_file}'. Check for syntax errors.")
+            print(
+                f"Error: Could not decode JSON from '{user_data_file}'. Check for syntax errors."
+            )
+
 
 if __name__ == "__main__":
     main()

@@ -1,11 +1,14 @@
-""" Test file for seeing database with user data"""
+"""Test file for seeing database with user data"""
 
-from unittest.mock import patch, mock_open
 import json
+from unittest.mock import mock_open, patch
+
 import bcrypt
+
 from app.extensions import mongo
-from scripts.seed_users import seed_users
 from scripts.seed_users import main as seed_users_main
+from scripts.seed_users import seed_users
+
 
 def test_seed_users_successfully(test_app):
     """
@@ -36,8 +39,7 @@ def test_seed_users_successfully(test_app):
         # Verify the password was hashed
         assert admin_user["password_hash"] != "AdminPassword123"
         assert bcrypt.checkpw(
-            b"AdminPassword123",
-            admin_user["password_hash"].encode("utf-8")
+            b"AdminPassword123", admin_user["password_hash"].encode("utf-8")
         )
     assert "Successfully seeded 2 users" in result_message
 
@@ -58,10 +60,12 @@ def test_seed_users_skips_if_user_already_exists(test_app, capsys):
         # start with a clean state
         mongo.db.users.delete_many({})
 
-        mongo.db.users.insert_one({
-            "email": "existing.user@example.com",
-            "password_hash": "some-pre-existing-hash"
-        })
+        mongo.db.users.insert_one(
+            {
+                "email": "existing.user@example.com",
+                "password_hash": "some-pre-existing-hash",
+            }
+        )
         # ACT
         result_message = seed_users(users_to_attempt_seeding)
 
@@ -71,7 +75,7 @@ def test_seed_users_skips_if_user_already_exists(test_app, capsys):
         # Check the return message from the function
         assert "Successfully seeded 1 users" in result_message
 
-        #Check the print
+        # Check the print
         captured = capsys.readouterr()
         assert "Skipping existing user: existing.user@example.com" in captured.out
         assert "Created user: new.user@example.com" in captured.out
@@ -87,9 +91,9 @@ def test_main_runs_seeding_process_successfully(capsys):
     fake_json_data = '[{"email": "fake@user.com", "password": "fakepass"}]'
 
     # Create mock objects for all of main's dependencies
-    with patch('scripts.seed_users.create_app'), \
-        patch("scripts.seed_users.seed_users") as mock_seed_users, \
-        patch("builtins.open", mock_open(read_data=fake_json_data)):
+    with patch("scripts.seed_users.create_app"), patch(
+        "scripts.seed_users.seed_users"
+    ) as mock_seed_users, patch("builtins.open", mock_open(read_data=fake_json_data)):
 
         # Act
         seed_users_main()
@@ -110,9 +114,9 @@ def test_main_throws_filenotfounderror(capsys):
     THEN it should print a FileNotFoundError message and not call seed_users.
     """
     # Arrange
-    with patch("scripts.seed_users.create_app"), \
-        patch("scripts.seed_users.seed_users") as mock_seed_users, \
-        patch("builtins.open") as mock_file:
+    with patch("scripts.seed_users.create_app"), patch(
+        "scripts.seed_users.seed_users"
+    ) as mock_seed_users, patch("builtins.open") as mock_file:
 
         mock_file.side_effect = FileNotFoundError
 
@@ -133,11 +137,15 @@ def test_main_throws_jsondecodeerror(capsys):
     THEN it should print a JSONDecodeError message and not call seed_users.
     """
     # Arrange
-    corrupted_json_data = '{"email": "bad@user.com", "password": "badpass"' # Missing closing brace
+    corrupted_json_data = (
+        '{"email": "bad@user.com", "password": "badpass"'  # Missing closing brace
+    )
 
-    with patch('scripts.seed_users.create_app'), \
-        patch('scripts.seed_users.seed_users') as mock_seed_users, \
-        patch('builtins.open', mock_open(read_data=corrupted_json_data)):
+    with patch("scripts.seed_users.create_app"), patch(
+        "scripts.seed_users.seed_users"
+    ) as mock_seed_users, patch(
+        "builtins.open", mock_open(read_data=corrupted_json_data)
+    ):
 
         # Act
         seed_users_main()
