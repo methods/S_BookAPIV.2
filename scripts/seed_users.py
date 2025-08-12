@@ -49,7 +49,7 @@ def seed_users(users_to_seed: list) -> str:
 
 def main():
     """
-    Main execution fucntion to run the seeding process.
+    Main execution function to run the seeding process.
     handles app context, data loading, and calls the core seeding logic.
     """
     # Create the DEVELOPMENT app when run from the command line
