@@ -1,8 +1,11 @@
 """ Test file for seeing database with user data"""
 
+from unittest.mock import patch, mock_open
+import json
 import bcrypt
 from app.extensions import mongo
 from scripts.seed_users import seed_users
+from scripts.seed_users import main as seed_users_main
 
 def test_seed_users_successfully(test_app):
     """
@@ -72,3 +75,74 @@ def test_seed_users_skips_if_user_already_exists(test_app, capsys):
         captured = capsys.readouterr()
         assert "Skipping existing user: existing.user@example.com" in captured.out
         assert "Created user: new.user@example.com" in captured.out
+
+
+def test_main_runs_seeding_process_successfully(capsys):
+    """
+    GIVEN a successful file read
+    WHEN the main function is called
+    THEN it should call seed_users with the loaded data and print success messages.
+    """
+    # Arrange
+    fake_json_data = '[{"email": "fake@user.com", "password": "fakepass"}]'
+
+    # Create mock objects for all of main's dependencies
+    with patch('scripts.seed_users.create_app'), \
+        patch("scripts.seed_users.seed_users") as mock_seed_users, \
+        patch("builtins.open", mock_open(read_data=fake_json_data)):
+
+        # Act
+        seed_users_main()
+
+        # Assert
+        expected_data = json.loads(fake_json_data)
+        mock_seed_users.assert_called_once_with(expected_data)
+        # Did it print the right message?
+        captured = capsys.readouterr()
+        assert "--- Starting user seeding ---" in captured.out
+        assert "--- Seeding complete ---" in captured.out
+
+
+def test_main_throws_filenotfounderror(capsys):
+    """
+    GIVEN the data file does not exist
+    WHEN the main function is called
+    THEN it should print a FileNotFoundError message and not call seed_users.
+    """
+    # Arrange
+    with patch("scripts.seed_users.create_app"), \
+        patch("scripts.seed_users.seed_users") as mock_seed_users, \
+        patch("builtins.open") as mock_file:
+
+        mock_file.side_effect = FileNotFoundError
+
+        # Act
+        seed_users_main()
+
+        # Assert
+        captured = capsys.readouterr()
+        assert "Error: Data file not found at" in captured.out
+
+        mock_seed_users.assert_not_called()
+
+
+def test_main_throws_jsondecodeerror(capsys):
+    """
+    GIVEN the data file contains invalid JSON
+    WHEN the main function is called
+    THEN it should print a JSONDecodeError message and not call seed_users.
+    """
+    # Arrange
+    corrupted_json_data = '{"email": "bad@user.com", "password": "badpass"' # Missing closing brace
+
+    with patch('scripts.seed_users.create_app'), \
+        patch('scripts.seed_users.seed_users') as mock_seed_users, \
+        patch('builtins.open', mock_open(read_data=corrupted_json_data)):
+
+        # Act
+        seed_users_main()
+
+        # Assert
+        captured = capsys.readouterr()
+        assert "Error: Could not decode JSON from" in captured.out
+        mock_seed_users.assert_not_called()
