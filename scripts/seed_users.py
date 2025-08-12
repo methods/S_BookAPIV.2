@@ -1,5 +1,6 @@
 """Seeding user_data script"""
 
+import os
 import json
 
 import bcrypt
@@ -55,11 +56,15 @@ def main():
     app = create_app()
     with app.app_context():
 
-        user_data_file = "scripts/sample_user_data.json"
+        # 1. Get the directory where THIS script (seed_users.py) lives.
+        script_dir = os.path.dirname(__file__)
+
+        # 2. Build the full, absolute path to the JSON file.
+        user_data_path = os.path.join(script_dir, "test_data/sample_user_data.json")
 
         try:
             # You can define your default users here or import from another file
-            with open(user_data_file, "r", encoding="utf-8") as user_file:
+            with open(user_data_path, "r", encoding="utf-8") as user_file:
                 default_users = json.load(user_file)
 
             print("--- Starting user seeding ---")
@@ -69,10 +74,10 @@ def main():
             print("--- Seeding complete ---")
 
         except FileNotFoundError:
-            print(f"Error: Data file not found at '{user_data_file}'.")
+            print(f"Error: Data file not found at '{user_data_path}'.")
         except json.JSONDecodeError:
             print(
-                f"Error: Could not decode JSON from '{user_data_file}'. Check for syntax errors."
+                f"Error: Could not decode JSON from '{user_data_path}'. Check for syntax errors."
             )
 
 
