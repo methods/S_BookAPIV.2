@@ -139,38 +139,34 @@ def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
 
 
 TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
-@pytest.fixture
-def mongo_mock_with_user(monkeypatch):
-    """
-    A pytest fixture that:
-    1. Creates a mock user with a hashed password.
-    2. Sets up a mongomock in-memory database.
-    3. Inserts the mock user into the mock databse.
-    4. Uses monkeypatch to make our app use this mock DB for the test.
-    """
-    # Define the user data we want in our fake database
-    plain_password = "a-secure-password"
+PLAIN_PASSWORD = "a-secure-password"
 
-    # MUST store the hashed password in the DB
-    hashed_password = bcrypt.hashpw(plain_password.encode("utf-8"), bcrypt.gensalt())
+@pytest.fixture(scope="session") # because this data never changes
+def mock_user_data():
+    """Provides a dictionary of a test user's data, with a hashed password."""
+    hashed_password = bcrypt.hashpw(PLAIN_PASSWORD.encode("utf-8"), bcrypt.gensalt())
 
-    mock_user = {
-        "id": TEST_USER_ID,
+    return {
+        "_id": TEST_USER_ID,
         "email": "testuser@example.com",
-        "password_hash": hashed_password.decode("utf-8")
+        "password_hash": hashed_password  # Standardize on 'password' as the field name
     }
 
-    # MOCK mongo.db
-    # we create a fake database object that has 'users' collection
-    class MockDB:
-        """ Fake Db """
-        def __init__(self):
-            # this mimics the structure 'mongo/db.users'
-            self.users = mongomock.MongoClient().db.create_collection
 
-    mock_db = MockDB()
-    mock_db.users.insert_one(mock_user)
+@pytest.fixture
+def seeded_user_in_db(test_app, mock_user_data, users_db_setup): # pylint: disable=redefined-outer-name
+    """
+    Ensures the test database is clean and contains exactly one predefined user.
+    Depends on:
+    - test_app: To get the application context and correct mongo.db object
+    - mock_user_data: To get the user data to insert.
+    - users_db_Setup: To ensure the users collection is empty before seeding.
+    """
+    _ = users_db_setup
 
-    # Use monkeypatch to replace the read 'mongo.db' wiht out mock for THIS TEST ONLY
-    # the path 'app.extensions.mongo.db' must point to where the 'mongo' object is defined
-    monkeypatch.setattr("app.extensions.mongo.db", mock_db)
+    with test_app.app_context():
+        mongo.db.users.insert_one(mock_user_data)
+
+    # yield the user data in case a test needs it
+    # but often we just need the side-effect of the user being in the DB
+    yield mock_user_data
