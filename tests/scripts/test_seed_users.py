@@ -37,9 +37,9 @@ def test_seed_users_successfully(test_app):
         assert admin_user is not None
 
         # Verify the password was hashed
-        assert admin_user["password_hash"] != "AdminPassword123"
+        assert admin_user["password"] != "AdminPassword123"
         assert bcrypt.checkpw(
-            b"AdminPassword123", admin_user["password_hash"].encode("utf-8")
+            b"AdminPassword123", admin_user["password"].encode("utf-8")
         )
     assert "Successfully seeded 2 users" in result_message
 
