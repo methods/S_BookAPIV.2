@@ -11,3 +11,4 @@ isort
 flask_pymongo
 flask-bcrypt
 email-validator
+PyJWT
