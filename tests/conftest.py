@@ -10,8 +10,9 @@ import mongomock
 import pytest
 import bcrypt
 
-from app import create_app, mongo
+from app import create_app
 from app.datastore.mongo_db import get_book_collection
+from app.extensions import bcrypt, mongo
 
 
 @pytest.fixture(name="_insert_book_to_db")
@@ -144,12 +145,13 @@ PLAIN_PASSWORD = "a-secure-password"
 @pytest.fixture(scope="session") # because this data never changes
 def mock_user_data():
     """Provides a dictionary of a test user's data, with a hashed password."""
-    hashed_password = bcrypt.hashpw(PLAIN_PASSWORD.encode("utf-8"), bcrypt.gensalt())
+    # USe Flask-Bcrypt's fucntion to CREATE the hash.
+    hashed_password = bcrypt.generate_password_hash(PLAIN_PASSWORD).decode("utf-8")
 
     return {
         "_id": TEST_USER_ID,
         "email": "testuser@example.com",
-        "password_hash": hashed_password  # Standardize on 'password' as the field name
+        "password": hashed_password  
     }
 
 
