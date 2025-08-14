@@ -1,13 +1,15 @@
 """Tests for auth/JWT upgrade"""
 
 from unittest.mock import patch
+
 import jwt
 import pytest
-from conftest import TEST_USER_ID, PLAIN_PASSWORD
-from app import mongo, bcrypt
+from conftest import PLAIN_PASSWORD, TEST_USER_ID
 
+from app import bcrypt, mongo
 
 # -------- /auth/register TESTS ---------
+
 
 def test_register_with_valid_data(client, users_db_setup):
     """GIVEN a clean users collection
@@ -154,7 +156,10 @@ def test_register_fails_with_invalid_email(client, users_db_setup, invalid_email
 
 # ---------- /auth/login -----------------
 
-def test_login_user_returns_jwt_for_valid_credentials(test_app, client, seeded_user_in_db):
+
+def test_login_user_returns_jwt_for_valid_credentials(
+    test_app, client, seeded_user_in_db
+):
     """
     GIVEN a user exists in the database (via seeded_user_in_db fixture)
     WHEN a POST request is sent to /auth/login with correct credentials
@@ -164,9 +169,9 @@ def test_login_user_returns_jwt_for_valid_credentials(test_app, client, seeded_u
     _ = seeded_user_in_db
 
     login_credentials = {
-        "email": "testuser@example.com", 
-        "password": PLAIN_PASSWORD
-    } # plain-text password
+        "email": "testuser@example.com",
+        "password": PLAIN_PASSWORD,
+    }  # plain-text password
 
     # ACT
     response = client.post("/auth/login", json=login_credentials)
@@ -179,11 +184,9 @@ def test_login_user_returns_jwt_for_valid_credentials(test_app, client, seeded_u
     with test_app.app_context():
         # check token: we need the SECRET_KEY from the app config to decode it.
         payload = jwt.decode(
-            data["token"],
-            test_app.config['SECRET_KEY'],
-            algorithms=["HS256"]
+            data["token"], test_app.config["SECRET_KEY"], algorithms=["HS256"]
         )
-        assert payload['sub'] == TEST_USER_ID
+        assert payload["sub"] == TEST_USER_ID
 
 
 def test_login_user_fails_for_wrong_password(client, seeded_user_in_db):
@@ -195,10 +198,7 @@ def test_login_user_fails_for_wrong_password(client, seeded_user_in_db):
     # Arrange
     _ = seeded_user_in_db
 
-    login_credentials = {
-        "email": "testuser@example.com", 
-        "password": "wrong-password"
-    }
+    login_credentials = {"email": "testuser@example.com", "password": "wrong-password"}
 
     # Act
     response = client.post("/auth/login", json=login_credentials)
@@ -217,10 +217,7 @@ def test_login_user_fails_for_nonexistent_user(client, seeded_user_in_db):
     # Arrange
     _ = seeded_user_in_db
 
-    login_credentials = {
-        "email": "ghost@example.com", 
-        "password": "any-password"
-    }
+    login_credentials = {"email": "ghost@example.com", "password": "any-password"}
 
     # Act
     response = client.post("/auth/login", json=login_credentials)
@@ -231,22 +228,22 @@ def test_login_user_fails_for_nonexistent_user(client, seeded_user_in_db):
 
 
 @pytest.mark.parametrize(
-    "payload, expected_message", [
+    "payload, expected_message",
+    [
         ("null", "Email and password are required"),  # 'if not data'
         ({}, "Email and password are required"),  # empty JSON object
-        ({"password": "a-password"}, "Email and password are required"),  # Missing email
-        ({"email": "test@example.com"}, "Email and password are required"), # Missing password
+        (
+            {"password": "a-password"},
+            "Email and password are required",
+        ),  # Missing email
+        (
+            {"email": "test@example.com"},
+            "Email and password are required",
+        ),  # Missing password
     ],
-    ids=[
-        "null_payload",
-        "empty_payload",
-        "missing_email",
-        "missing_password"
-    ]
+    ids=["null_payload", "empty_payload", "missing_email", "missing_password"],
 )
-def test_login_user_fails_with_missing_data(
-    client, payload, expected_message
-    ):
+def test_login_user_fails_with_missing_data(client, payload, expected_message):
     """
     GIVEN a test client
     WHEN a POST request is sent to /auth/login with incomplete data
@@ -257,9 +254,7 @@ def test_login_user_fails_with_missing_data(
     # For all other cases (which are dicts), we send it as json.
     if isinstance(payload, str):
         response = client.post(
-            "/auth/login",
-            data=payload,
-            content_type="application/json"
+            "/auth/login", data=payload, content_type="application/json"
         )
     else:
         response = client.post("/auth/login", json=payload)
@@ -281,7 +276,7 @@ def test_loginhandles_jwp_encoding_error(client, seeded_user_in_db):
     _ = seeded_user_in_db
     login_credentials = {
         "email": "testuser@example.com",
-        "password": "a-secure-password"
+        "password": "a-secure-password",
     }
     # Patch jwt.encode() to be a mock
     with patch("app.routes.auth_routes.jwt.encode") as mock_jwt_encode:

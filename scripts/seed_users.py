@@ -1,7 +1,7 @@
 """Seeding user_data script"""
 
-import os
 import json
+import os
 
 import bcrypt
 

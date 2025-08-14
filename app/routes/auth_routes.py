@@ -2,12 +2,13 @@
 """Routes for authorization for the JWT upgrade"""
 
 import datetime
+
 import jwt
 from email_validator import EmailNotValidError, validate_email
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, current_app, jsonify, request
 from werkzeug.exceptions import BadRequest
 
-from app.extensions import mongo, bcrypt
+from app.extensions import bcrypt, mongo
 
 auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
 
@@ -57,7 +58,7 @@ def register_user():
         {
             "email": email,
             # The hash is stored as a string in the DB
-            "password": hashed_password
+            "password": hashed_password,
         }
     ).inserted_id
 
@@ -95,17 +96,20 @@ def login_user():
 
     # 4. Generate the JWT payload
     payload = {
-        "sub": str(user["_id"]), # sub (subject)- standard claim for user ID
-        "iat": datetime.datetime.now(datetime.UTC), # iat (issued at)- when token was created
-        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=24) # expiration
+        "sub": str(user["_id"]),  # sub (subject)- standard claim for user ID
+        "iat": datetime.datetime.now(
+            datetime.UTC
+        ),  # iat (issued at)- when token was created
+        "exp": datetime.datetime.now(datetime.UTC)
+        + datetime.timedelta(hours=24),  # expiration
     }
 
     # 5. Encode the token with our app's SECRET_KEY
     try:
         token = jwt.encode(
             payload,
-            current_app.config['SECRET_KEY'],
-            algorithm="HS256" # the standard signing algorithm
+            current_app.config["SECRET_KEY"],
+            algorithm="HS256",  # the standard signing algorithm
         )
         return jsonify({"token": token}), 200
     except jwt.PyJWTError:

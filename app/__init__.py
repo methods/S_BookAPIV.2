@@ -6,7 +6,7 @@ from flask import Flask
 from flask_pymongo import PyMongo
 
 from app.config import Config
-from app.extensions import mongo, bcrypt
+from app.extensions import bcrypt, mongo
 
 
 def create_app(test_config=None):

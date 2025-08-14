@@ -6,9 +6,9 @@ This file contains shared fixtures and helpers that are automatically discovered
 """
 from unittest.mock import patch
 
+import bcrypt
 import mongomock
 import pytest
-import bcrypt
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
@@ -138,11 +138,11 @@ def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
         users_collection.delete_many({})
 
 
-
 TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
 PLAIN_PASSWORD = "a-secure-password"
 
-@pytest.fixture(scope="session") # because this data never changes
+
+@pytest.fixture(scope="session")  # because this data never changes
 def mock_user_data():
     """Provides a dictionary of a test user's data, with a hashed password."""
     # USe Flask-Bcrypt's fucntion to CREATE the hash.
@@ -151,12 +151,14 @@ def mock_user_data():
     return {
         "_id": TEST_USER_ID,
         "email": "testuser@example.com",
-        "password": hashed_password  
+        "password": hashed_password,
     }
 
 
 @pytest.fixture
-def seeded_user_in_db(test_app, mock_user_data, users_db_setup): # pylint: disable=redefined-outer-name
+def seeded_user_in_db(
+    test_app, mock_user_data, users_db_setup
+):  # pylint: disable=redefined-outer-name
     """
     Ensures the test database is clean and contains exactly one predefined user.
     Depends on:
