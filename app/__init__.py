@@ -6,7 +6,7 @@ from flask import Flask
 from flask_pymongo import PyMongo
 
 from app.config import Config
-from app.extensions import mongo
+from app.extensions import bcrypt, mongo
 
 
 def create_app(test_config=None):
@@ -20,6 +20,8 @@ def create_app(test_config=None):
 
     # Connect Pymongo to our specific app instance
     mongo.init_app(app)
+    # Connect Flask-BCrypt
+    bcrypt.init_app(app)
 
     # Import blueprints inside the factory
     from app.routes.auth_routes import \
