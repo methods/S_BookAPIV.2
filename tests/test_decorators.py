@@ -7,7 +7,10 @@ To test the decorator in isolation, we'll create a tiny, temporary Flask app ins
 This app will have a single, simple route that does nothing but apply our decorator. 
 This way, we know that any success or failure is due to the decorator itself, not other application code. # pylint: disable=line-too-long
 """
+
+from unittest.mock import patch
 import pytest
+import jwt
 from flask import Flask, g, jsonify
 
 from app.utils.decorators import require_jwt
@@ -70,7 +73,6 @@ def test_require_jwt_malformed_header(client, auth_header):
     WHEN the Authorization header is malformed
     THEN it should return a 401 Unauthorized error
     """
-
     # Act
     response = client.get("/protected", headers= {"Authorization": auth_header})
     data = response.get_json()
@@ -78,3 +80,39 @@ def test_require_jwt_malformed_header(client, auth_header):
     # Assert
     assert response.status_code == 401
     assert data["error"] == "Malformed Authorization header"
+
+
+def test_require_jwt_expired_signature_error(client, monkeypatch):
+    """
+    GIVEN a request to a protected endpoint
+    WHEN jwt.decode raises ExpiredSignatureError
+    THEN it should return a 401 expiration error
+    """
+    # Arrange: patch jwt.decode where the decorator imports it
+    def fake_decode(*args, **kwargs):
+        raise jwt.ExpiredSignatureError()
+
+    monkeypatch.setattr("app.utils.decorators.jwt.decode", fake_decode)
+
+    # Act: send a request with any Bearer token
+    response = client.get("/protected", headers={"Authorization": "Bearer expired-token"})
+    data = response.get_json()
+
+    # Assert
+    assert response.status_code == 401
+    assert data["error"] == "Token has expired"
+
+
+def test_require_jwt_invalid_token_error(client):
+    """
+    GIVEN a request to a protected endpoint
+    WHEN jwt.decode raises InvalidTokenError
+    THEN it should return a 401 invalid token error
+    """
+    with patch("app.utils.decorators.jwt.decode", side_effect=jwt.InvalidTokenError()):
+        response = client.get("/protected", headers={"Authorization": "Bearer invalid-token"})
+        data = response.get_json()
+
+        assert response.status_code == 401
+        assert data is not None
+        assert data["error"] == "Invalid token. Please log in again."
