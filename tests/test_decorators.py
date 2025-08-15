@@ -47,6 +47,32 @@ def client():
         yield test_client
 
 
+def test_require_jwt_valid_token(client):
+    """
+    GIVEN a request to a protected endpoint
+    WHEN the Authorization header contains a valid JWT
+    THEN it should succeed and the route should have access to the user in g.current_user
+    """
+    # Arrange
+    # 1. Create a dummy user ID
+    user_id = ObjectId()
+    dummy_user = {"_id": user_id, "email": "test@example.com"}
+
+    # Mock the database call
+    with patch("app.extensions.mongo.db.users.find_one", return_value=dummy_user), \
+         patch("app.utils.decorators.jwt.decode", return_value={"sub": str(user_id)}):
+
+        token = "valid-token"
+        response = client.get(
+            "/protected",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        data = response.get_json()
+
+        assert response.status_code == 200
+        assert data["email"] == dummy_user["email"]
+
+
 def test_require_jwt_authorization_header_missing(client):
     """
     GIVEN a request to a protected endpoint
