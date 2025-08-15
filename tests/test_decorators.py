@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 """
 Test suite for decorators
 
@@ -38,3 +39,42 @@ def client():
     app.add_url_rule("/protected", view_func=protected_route)
     with app.test_client() as test_client:
         yield test_client
+
+
+def test_require_jwt_authorization_header_missing(client):
+    """
+    GIVEN a request to a protected endpoint
+    WHEN the Authorization header is missing
+    THEN it should return a 401 Unauthorized error
+    """
+    # Act
+    response = client.get("/protected")
+    data = response.get_json()
+
+    # Assert
+    assert response.status_code == 401
+    assert data["error"] == "Authorization header missing"
+
+@pytest.mark.parametrize(
+    "auth_header",
+    [
+        "Bearer",          # Just the word "Bearer"
+        "Token 12345",     # Wrong schema word ("Token" instead of "Bearer")
+        "Bearer token1 token2", # Too many parts
+        "JustAToken",      # Only one part
+    ],
+)
+def test_require_jwt_malformed_header(client, auth_header):
+    """
+    GIVEN a request to a protected endpoint
+    WHEN the Authorization header is malformed
+    THEN it should return a 401 Unauthorized error
+    """
+
+    # Act
+    response = client.get("/protected", headers= {"Authorization": auth_header})
+    data = response.get_json()
+
+    # Assert
+    assert response.status_code == 401
+    assert data["error"] == "Malformed Authorization header"
