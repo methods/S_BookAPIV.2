@@ -1,3 +1,4 @@
+# pylint: disable=too-many-return-statements
 """..."""
 import functools
 import jwt
