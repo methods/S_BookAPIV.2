@@ -75,6 +75,7 @@ def test_app():
             "TESTING": True,
             "TRAP_HTTP_EXCEPTIONS": True,
             "API_KEY": "test-key-123",
+            "SECRET_KEY": "a-secure-key-for-testing-only",
             "MONGO_URI": "mongodb://localhost:27017/",
             "DB_NAME": "test_database",
             "COLLECTION_NAME": "test_books",
