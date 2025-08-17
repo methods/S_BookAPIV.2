@@ -108,7 +108,7 @@ def login_user():
     try:
         token = jwt.encode(
             payload,
-            current_app.config["SECRET_KEY"],
+            current_app.config.get("SECRET_KEY", "a-secure-key-for-testing-only"),
             algorithm="HS256",  # the standard signing algorithm
         )
         return jsonify({"token": token}), 200
