@@ -145,7 +145,7 @@ PLAIN_PASSWORD = "a-secure-password"
 @pytest.fixture(scope="session")  # because this data never changes
 def mock_user_data():
     """Provides a dictionary of a test user's data, with a hashed password."""
-    # USe Flask-Bcrypt's fucntion to CREATE the hash.
+    # Use Flask-Bcrypt's function to CREATE the hash.
     hashed_password = bcrypt.generate_password_hash(PLAIN_PASSWORD).decode("utf-8")
 
     return {

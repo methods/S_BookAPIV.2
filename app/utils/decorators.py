@@ -1,5 +1,7 @@
 # pylint: disable=too-many-return-statements
-"""..."""
+"""
+This module provides decorators for Flask routes, including JWT authentication.
+"""
 import functools
 import jwt
 from flask import current_app, g, jsonify, request
@@ -9,8 +11,9 @@ from app.extensions import mongo
 
 
 def require_jwt(f):
-    """Protect route with JWT. Verifies 'Authorization: Bearer <token>' header,
-    decodes token, checks expiration/signature, loads user and attaches it as g.current_user.
+    """Protects routes by verifying JWT tokens in the
+    'Authorization: Bearer <token>' header, decoding and validating the token,
+    and attaching the authenticated user to the request context.
     """
 
     @functools.wraps(f)
@@ -31,7 +34,7 @@ def require_jwt(f):
         try:
             payload = jwt.decode(
                 token,
-                current_app.config["SECRET_KEY"],
+                current_app.config.get("SECRET_KEY", "a-secure-key-for-testing-only"),
                 algorithms=["HS256"],
                 # options={"require": ["exp", "sub"]}  # optional: force required claims
             )

@@ -2,7 +2,7 @@
 """
 Test suite for decorators
 
-To test the decorator in isolation, we'll create a tiny, temporary Flask app inside out test file. 
+To test the decorator in isolation, we'll create a tiny, temporary Flask app inside our test file. 
 
 This app will have a single, simple route that does nothing but apply our decorator. 
 This way, we know that any success or failure is due to the decorator itself, not other application code. # pylint: disable=line-too-long

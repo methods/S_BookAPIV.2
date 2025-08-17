@@ -266,7 +266,7 @@ def test_login_user_fails_with_missing_data(client, payload, expected_message):
     assert data["error"] == expected_message
 
 
-def test_loginhandles_jwp_encoding_error(client, seeded_user_in_db):
+def test_login_handles_jwp_encoding_error(client, seeded_user_in_db):
     """
     GIVEN a valid user is logging in
     WHEN the internal PyJWT library fails to encode the token
@@ -280,7 +280,7 @@ def test_loginhandles_jwp_encoding_error(client, seeded_user_in_db):
     }
     # Patch jwt.encode() to be a mock
     with patch("app.routes.auth_routes.jwt.encode") as mock_jwt_encode:
-        # Configure the mosk to raise the specific exception we want to test
+        # Configure the mock to raise the specific exception we want to test
         mock_jwt_encode.side_effect = jwt.PyJWTError("Simulated library error")
 
         # Act
