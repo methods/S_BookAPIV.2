@@ -5,11 +5,9 @@ from unittest.mock import ANY, MagicMock, patch
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
 
-from tests.test_data import HEADERS, DUMMY_PAYLOAD
-
 from app import routes
 from app.datastore.mongo_db import get_book_collection
-
+from tests.test_data import DUMMY_PAYLOAD, HEADERS
 
 # Mock book database object
 books_database = [
@@ -79,9 +77,15 @@ def test_add_book_creates_and_returns_new_book(client, _insert_book_to_db, monke
     mock_insert_helper = MagicMock(return_value=mock_insert_result)
 
     # Apply all the patches
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
-    monkeypatch.setattr("app.routes.insert_book_to_mongo", mock_insert_helper)
-    monkeypatch.setattr("app.routes.append_hostname", lambda book, host: book)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.insert_book_to_mongo", mock_insert_helper
+    )
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.append_hostname", lambda book, host: book
+    )
 
     # Define the valid headers, including the API key that matches conftest.py
     valid_headers = {"X-API-KEY": "test-key-123"}
@@ -174,7 +178,10 @@ def test_500_response_is_json(client):
     error_message = "An unexpected error occurred"
 
     # Use patch to mock uuid module failing and throwing an exception
-    with patch("app.routes.insert_book_to_mongo", side_effect=Exception(error_message)):
+    with patch(
+        "app.routes.legacy_routes.insert_book_to_mongo",
+        side_effect=Exception(error_message),
+    ):
         response = client.post("/books", json=test_book, headers=valid_headers)
 
         # ASSERT
@@ -187,8 +194,8 @@ def test_500_response_is_json(client):
 # ------------------------ Tests for GET --------------------------------------------
 
 
-@patch("app.routes.format_books_for_api")
-@patch("app.routes.fetch_active_books")
+@patch("app.routes.legacy_routes.format_books_for_api")
+@patch("app.routes.legacy_routes.fetch_active_books")
 def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
 
     mock_books_list = MagicMock()
@@ -218,7 +225,7 @@ def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
     mock_format.assert_called_once_with(mock_books_list, "http://localhost")
 
 
-@patch("app.routes.fetch_active_books")
+@patch("app.routes.legacy_routes.fetch_active_books")
 def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
 
     bad_raw_data = [
@@ -245,7 +252,7 @@ def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
     mock_fetch.assert_called_once()
 
 
-@patch("app.routes.fetch_active_books")
+@patch("app.routes.legacy_routes.fetch_active_books")
 def test_get_all_books_returns_error_404_when_list_is_empty(mock_fetch, client):
     empty_data = []
     mock_fetch.return_value = empty_data
@@ -254,7 +261,7 @@ def test_get_all_books_returns_error_404_when_list_is_empty(mock_fetch, client):
     assert "No books found" in response.get_json()["error"]
 
 
-@patch("app.routes.fetch_active_books")
+@patch("app.routes.legacy_routes.fetch_active_books")
 def test_get_book_returns_404_when_books_is_none(mock_fetch, client):
     none_data = None
     mock_fetch.return_value = none_data
@@ -382,7 +389,9 @@ def test_get_book_happy_path_unit_test(client, monkeypatch):
     mock_collection.find_one.return_value = fake_book_from_db
 
     # use monkeypatch to replace the get_book_collection
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
     # ACT
     get_response = client.get(f"/books/{fake_book_id_str}")
@@ -461,7 +470,9 @@ def test_get_book_not_found_returns_404(client, monkeypatch):
     # Mock the collection to return None (book not in DB)
     mock_collection = MagicMock()
     mock_collection.find_one.return_value = None
-    monkeypatch.setattr(routes, "get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        routes.legacy_routes, "get_book_collection", lambda: mock_collection
+    )
 
     # ACT: Test GET request using invalid book ID
     response = client.get(f"/books/{valid_id_str}")
@@ -480,7 +491,7 @@ def test_book_database_is_initialized_for_specific_book_route(client, monkeypatc
     valid_id = ObjectId()
     valid_id_str = str(valid_id)
 
-    monkeypatch.setattr(routes, "get_book_collection", lambda: None)
+    monkeypatch.setattr(routes.legacy_routes, "get_book_collection", lambda: None)
 
     response = client.get(f"/books/{valid_id_str}")
     assert response.status_code == 500
@@ -495,7 +506,9 @@ def test_get_book_returns_404_if_state_equals_deleted(client, monkeypatch):
     # Mock the collection to return None (book state deleted)
     mock_collection = MagicMock()
     mock_collection.find_one.return_value = None
-    monkeypatch.setattr(routes, "get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        routes.legacy_routes, "get_book_collection", lambda: mock_collection
+    )
 
     response = client.get(f"/books/{valid_id_str}")
     assert response.status_code == 404
@@ -524,13 +537,16 @@ def test_book_is_soft_deleted_on_delete_request(client):
 
     This test verifies the integration between the Flask route and the data layer.
     """
-    with patch("app.routes.delete_book_by_id") as mock_delete_helper:
+    with patch("app.routes.legacy_routes.delete_book_by_id") as mock_delete_helper:
         # Arrange
         # Configure the mock to simulate a successful deletion
         mock_delete_helper.return_value = {"_id": VALID_OID_STRING}
 
         # Mock get_book_collection to avoid a real DB connection
-        with patch("app.routes.get_book_collection", return_value="fake_collection"):
+        with patch(
+            "app.routes.legacy_routes.get_book_collection",
+            return_value="fake_collection",
+        ):
             # --- Act ---
             # Send the DELETE request using a valid API header.
             headers = {"X-API-KEY": "test-key-123"}
@@ -561,7 +577,9 @@ def test_delete_invalid_book_id(client):
     invalid_id = "1234-this-is-not-a-valid-id"
 
     # Mock get_book_collection to avoid a real DB connection
-    with patch("app.routes.get_book_collection", return_value="fake_collection"):
+    with patch(
+        "app.routes.legacy_routes.get_book_collection", return_value="fake_collection"
+    ):
         # --- Act ---
         # Send the DELETE request using a valid API header.
         headers = {"X-API-KEY": "test-key-123"}
@@ -575,7 +593,7 @@ def test_delete_invalid_book_id(client):
 
 
 def test_book_database_is_initialized_for_delete_book_route(client):
-    with patch("app.routes.get_book_collection") as mock_get_collection:
+    with patch("app.routes.legacy_routes.get_book_collection") as mock_get_collection:
         mock_get_collection.return_value = None
 
         headers = {"X-API-KEY": "test-key-123"}
@@ -588,7 +606,7 @@ def test_book_database_is_initialized_for_delete_book_route(client):
 
 
 def test_returns_404_if_helper_function_result_is_none(client):
-    with patch("app.routes.delete_book_by_id") as mock_delete_book:
+    with patch("app.routes.legacy_routes.delete_book_by_id") as mock_delete_book:
         mock_delete_book.return_value = None
 
         headers = {"X-API-KEY": "test-key-123"}
@@ -629,9 +647,9 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     WHEN the response is received
     THEN it should be a 200 OK and the JSON body must contain all required fields.
     """
-    test_book_id = str(ObjectId())
+    test_book_obj_id = str(ObjectId())
 
-    book_doc_from_db = {"_id": ObjectId(test_book_id), **DUMMY_PAYLOAD}
+    book_doc_from_db = {"_id": ObjectId(test_book_obj_id), **DUMMY_PAYLOAD}
 
     # Create and configure our mock collection
     mock_collection = MagicMock()
@@ -639,12 +657,14 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
     mock_collection.find_one.return_value = book_doc_from_db
 
     # Patch the function that provides the database collection
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
     # ACT
     # Send the PUT request to the endpoint
     response = client.put(
-        f"/books/{test_book_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
+        f"/books/{test_book_obj_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
     )
 
     # Assert
@@ -657,7 +677,7 @@ def test_update_book_response_contains_all_required_fields(monkeypatch, client):
             field in response_data
         ), f"Required field '{field}' is missing from the response"
 
-    assert response_data["id"] == test_book_id
+    assert response_data["id"] == test_book_obj_id
     assert isinstance(response_data["links"], dict)
 
 
@@ -680,7 +700,9 @@ def test_update_book_replaces_whole_object(monkeypatch, client):
     mock_collection.find_one.return_value = book_doc_after_put
 
     # Inject our mock into the application.
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
     # ACT
     response = client.put(
@@ -711,7 +733,9 @@ def test_update_book_sent_with_invalid_book_id(monkeypatch, client):
 
     # Simulate a failed replacement by setting matched_count to 0.
     mock_collection.replace_one.return_value.matched_count = 0
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: mock_collection)
+    monkeypatch.setattr(
+        "app.routes.legacy_routes.get_book_collection", lambda: mock_collection
+    )
 
     response = client.put(
         f"/books/{non_existent_id}", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"]
@@ -726,7 +750,7 @@ def test_update_book_sent_with_invalid_book_id(monkeypatch, client):
 
 
 def test_book_database_is_initialized_for_update_book_route(monkeypatch, client):
-    monkeypatch.setattr("app.routes.get_book_collection", lambda: None)
+    monkeypatch.setattr("app.routes.legacy_routes.get_book_collection", lambda: None)
     response = client.put("/books/123", json=DUMMY_PAYLOAD, headers=HEADERS["VALID"])
     assert response.status_code == 500
     response_data = response.get_json()
@@ -768,21 +792,20 @@ def test_update_book_sent_with_missing_required_fields(client):
     expected_error = "Missing required fields: synopsis, title"
     assert response_data["error"] == expected_error
 
+
 def test_update_book_fails_with_malformed_json_body(client):
     # --- ARRANGE ---
     malformed_json_string = '{"title": "A Test Book", }'
 
     headers_with_bad_body = {
         "Content-Type": "application/json",
-        "X-API-KEY": "test-key-123" 
+        "X-API-KEY": "test-key-123",
     }
     # --- ACT ---
     # Use the `data` argument to send the raw, broken string.
     # If we used `json=`, the test client would fix it for us!
     response = client.put(
-        "/books/some_id", 
-        data=malformed_json_string,
-        headers=headers_with_bad_body
+        "/books/some_id", data=malformed_json_string, headers=headers_with_bad_body
     )
     # --- ASSERT ---
     assert response.status_code == 400
@@ -798,15 +821,15 @@ def test_update_book_fails_with_wrong_content_type(client):
     """
     # --- ARRANGE ---
     headers_with_wrong_type = {
-        "Content-Type": "text/plain", # The wrong type
-        "X-API-KEY": "test-key-123"
+        "Content-Type": "text/plain",  # The wrong type
+        "X-API-KEY": "test-key-123",
     }
 
     # --- ACT ---
     response = client.put(
         "/books/some_id",
         data="This is just plain text",
-        headers=headers_with_wrong_type
+        headers=headers_with_wrong_type,
     )
 
     # --- ASSERT ---

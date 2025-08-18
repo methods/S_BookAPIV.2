@@ -191,7 +191,7 @@ def test_validate_payload_fails_with_extra_fields():
         "title": "Valid Title",
         "author": "Valid Author",
         "synopsis": "A valid synopsis.",
-        "rating": 5  # This is the unexpected, extra field
+        "rating": 5,  # This is the unexpected, extra field
     }
 
     is_valid, error_dict = validate_book_put_payload(payload_with_extra_field)
@@ -203,6 +203,7 @@ def test_validate_payload_fails_with_extra_fields():
     expected_error_message = "Unexpected fields provided: rating"
     assert error_dict["error"] == expected_error_message
 
+
 def test_validate_payload_fails_with_multiple_extra_fields():
     """
     GIVEN a payload with multiple extra fields
@@ -213,8 +214,8 @@ def test_validate_payload_fails_with_multiple_extra_fields():
         "title": "Valid Title",
         "author": "Valid Author",
         "synopsis": "A valid synopsis.",
-        "year": 2024,          # Extra field
-        "isbn": "123-456"      # Extra field
+        "year": 2024,  # Extra field
+        "isbn": "123-456",  # Extra field
     }
 
     is_valid, error_dict = validate_book_put_payload(payload_with_extra_fields)

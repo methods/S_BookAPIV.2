@@ -80,8 +80,9 @@ To use the API, you first need to populate the database with some initial data.
 | Command        | Description                                                                 |
 |----------------|-----------------------------------------------------------------------------|
 | `make db-setup`| **(Recommended)** Resets the database. Runs `db-clean` and then `db-seed`. |
-| `make db-seed` | Populates the database with the contents of `scripts/books.json`.           |
+| `make db-seed` | Populates the database with the contents of `scripts/test_data/books.json`.           |
 | `make db-clean`| Deletes all documents from the 'books' collection. Useful for starting fresh. |
+| `make seed-users`| *** THIS IS WIP right now: The user data is required for the JWT authentication system. ***  Populates the database with initial user data for authentication from `scripts/test_data/sample_user_data.json`. |
 
 To perform a full database reset, run:
 ```bash
