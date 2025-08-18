@@ -6,11 +6,13 @@ This file contains shared fixtures and helpers that are automatically discovered
 """
 from unittest.mock import patch
 
+import bcrypt
 import mongomock
 import pytest
 
-from app import create_app, mongo
+from app import create_app
 from app.datastore.mongo_db import get_book_collection
+from app.extensions import bcrypt, mongo
 
 
 @pytest.fixture(name="_insert_book_to_db")
@@ -73,6 +75,7 @@ def test_app():
             "TESTING": True,
             "TRAP_HTTP_EXCEPTIONS": True,
             "API_KEY": "test-key-123",
+            "SECRET_KEY": "a-secure-key-for-testing-only",
             "MONGO_URI": "mongodb://localhost:27017/",
             "DB_NAME": "test_database",
             "COLLECTION_NAME": "test_books",
@@ -134,3 +137,41 @@ def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
     with test_app.app_context():
         users_collection = mongo.db.users
         users_collection.delete_many({})
+
+
+TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
+PLAIN_PASSWORD = "a-secure-password"
+
+
+@pytest.fixture(scope="session")  # because this data never changes
+def mock_user_data():
+    """Provides a dictionary of a test user's data, with a hashed password."""
+    # Use Flask-Bcrypt's function to CREATE the hash.
+    hashed_password = bcrypt.generate_password_hash(PLAIN_PASSWORD).decode("utf-8")
+
+    return {
+        "_id": TEST_USER_ID,
+        "email": "testuser@example.com",
+        "password": hashed_password,
+    }
+
+
+@pytest.fixture
+def seeded_user_in_db(
+    test_app, mock_user_data, users_db_setup
+):  # pylint: disable=redefined-outer-name
+    """
+    Ensures the test database is clean and contains exactly one predefined user.
+    Depends on:
+    - test_app: To get the application context and correct mongo.db object
+    - mock_user_data: To get the user data to insert.
+    - users_db_Setup: To ensure the users collection is empty before seeding.
+    """
+    _ = users_db_setup
+
+    with test_app.app_context():
+        mongo.db.users.insert_one(mock_user_data)
+
+    # yield the user data in case a test needs it
+    # but often we just need the side-effect of the user being in the DB
+    yield mock_user_data

@@ -1,7 +1,7 @@
 """Seeding user_data script"""
 
-import os
 import json
+import os
 
 import bcrypt
 
@@ -39,7 +39,7 @@ def seed_users(users_to_seed: list) -> str:
 
         # insert to new user
         mongo.db.users.insert_one(
-            {"email": email, "password_hash": hashed_password.decode("utf-8")}
+            {"email": email, "password": hashed_password.decode("utf-8")}
         )
         count += 1
         print(f"Created user: {email}")
