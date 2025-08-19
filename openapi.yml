@@ -200,6 +200,22 @@ components:
         user:
           $ref: '#/components/schemas/User'
 
+    # Schema for the PUT /reservations/{res_id} request body
+    ReservationUpdateInput:
+      type: object
+      description: The fields required to fully update a reservation. 
+      required:
+        - user
+        - reservationDate
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        reservationDate:
+          type: string
+          format: date-time
+          description: The new timestamp for the reservation.
+          example: "2023-10-28T12:00:00Z"
+
     # Schema for the full Reservation object returned by the API
     ReservationOutput:
       type: object
@@ -482,8 +498,6 @@ paths:
                 error: "Request must have Content-Type: application/json"
         '500':
           $ref: '#/components/responses/InternalServerError'
-
-    # --------------------------------------------
     
     delete:
       tags:
@@ -600,6 +614,69 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError' 
+
+    put:
+      tags: 
+        - Reservations
+      summary: Update a reservation
+      security:
+        - bearerAuth: []
+      description: Updates an existing reservation by its ID. 
+        This is a full replacement operation (HTTP PUT), so the request body must contain all updatable fields for the reservation.
+      operationId: updateReservationById
+      requestBody:
+        description: A complete Reservation object with the updated details.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdateInput'
+      responses:
+        '200':
+          description: Reservation updated successfully. Returns the full updated reservation object.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationOutput'
+        '400':
+          description: Bad Request. The request body is invalid or the ID format is incorrect.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              example:
+                error:
+                  code: 400
+                  name: "Bad Request"
+                  message: "Invalid ID format or missing required fields in the request body."
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Forbidden. The authenticated user does not have permission to update this reservation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              example:
+                error:
+                  code: 403
+                  name: "Forbidden"
+                  message: "You are not authorized to perform this action."
+        '404':
+          description: The book or reservation to be updated was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardError'
+              example:
+                error:
+                  code: 404
+                  name: "Not Found"
+                  message: "The reservation you are trying to update does not exist."
+        '415':
+          $ref: '#/components/responses/UnsupportedMediaType'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
     delete:
       tags:
