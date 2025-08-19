@@ -366,15 +366,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookListResponse'
-                properties:
-                  total_count:
-                    type: integer
-                    description: The number of books returned.
-                    example: 3
-                  items:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/BookOutput'
         '404':
           $ref: '#/components/responses/NotFound' 
         '500':
@@ -536,33 +527,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReservationOutput' 
         '400':
-          description: Bad Request. The request body is invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         '401':
-          description: Authentication has failed.
+          $ref: '#/components/responses/Unauthorized' 
         '404':
-          description: A book with the specified ID was not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
-              example:
-                error: "Book not found"
+          $ref: '#/components/responses/NotFound'
         '415':
-          description: Unsupported media type.
+          $ref: '#/components/responses/UnsupportedMediaType' 
         '500':
-          description: Internal Server Error. 
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleError'
-              example:
-                error: "Datbase Connection Error"
+          $ref: '#/components/responses/InternalServerError'
         '503':
-          description: Service Unavailable
+          $ref: '#/components/responses/ServiceUnavailable'
 
     # ----------------------------------------
     get:
@@ -700,11 +675,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/RegistrationSuccess'
         '400':
-          description: Bad Request. The request body is missing, not valid JSON, or is missing required fields. # this is line 703
+          description: Bad Request. The request body is missing, not valid JSON, or is missing required fields.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SimpleError'
+                $ref: '#/components/responses/BadRequest'
         '409':
           description: Conflict. The provided email is already registered.
           content:
