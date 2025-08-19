@@ -181,7 +181,7 @@ components:
   # ------- Reservation schemas ----------
 
     # Schema for what a User looks like 
-    User: # This is just a WIP
+    User:
       type: object
       properties:
         userId:
@@ -281,41 +281,71 @@ components:
   # API Error: Reusable responses for common errors  
   responses:
     BadRequest:
-      description: The server could not process the request due to a client error (e.g., malformed request syntax, invalid request message framing, or deceptive request routing).
+      description: The server could not process the request due to a client error (e.g., malformed request syntax).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 400
+              name: "Bad Request"
+              message: "The request syntax was invalid or the payload is missing required fields."
     Unauthorized:
-      description: API key is missing or invalid.
+      description: Authentication credentials are missing or invalid.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 401
+              name: "Unauthorized"
+              message: "Authentication credentials were not provided or are invalid."
     NotFound:
       description: The requested resource could not be found.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 404
+              name: "Not Found"
+              message: "The requested resource could not be located."
     UnsupportedMediaType:
-      description: The request payload is not in the expected format (e.g., not JSON).
+      description: The request payload is not in the expected format (e.g., not application/json).
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 415
+              name: "Unsupported Media Type"
+              message: "The payload format is unsupported. Please use 'application/json'."
     ServiceUnavailable:
       description: The service is temporarily unavailable, likely due to a database connection issue or server maintenance.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 503
+              name: "Service Unavailable"
+              message: "The server is temporarily unavailable. Please try again later."
     InternalServerError:
       description: An unexpected error occurred on the server.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/StandardError'
+          example:
+            error:
+              code: 500
+              name: "Internal Server Error"
+              message: "An unexpected condition was encountered on the server."
 # --------------------------------------------
 
 # Paths
@@ -410,14 +440,7 @@ paths:
               example:
                 error: "Book not found" 
         '500':
-          description: |-
-            Service Unavailable. The server cannot connect to the database.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleError'
-              example:
-                error: "Book collection not found" 
+          $ref: '#/components/responses/InternalServerError'
      # --------------------------------------------
 
     put:
@@ -458,13 +481,7 @@ paths:
               example:
                 error: "Request must have Content-Type: application/json"
         '500':
-          description: An internal server error occurred, likely related to the database connection.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleError'
-              example:
-                error: "Book collection not initialized"
+          $ref: '#/components/responses/InternalServerError'
 
     # --------------------------------------------
     
@@ -491,13 +508,7 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized' 
         '404':
-          description: A book with the specified ID was not found or was already deleted.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
-              example:
-                error: "Book not found"
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError' 
 
@@ -554,22 +565,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReservationsOutput'
         '404':
-          description: A book with the specified ID was not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
-              example:
-                error: "Book not found"
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: |-
-            Service Unavailable. The server cannot connect to the database.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SimpleError'
-              example:
-                error: "Database connection error" 
+          $ref: '#/components/responses/InternalServerError'
 
   # ----------------------------------------
   /books/{book_id}/reservations/{res_id}:
@@ -598,23 +596,10 @@ paths:
                 $ref: '#/components/schemas/SimpleError'
               example:
                 error: "Invalid book/reservation ID format"
-        '404': 
-          description: A book or reservation with the specified ID was not found.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/NotFound'
-              example:
-                error: "Reservation not found" 
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
-          description: |-
-            Service Unavailable. The server cannot connect to the database.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/responses/InternalServerError'
-              example:
-                error: "Database connection error" 
+          $ref: '#/components/responses/InternalServerError' 
 
     delete:
       tags:
@@ -622,7 +607,7 @@ paths:
       summary: Delete a reservation by {res_id}.
       security: 
         - bearerAuth: []
-      description: Hard deletes a specific book reservation by reservation ID{res_id}. It is a HARD delete.
+      description: Hard deletes a specific book reservation by reservation ID {res_id}. It is a HARD delete.
       operationId: deleteReservationById
       responses:
         '204':
