@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name
 """..."""
 
 import pytest
@@ -28,6 +29,28 @@ def client_with_book(test_app):
         mongo.db.reservations.delete_many({})
 
 
+@pytest.mark.parametrize("payload, expected_message",
+    [
+        ("invalid!!", "Invalid Book ID"),
+        ("", "Book ID is required")
+    ]
+)
+def test_reservation_with_missing_or_invalid_book_id(payload, expected_message, client_with_book):
+    """
+    GIVEN a Flask app with a pre-existing book in the mock DB
+    WHEN a POST request is made to /books/<book_id>/reservations without a book_id_str argument
+    THEN a 400 status code is returned.
+    """
+    _ = client_with_book
+
+    # Act
+    response = client_with_book.post(
+        f'/books/{payload}/reservations',
+        json={"forenames": "Firstname", "surname": "Tester"}
+    )
+    assert response.status_code == 400
+    data = response.get_json()
+    assert data["error"] == expected_message
 
 def test_create_reservation_success(client_with_book):
     """
