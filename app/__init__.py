@@ -1,3 +1,4 @@
+# pylint: disable=import-outside-toplevel
 """Initialize the Flask app and register all routes."""
 
 import os
@@ -25,12 +26,15 @@ def create_app(test_config=None):
 
     # Import blueprints inside the factory
     from app.routes.auth_routes import \
-        auth_bp  # pylint: disable=import-outside-toplevel
+        auth_bp
     from app.routes.legacy_routes import \
-        register_legacy_routes  # pylint: disable=import-outside-toplevel
+        register_legacy_routes
+    from app.routes.reservation_routes import \
+        reservations_bp
 
     # Register routes with app instance
     register_legacy_routes(app)
     app.register_blueprint(auth_bp)
+    app.register_blueprint(reservations_bp)
 
     return app
