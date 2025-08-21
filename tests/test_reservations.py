@@ -68,3 +68,24 @@ def test_reservation_for_nonexistant_book(client_with_book):
     assert response.status_code == 404
     data = response.get_json()
     assert data is not None
+
+def test_create_reservation_success(client_with_book):
+    """
+    GIVEN a Flask app with a pre-existing book in the mock DB
+    WHEN a POST request is made to /books/<book_id>/reservations with valid data
+    THEN a 201 status code is returned with the new reservation data
+    """
+    _ = client_with_book
+    # Arrange
+    book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
+
+    # Act
+    response = client_with_book.post(
+        f'/books/{book_id}/reservations',
+        json={"forenames": "Firstname", "surname": "Tester"}
+    )
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['state'] == 'reserved'
+    assert data['user']['forenames'] == 'Firstname'
+    assert data['user']['surname'] == 'Tester'
