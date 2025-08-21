@@ -31,8 +31,9 @@ def create_reservation(book_id_str):
     # check payload exists & is JSON
     try:
         data = request.get_json()
-        if not data:
-            return jsonify({"message": "Request body cannot be empty"}), 400
+
+        if not isinstance(data, dict) or not data:
+            return jsonify({"error": "Request body must be a non-empty JSON object"}), 400
 
         errors = {}
         if "forenames" not in data or not isinstance(data.get("forenames"), str):
