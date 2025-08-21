@@ -15,8 +15,6 @@ def create_reservation(book_id_str):
     """..."""
 
     # ---------- VALIDATION 1 - check payload has valid id - mongoDB id shape
-    if not book_id_str:
-        return jsonify({"error": "Book ID is required"}), 400
 
     try:
         # convert string to an ObjectId
