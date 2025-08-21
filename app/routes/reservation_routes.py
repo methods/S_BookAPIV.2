@@ -69,7 +69,7 @@ def create_reservation(book_id_str):
             "surname": surname
         },
         # Add time reservation was made
-        "reservation_date": datetime.datetime.utcnow()
+        "reservation_date": datetime.datetime.now(datetime.UTC)
     }
 
     # Insert new reservation to MongoDb 'reservation' collection
