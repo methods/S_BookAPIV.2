@@ -50,3 +50,21 @@ def test_reservation_with_invalid_book_id(payload, expected_message, client_with
     assert response.status_code == 400
     data = response.get_json()
     assert data["error"] == expected_message
+
+def test_reservation_for_nonexistant_book(client_with_book):
+    """
+    GIVEN a FLASK APP WITH A PRE-EXISTING BOOK
+    WHEN a POST request is made with a valid but non-existent book ID
+    THEN a 404 Not Found statu sis returned
+    """
+    _ = client_with_book
+    non_existent_id = ObjectId()
+
+    response = client_with_book.post(
+        f'/books/{non_existent_id}/reservations',
+        json={"forenames": "Firstname", "surname": "Tester"}
+    )
+
+    assert response.status_code == 404
+    data = response.get_json()
+    assert data is not None
