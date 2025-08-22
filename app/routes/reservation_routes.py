@@ -89,7 +89,7 @@ def create_reservation(book_id_str):
             "self": url_for(".create_reservation", book_id_str=str(book_id), _external=True),
             "book": url_for("get_book", book_id=str(book_id), _external=True)
         },
-        "reservation_doc": reservation_doc["reservation_date"].isoformat()
+        "reservation_date": reservation_doc["reservation_date"].isoformat()
     }
 
     return jsonify(response_data), 201
