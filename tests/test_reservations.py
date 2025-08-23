@@ -40,7 +40,7 @@ def auth_token(client_with_book):
     """
     # Section 1: Get the app context and secret key
     app = client_with_book.application
-    secret_key = app.config.get('SECRET_KEY', 'default-secret-key-for-dev') 
+    secret_key = app.config.get('SECRET_KEY', 'default-secret-key-for-dev')
 
     # Section 2: Define the token's payload
     # This payload should mimic what your real login endpoint would create.
@@ -70,7 +70,12 @@ def auth_token(client_with_book):
         ("invalid!!", "Invalid Book ID"),
     ]
 )
-def test_reservation_with_invalid_book_id(payload, expected_message, client_with_book):
+def test_reservation_with_invalid_book_id(
+    payload,
+    expected_message,
+    client_with_book,
+    auth_token
+    ):
     """
     GIVEN a Flask app with a pre-existing book in the mock DB
     WHEN a POST request is made to /books/<book_id>/reservations without a book_id_str argument
@@ -82,6 +87,7 @@ def test_reservation_with_invalid_book_id(payload, expected_message, client_with
     response = client_with_book.post(
         f'/books/{payload}/reservations',
         json={"forenames": "Firstname", "surname": "Tester"},
+        headers=auth_token
 
     )
     assert response.status_code == 400
@@ -101,7 +107,8 @@ def test_create_reservation_with_bad_payload(
     test_case,
     expected_status,
     expected_message,
-    client_with_book
+    client_with_book,
+    auth_token
 ):
     """
     GIVEN a Flask app with a pre-existing book
