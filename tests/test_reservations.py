@@ -31,7 +31,7 @@ def client_with_book(test_app):
         mongo.db.reservations.delete_many({})
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def auth_token(client_with_book):
     """
     GIVEN a test client
@@ -94,17 +94,16 @@ def test_reservation_with_invalid_book_id(
     data = response.get_json()
     assert data["error"] == expected_message
 
-@pytest.mark.parametrize("test_case, expected_status, expected_message",
+@pytest.mark.parametrize("post_args, expected_status, expected_message",
     [
-        ("no_payload", 415, "Unsupported Media Type"),
-        ("empty_json_object", 400, "Request body must be a non-empty JSON object"),
-        ("null_payload", 400, "Request body must be a non-empty JSON object"),
-        ("invalid_json", 400, "Invalid JSON format"),
-        ("invalid_json", 400, "Invalid JSON format"),
+        ({}, 415, "Unsupported Media Type"),
+        ({"json": {}}, 400, "Request body must be a non-empty JSON object"),
+        ({"data": 'null', "content_type": 'application/json'}, 400, "Request body must be a non-empty JSON object"), # pylint: disable=line-too-long
+        ({"data": '{ "bad" json }', "content_type": 'application/json'}, 400, "Invalid JSON format"),# pylint: disable=line-too-long
     ]
 )
 def test_create_reservation_with_bad_payload(
-    test_case,
+    post_args,
     expected_status,
     expected_message,
     client_with_book,
@@ -119,22 +118,15 @@ def test_create_reservation_with_bad_payload(
     book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
     url = f'/books/{book_id}/reservations'
 
+    # Combine the authorization headers with the arguments for this specific test case
+    # The ** operator unpacks the dictionaries into keyword arguments
+    request_kwargs = {**post_args, "headers": auth_token}
+
     # Act
-    if test_case == "no_payload":
-        response = client_with_book.post(url)
-    elif test_case == "empty_json_object":
-        response = client_with_book.post(url, json={})
-    elif test_case == "null_payload":
-        response = client_with_book.post(url, data='null', content_type='application/json')
-    elif test_case == "invalid_json":
-        response = client_with_book.post(
-            url,
-            data='{ "bad" json }',
-            content_type='application/json'
-        )
+    response = client_with_book.post(url, **request_kwargs)
 
     # Assert
-    assert response.status_code == expected_status # pylint: disable=possibly-used-before-assignment
+    assert response.status_code == expected_status
 
     data = response.get_json()
     if response.status_code == 415:
