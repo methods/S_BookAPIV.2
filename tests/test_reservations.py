@@ -1,10 +1,12 @@
 # pylint: disable=redefined-outer-name
 """..."""
-
-import pytest
+from datetime import datetime, timedelta, timezone
 from bson.objectid import ObjectId
+import pytest
+import jwt
 from app.extensions import mongo
 
+# ------------------- FILE SPECIFIC FIXTURES -----------------
 @pytest.fixture
 def client_with_book(test_app):
     """
@@ -29,6 +31,40 @@ def client_with_book(test_app):
         mongo.db.reservations.delete_many({})
 
 
+@pytest.fixture(scope="module")
+def auth_token(client_with_book):
+    """
+    GIVEN a test client
+    WHEN this fixture is used
+    THEN a valid JWT and Authorization header are generated.
+    """
+    # Section 1: Get the app context and secret key
+    app = client_with_book.application
+    secret_key = app.config.get('SECRET_KEY', 'default-secret-key-for-dev') 
+
+    # Section 2: Define the token's payload
+    # This payload should mimic what your real login endpoint would create.
+    # It includes who the user is and when the token expires.
+    fake_user_id = str(ObjectId())
+    payload = {
+        'sub': fake_user_id,
+        'iat': datetime.now(timezone.utc),  # Issued at
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=15) # Expiration time
+    }
+
+    # Section 3: Encode the token and create the header
+    # PyJWT's encode function creates the token string.
+    token = jwt.encode(payload, secret_key, algorithm="HS256")
+
+    # The HTTP header must be in the format 'Bearer <token>'
+    headers = {
+        'Authorization': f'Bearer {token}'
+    }
+
+    return headers
+
+#            ------------------ TESTS -----------------------
+
 @pytest.mark.parametrize("payload, expected_message",
     [
         ("invalid!!", "Invalid Book ID"),
@@ -45,7 +81,8 @@ def test_reservation_with_invalid_book_id(payload, expected_message, client_with
     # Act
     response = client_with_book.post(
         f'/books/{payload}/reservations',
-        json={"forenames": "Firstname", "surname": "Tester"}
+        json={"forenames": "Firstname", "surname": "Tester"},
+
     )
     assert response.status_code == 400
     data = response.get_json()
