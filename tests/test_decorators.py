@@ -21,28 +21,30 @@ from app.utils import decorators
 # A dummy secret key for testing
 TEST_SECRET_KEY = "test-secret-key"
 
-# Dummy route we'll protect
-@require_jwt
-def protected_route():
-    """
-    A minimal protected route function
-    decorated with require_jwt we are testing
-
-    Returns: the current user's email from g.current_user as JSON
-    The idea is: if the decorator runs and attaches g.current_user, the route will be able to read it and return an email. If the decorator blocks the request (bad/missing token), the route body never runs. # pylint: disable=line-too-long
-    """
-    return jsonify({"email": g.current_user["email"]})
 
 @pytest.fixture
 def client():
     """
-    Creates a minimal app and
-    a test client
+    Creates a minimal, isolated Flask app for unit testing the decorator.
+    This is separate from the main app fixture in conftest.py.
     """
+    # 1. Create a minimal Flask application
     app = Flask(__name__)
-    app.config["SECRET_KEY"] = TEST_SECRET_KEY
-    # register protected_route at /protected
-    app.add_url_rule("/protected", view_func=protected_route)
+    # 2. Add the config the decorator needs
+    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY
+    # 3. Create a protected route to test against
+    @app.route("/protected")
+    @require_jwt
+    def protected_route():
+        """
+        A minimal protected route function
+        decorated with require_jwt we are testing
+
+        Returns: the current user's email from g.current_user as JSON
+        """
+        return jsonify({"message": "success", "user_email": g.current_user.get("email")})
+
+    # 4. Yield the test client for this specific app
     with app.test_client() as test_client:
         yield test_client
 
@@ -69,8 +71,9 @@ def test_require_jwt_valid_token(client):
         )
         data = response.get_json()
 
-        assert response.status_code == 200
-        assert data["email"] == dummy_user["email"]
+        assert response.status_code == 200, f"Expected 200, got {response.status_code}. Response: {data}" # pylint: disable=line-too-long
+        assert data["message"] == "success"
+        assert data["user_email"] == "test@example.com"
 
 
 def test_require_jwt_authorization_header_missing(client):
