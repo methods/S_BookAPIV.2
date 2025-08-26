@@ -1,13 +1,18 @@
 """Routes for /books/<id>/reservations endpoint"""
+
 import datetime
 
-from flask import Blueprint, jsonify, url_for, g
 from bson import ObjectId
 from bson.errors import InvalidId
+from flask import Blueprint, g, jsonify, url_for
+
 from app.extensions import mongo
 from app.utils.decorators import require_jwt
 
-reservations_bp = Blueprint("reservations_bp", __name__, url_prefix="/books/<book_id_str>")
+reservations_bp = Blueprint(
+    "reservations_bp", __name__, url_prefix="/books/<book_id_str>"
+)
+
 
 @reservations_bp.route("/reservations", methods=["POST"])
 @require_jwt
@@ -30,12 +35,12 @@ def create_reservation(book_id_str):
     # Get the current user directly from Flask's 'g'
     current_user_id = g.current_user["_id"]
 
-#    2. DOCUMENT CREATION
+    #    2. DOCUMENT CREATION
     reservation_doc = {
         "book_id": book_id,
         "state": "reserved",
         "user_id": current_user_id,
-        "reservation_date": datetime.datetime.now(datetime.UTC)
+        "reservation_date": datetime.datetime.now(datetime.UTC),
     }
 
     # Insert new reservation to MongoDb 'reservation' collection
@@ -49,10 +54,12 @@ def create_reservation(book_id_str):
         "user_id": reservation_doc["user_id"],
         "book_id": str(reservation_doc["book_id"]),
         "links": {
-            "self": url_for(".create_reservation", book_id_str=str(book_id), _external=True),
-            "book": url_for("get_book", book_id=str(book_id), _external=True)
+            "self": url_for(
+                ".create_reservation", book_id_str=str(book_id), _external=True
+            ),
+            "book": url_for("get_book", book_id=str(book_id), _external=True),
         },
-        "reservation_date": reservation_doc["reservation_date"].isoformat()
+        "reservation_date": reservation_doc["reservation_date"].isoformat(),
     }
 
     return jsonify(response_data), 201

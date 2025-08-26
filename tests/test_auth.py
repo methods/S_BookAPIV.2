@@ -4,7 +4,8 @@ from unittest.mock import patch
 
 import jwt
 import pytest
-from conftest import PLAIN_PASSWORD, TEST_USER_ID # pylint: disable=import-error
+from conftest import (PLAIN_PASSWORD,  # pylint: disable=import-error
+                      TEST_USER_ID)
 
 from app import bcrypt, mongo
 

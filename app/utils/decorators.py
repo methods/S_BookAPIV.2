@@ -3,10 +3,12 @@
 This module provides decorators for Flask routes, including JWT authentication.
 """
 import functools
+
 import jwt
-from flask import current_app, g, jsonify, request
-from bson.objectid import ObjectId
 from bson.errors import InvalidId
+from bson.objectid import ObjectId
+from flask import current_app, g, jsonify, request
+
 from app.extensions import mongo
 
 

@@ -5,11 +5,11 @@ A configuration file for pytest.
 This file contains shared fixtures and helpers that are automatically discovered by pytest and made available to all tests.
 """
 from unittest.mock import patch
-from bson.objectid import ObjectId
 
 import bcrypt
 import mongomock
 import pytest
+from bson.objectid import ObjectId
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection

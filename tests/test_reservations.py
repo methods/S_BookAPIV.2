@@ -1,10 +1,13 @@
 # pylint: disable=redefined-outer-name
 """..."""
 from datetime import datetime, timedelta, timezone
-from bson.objectid import ObjectId
-import pytest
+
 import jwt
+import pytest
+from bson.objectid import ObjectId
+
 from app.extensions import mongo
+
 
 # ------------------- FILE SPECIFIC FIXTURES -----------------
 @pytest.fixture
@@ -18,10 +21,9 @@ def client_with_book(test_app):
     with test_app.app_context():
         mongo.db.books.delete_many({})
         mongo.db.reservations.delete_many({})
-        mongo.db.books.insert_one({
-            "_id": ObjectId("5f8f8b8b8b8b8b8b8b8b8b8b"),
-            "title": "Test Book"
-        })
+        mongo.db.books.insert_one(
+            {"_id": ObjectId("5f8f8b8b8b8b8b8b8b8b8b8b"), "title": "Test Book"}
+        )
 
     yield test_app.test_client()
 
@@ -42,15 +44,15 @@ def auth_token(client_with_book, seeded_user_in_db):
 
     # Section 1: Get the app context and secret key
     app = client_with_book.application
-    secret_key = app.config.get('JWT_SECRET_KEY')
+    secret_key = app.config.get("JWT_SECRET_KEY")
 
     # Section 2: Define the token's payload
     # Use the ID from the user seeded into the databse by the fixture
-    fake_user_id = seeded_user_in_db['_id']
+    fake_user_id = seeded_user_in_db["_id"]
     payload = {
-        'sub': fake_user_id,
-        'iat': datetime.now(timezone.utc),  # Issued at
-        'exp': datetime.now(timezone.utc) + timedelta(minutes=15) # Expires at
+        "sub": fake_user_id,
+        "iat": datetime.now(timezone.utc),  # Issued at
+        "exp": datetime.now(timezone.utc) + timedelta(minutes=15),  # Expires at
     }
 
     # Section 3: Encode the token and create the header
@@ -58,26 +60,23 @@ def auth_token(client_with_book, seeded_user_in_db):
     token = jwt.encode(payload, secret_key, algorithm="HS256")
 
     # The HTTP header must be in the format 'Bearer <token>'
-    headers = {
-        'Authorization': f'Bearer {token}'
-    }
+    headers = {"Authorization": f"Bearer {token}"}
 
     return headers
 
+
 #            ------------------ TESTS -----------------------
 
-@pytest.mark.parametrize("payload, expected_message",
+
+@pytest.mark.parametrize(
+    "payload, expected_message",
     [
         ("invalid!!", "Invalid Book ID"),
-    ]
+    ],
 )
 def test_reservation_with_invalid_book_id(
-    payload,
-    expected_message,
-    client_with_book,
-    auth_token,
-    seeded_user_in_db
-    ):
+    payload, expected_message, client_with_book, auth_token, seeded_user_in_db
+):
     """
     GIVEN a Flask app with a pre-existing book in the mock DB
     WHEN a POST request is made to /books/<book_id>/reservations without a book_id_str argument
@@ -88,10 +87,9 @@ def test_reservation_with_invalid_book_id(
 
     # Act
     response = client_with_book.post(
-        f'/books/{payload}/reservations',
+        f"/books/{payload}/reservations",
         json={"forenames": "Firstname", "surname": "Tester"},
-        headers=auth_token
-
+        headers=auth_token,
     )
     assert response.status_code == 400
     data = response.get_json()
@@ -99,10 +97,8 @@ def test_reservation_with_invalid_book_id(
 
 
 def test_reservation_for_nonexistant_book(
-    client_with_book,
-    auth_token,
-    seeded_user_in_db
-    ):
+    client_with_book, auth_token, seeded_user_in_db
+):
     """
     GIVEN a FLASK APP WITH A PRE-EXISTING BOOK
     WHEN a POST request is made with a valid but non-existent book ID
@@ -113,8 +109,7 @@ def test_reservation_for_nonexistant_book(
     non_existent_id = ObjectId()
 
     response = client_with_book.post(
-        f'/books/{non_existent_id}/reservations',
-        headers=auth_token
+        f"/books/{non_existent_id}/reservations", headers=auth_token
     )
 
     assert response.status_code == 404
@@ -135,12 +130,12 @@ def test_create_reservation_success(client_with_book, auth_token, seeded_user_in
 
     # Act- make an authenticated request
     response = client_with_book.post(
-        f'/books/{book_id}/reservations',
-        headers=auth_token,
-        json={}
+        f"/books/{book_id}/reservations", headers=auth_token, json={}
     )
 
     # Assert
     data = response.get_json()
-    assert response.status_code == 201, f"Expected 201, got {response.status_code} with data: {data}" # pylint: disable=line-too-long
-    assert data['state'] == 'reserved'
+    assert (
+        response.status_code == 201
+    ), f"Expected 201, got {response.status_code} with data: {data}"  # pylint: disable=line-too-long
+    assert data["state"] == "reserved"
