@@ -152,7 +152,7 @@ def test_create_reservation_for_already_reserved_book_fails(
     _ = client_with_book
     _ = seeded_user_in_db
     book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
-    url = f'/books/{book_id}/reservations'
+    url = f"/books/{book_id}/reservations"
 
     # Arrange: Create the first reservation
     response1 = client_with_book.post(url, headers=auth_token, json={})
@@ -164,4 +164,4 @@ def test_create_reservation_for_already_reserved_book_fails(
     # Assert
     assert response2.status_code == 409
     data = response2.get_json()
-    assert data['error'] == "You have already reserved this book"
+    assert data["error"] == "You have already reserved this book"
