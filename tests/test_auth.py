@@ -185,7 +185,7 @@ def test_login_user_returns_jwt_for_valid_credentials(
     with test_app.app_context():
         # check token: we need the SECRET_KEY from the app config to decode it.
         payload = jwt.decode(
-            data["token"], test_app.config["SECRET_KEY"], algorithms=["HS256"]
+            data["token"], test_app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
         )
         assert payload["sub"] == TEST_USER_ID
 
