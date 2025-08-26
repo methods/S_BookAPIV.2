@@ -229,7 +229,7 @@ components:
           pattern: '^[a-f\d]{24}$'
           example: "635f3a7e3a8e3bcfc8e6a1e0"
         book_id:
-          tyep: string
+          type: string
           description: The ID of the book being reserved.
           pattern: '^[a-f\d]{24}$'
           example: "635f3a7e3a8e3bcfc8e6a1e0"
