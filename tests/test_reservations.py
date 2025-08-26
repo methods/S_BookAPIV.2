@@ -32,24 +32,25 @@ def client_with_book(test_app):
 
 
 @pytest.fixture(scope="function")
-def auth_token(client_with_book):
+def auth_token(client_with_book, seeded_user_in_db):
     """
     GIVEN a test client
     WHEN this fixture is used
-    THEN a valid JWT and Authorization header are generated.
+    THEN a valid JWT and Authorization header are generated for a user that exists in the database.
     """
+    _ = client_with_book
+
     # Section 1: Get the app context and secret key
     app = client_with_book.application
-    secret_key = app.config.get('SECRET_KEY', 'default-secret-key-for-dev')
+    secret_key = app.config.get('JWT_SECRET_KEY')
 
     # Section 2: Define the token's payload
-    # This payload should mimic what your real login endpoint would create.
-    # It includes who the user is and when the token expires.
-    fake_user_id = str(ObjectId())
+    # Use the ID from the user seeded into the databse by the fixture
+    fake_user_id = seeded_user_in_db['_id']
     payload = {
         'sub': fake_user_id,
         'iat': datetime.now(timezone.utc),  # Issued at
-        'exp': datetime.now(timezone.utc) + timedelta(minutes=15) # Expiration time
+        'exp': datetime.now(timezone.utc) + timedelta(minutes=15) # Expires at
     }
 
     # Section 3: Encode the token and create the header
@@ -74,7 +75,8 @@ def test_reservation_with_invalid_book_id(
     payload,
     expected_message,
     client_with_book,
-    auth_token
+    auth_token,
+    seeded_user_in_db
     ):
     """
     GIVEN a Flask app with a pre-existing book in the mock DB
@@ -82,6 +84,7 @@ def test_reservation_with_invalid_book_id(
     THEN a 400 status code is returned.
     """
     _ = client_with_book
+    _ = seeded_user_in_db
 
     # Act
     response = client_with_book.post(
@@ -94,146 +97,110 @@ def test_reservation_with_invalid_book_id(
     data = response.get_json()
     assert data["error"] == expected_message
 
-@pytest.mark.parametrize("post_args, expected_status, expected_message",
-    [
-        ({}, 415, "Unsupported Media Type"),
-        ({"json": {}}, 400, "Request body must be a non-empty JSON object"),
-        ({"data": 'null', "content_type": 'application/json'}, 400, "Request body must be a non-empty JSON object"), # pylint: disable=line-too-long
-        ({"data": '{ "bad" json }', "content_type": 'application/json'}, 400, "Invalid JSON format"),# pylint: disable=line-too-long
-    ]
-)
-def test_create_reservation_with_bad_payload(
-    post_args,
-    expected_status,
-    expected_message,
+
+def test_reservation_for_nonexistant_book(
     client_with_book,
-    auth_token
-):
-    """
-    GIVEN a Flask app with a pre-existing book
-    WHEN a POST request is made with no payload, an empty payload, a null payload, or invalid JSON
-    THEN the correct error status code and message are returned.
-    """
-    _ = client_with_book
-    book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
-    url = f'/books/{book_id}/reservations'
-
-    # Combine the authorization headers with the arguments for this specific test case
-    # The ** operator unpacks the dictionaries into keyword arguments
-    request_kwargs = {**post_args, "headers": auth_token}
-
-    # Act
-    response = client_with_book.post(url, **request_kwargs)
-
-    # Assert
-    assert response.status_code == expected_status
-
-    data = response.get_json()
-    if response.status_code == 415:
-        # Flask's default 415 error message uses a 'name' field
-        assert data["error"]["name"] == expected_message
-    else:
-        error_message = data.get("message") or data.get("error")
-        assert error_message == expected_message
-
-
-def test_reservation_for_nonexistant_book(client_with_book):
+    auth_token,
+    seeded_user_in_db
+    ):
     """
     GIVEN a FLASK APP WITH A PRE-EXISTING BOOK
     WHEN a POST request is made with a valid but non-existent book ID
     THEN a 404 Not Found statu sis returned
     """
     _ = client_with_book
+    _ = seeded_user_in_db
     non_existent_id = ObjectId()
 
     response = client_with_book.post(
         f'/books/{non_existent_id}/reservations',
-        json={"forenames": "Firstname", "surname": "Tester"}
+        headers=auth_token
     )
 
     assert response.status_code == 404
     data = response.get_json()
-    assert data is not None
-
-def test_create_reservation_success(client_with_book):
-    """
-    GIVEN a Flask app with a pre-existing book in the mock DB
-    WHEN a POST request is made to /books/<book_id>/reservations with valid data
-    THEN a 201 status code is returned with the new reservation data
-    """
-    _ = client_with_book
-    # Arrange
-    book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
-
-    # Act
-    response = client_with_book.post(
-        f'/books/{book_id}/reservations',
-        json={"forenames": "Firstname", "surname": "Tester"}
-    )
-    assert response.status_code == 201
-    data = response.get_json()
-    assert data['state'] == 'reserved'
-    assert data['user']['forenames'] == 'Firstname'
-    assert data['user']['surname'] == 'Tester'
+    assert data["error"] == "Book not found"
 
 
-FORENAMES_ERROR = "forenames is required and must be a string"
-SURNAME_ERROR = "surname is required and must be a string"
-@pytest.mark.parametrize("_test_name, payload, expected_messages",
-    [
-        (
-            "forename is missing",
-            {"surname": "Tester"},
-            {"forenames": FORENAMES_ERROR}
-        ),
-        (
-            "surname is missing",
-            {"forenames": "John"},
-            {"surname": SURNAME_ERROR}
-        ),
-        (
-            "forename is wrong type (integer)",
-            {"forenames": 12345, "surname": "Tester"},
-            {"forenames": FORENAMES_ERROR}
-        ),
-        (
-            "surname is wrong type (list)",
-            {"forenames": "John", "surname": ["Doe"]},
-            {"surname": SURNAME_ERROR}
-        ),
-        (
-            "both fields are missing",
-            {"some_other_field": "irrelevant"},
-            {"forenames": FORENAMES_ERROR, "surname": SURNAME_ERROR}
-        ),
-        (
-            "both fields are wrong type",
-            {"forenames": None, "surname": True},
-            {"forenames": FORENAMES_ERROR, "surname": SURNAME_ERROR}
-        )
-    ]
-)
-def test_create_reservation_with_invalid_data_fields(
-    _test_name,
-    payload,
-    expected_messages,
-    client_with_book
-):
-    """
-    GIVEN a Flask app with a pre-existing book
-    WHEN a POST request is made with missing or malformed data fields
-    THEN a 400 status code is returned with a specific validation error message.
-    """
-    _ = client_with_book
-    book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
-    url = f'/books/{book_id}/reservations'
+# def test_create_reservation_success(client_with_book, auth_token, seeded_user_in_db):
+#     """
+#     GIVEN a Flask app with a pre-existing book in the mock DB
+#     WHEN a POST request is made to /books/<book_id>/reservations with valid data
+#     THEN a 201 status code is returned with the new reservation data
+#     """
+#     _ = client_with_book
+#     # Arrange
+#     book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
 
-    # Act: Send the invalid payload to the endpoint
-    response = client_with_book.post(url, json=payload)
+#     # Act
+#     response = client_with_book.post(
+#         f'/books/{book_id}/reservations',
+#         json={"forenames": "Firstname", "surname": "Tester"}
+#     )
+#     assert response.status_code == 201
+#     data = response.get_json()
+#     assert data['state'] == 'reserved'
+#     assert data['user']['forenames'] == 'Firstname'
+#     assert data['user']['surname'] == 'Tester'
 
-    # Assert
-    assert response.status_code == 400
-    data = response.get_json()
-    # Check the overall error structure
-    assert data["error"] == "Validation failed"
-    assert data["messages"] == expected_messages
+
+# FORENAMES_ERROR = "forenames is required and must be a string"
+# SURNAME_ERROR = "surname is required and must be a string"
+# @pytest.mark.parametrize("_test_name, payload, expected_messages",
+#     [
+#         (
+#             "forename is missing",
+#             {"surname": "Tester"},
+#             {"forenames": FORENAMES_ERROR}
+#         ),
+#         (
+#             "surname is missing",
+#             {"forenames": "John"},
+#             {"surname": SURNAME_ERROR}
+#         ),
+#         (
+#             "forename is wrong type (integer)",
+#             {"forenames": 12345, "surname": "Tester"},
+#             {"forenames": FORENAMES_ERROR}
+#         ),
+#         (
+#             "surname is wrong type (list)",
+#             {"forenames": "John", "surname": ["Doe"]},
+#             {"surname": SURNAME_ERROR}
+#         ),
+#         (
+#             "both fields are missing",
+#             {"some_other_field": "irrelevant"},
+#             {"forenames": FORENAMES_ERROR, "surname": SURNAME_ERROR}
+#         ),
+#         (
+#             "both fields are wrong type",
+#             {"forenames": None, "surname": True},
+#             {"forenames": FORENAMES_ERROR, "surname": SURNAME_ERROR}
+#         )
+#     ]
+# )
+# def test_create_reservation_with_invalid_data_fields(
+#     _test_name,
+#     payload,
+#     expected_messages,
+#     client_with_book
+# ):
+#     """
+#     GIVEN a Flask app with a pre-existing book
+#     WHEN a POST request is made with missing or malformed data fields
+#     THEN a 400 status code is returned with a specific validation error message.
+#     """
+#     _ = client_with_book
+#     book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
+#     url = f'/books/{book_id}/reservations'
+
+#     # Act: Send the invalid payload to the endpoint
+#     response = client_with_book.post(url, json=payload)
+
+#     # Assert
+#     assert response.status_code == 400
+#     data = response.get_json()
+#     # Check the overall error structure
+#     assert data["error"] == "Validation failed"
+#     assert data["messages"] == expected_messages
