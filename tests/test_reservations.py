@@ -139,3 +139,29 @@ def test_create_reservation_success(client_with_book, auth_token, seeded_user_in
         response.status_code == 201
     ), f"Expected 201, got {response.status_code} with data: {data}"  # pylint: disable=line-too-long
     assert data["state"] == "reserved"
+
+
+def test_create_reservation_for_already_reserved_book_fails(
+    client_with_book, auth_token, seeded_user_in_db
+):
+    """
+    GIVEN a user who already reserved a specific book
+    WHEN they attempy to reserve that same book again
+    THEN a 409 Conflict status is returned.
+    """
+    _ = client_with_book
+    _ = seeded_user_in_db
+    book_id = "5f8f8b8b8b8b8b8b8b8b8b8b"
+    url = f'/books/{book_id}/reservations'
+
+    # Arrange: Create the first reservation
+    response1 = client_with_book.post(url, headers=auth_token, json={})
+    assert response1.status_code == 201, "The initial reservation failed"
+
+    # ACT
+    response2 = client_with_book.post(url, headers=auth_token, json={})
+
+    # Assert
+    assert response2.status_code == 409
+    data = response2.get_json()
+    assert data['error'] == "You have already reserved this book"
