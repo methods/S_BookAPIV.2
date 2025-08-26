@@ -35,6 +35,16 @@ def create_reservation(book_id_str):
     # Get the current user directly from Flask's 'g'
     current_user_id = g.current_user["_id"]
 
+    #  ---------- VALIDATION 2 - Check for existing reservation
+    # A user should not be able to reserve the same book more than once.
+    existing_reservation = mongo.db.reservations.find_one({
+        "book_id": book_id,
+        "user_id": current_user_id
+    })
+    if existing_reservation:
+        return jsonify({"error": "You have already reserved this book"}), 409
+
+
     #    2. DOCUMENT CREATION
     reservation_doc = {
         "book_id": book_id,
