@@ -142,5 +142,5 @@ def test_create_reservation_success(client_with_book, auth_token, seeded_user_in
 
     # Assert
     data = response.get_json()
-    assert response.status_code == 201, f"Expected 201, got {response.status_code} with data: {data}" # pylint disable=line-too-long
+    assert response.status_code == 201, f"Expected 201, got {response.status_code} with data: {data}" # pylint: disable=line-too-long
     assert data['state'] == 'reserved'
