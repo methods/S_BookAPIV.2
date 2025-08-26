@@ -180,22 +180,6 @@ components:
 
   # ------- Reservation schemas ----------
 
-    # Schema for the POST /reservations request body
-    ReservationInput:
-      type: object
-      required:
-        - forenames
-        - surname
-      properties:
-        forenames:
-          type: string
-          description: The first name and any middle names of the user making the reservation.
-          example: "John Fitzgerald"
-        surname:
-          type: string
-          description: The last name of the user making the reservation.
-          example: "Doe"
-
     # Schema for the PUT /reservations/{res_id} request body
     ReservationUserOutput:
       type: object
@@ -239,10 +223,13 @@ components:
           description: The current state of the reservation.
           example: "reserved"
           readOnly: true
-        user:
-          $ref: '#/components/schemas/ReservationUserOutput'
-        bookId:
+        user_id:
           type: string
+          description: The ID of the user who made the reservation.
+          pattern: '^[a-f\d]{24}$'
+          example: "635f3a7e3a8e3bcfc8e6a1e0"
+        book_id:
+          tyep: string
           description: The ID of the book being reserved.
           pattern: '^[a-f\d]{24}$'
           example: "635f3a7e3a8e3bcfc8e6a1e0"
@@ -552,15 +539,15 @@ paths:
       tags:
         - Reservations
       summary: Create a reservation for a book.
-      description: Creates a reservation for the book identified by {book_id} on behalf of a user.
+      description: Creates a reservation for the book identified by {book_id} on behalf of the authenticated user. A valid JWT Bearer token is required.
       operationId: createBookReservation
+      security:
+        - bearerAuth: []
       requestBody:
-        description: The user's name details required to create the reservation.
-        required: true
+        description: The request body for this endpoint is ignored. An empty JSON object `{}` is recommended.
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/ReservationInput'
+            schema: {}
       responses:
         '201':
           description: Reservation created successfully.
@@ -571,9 +558,8 @@ paths:
         '400':
           description: |-
             Bad Request. Possible reasons include:
-            - The book ID in the path is invalid.
-            - The request body is not valid JSON.
-            - The request body is missing 'forenames' or 'surname'.
+            - The book ID in the path is not a valid MongoDB ObjectId.
+            - The request body is malformed (e.g., not valid JSON).
           content:
             application/json:
               schema:
@@ -583,12 +569,6 @@ paths:
                   summary: Invalid Book ID
                   value:
                     error: "Invalid Book ID"
-                validationFailed:
-                  summary: Missing required fields
-                  value:
-                    error: "Validation failed"
-                    messages:
-                      surname: "surname is required and must be a string"
         '401':
           $ref: '#/components/responses/Unauthorized' 
         '404':
@@ -599,6 +579,14 @@ paths:
                 $ref: '#/components/schemas/SimpleError'
               example:
                 error: "Book not found"
+        '409':
+          description: A reservation for this book by the authenticated user already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "You have already reserved this book"
         '415':
           $ref: '#/components/responses/UnsupportedMediaType' 
         '500':
