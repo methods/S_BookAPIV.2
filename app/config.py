@@ -25,6 +25,7 @@ class Config:
 
     # General config
     SECRET_KEY = os.environ.get("SECRET_KEY")
+    JWT_SECRET_KEY = os.environ.get("JWT_SECRET_KEY")
     FLASK_APP = os.environ.get("FLASK_APP")
     FLASK_ENV = os.environ.get("FLASK")  # values will be 'development' or 'production'
     API_KEY = os.environ.get("API_KEY")

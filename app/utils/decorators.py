@@ -34,7 +34,7 @@ def require_jwt(f):
         try:
             payload = jwt.decode(
                 token,
-                current_app.config["SECRET_KEY"],
+                current_app.config["JWT_SECRET_KEY"],
                 algorithms=["HS256"],
                 # options={"require": ["exp", "sub"]}  # optional: force required claims
             )
