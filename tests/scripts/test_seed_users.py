@@ -14,13 +14,14 @@ def test_seed_users_successfully(test_app):
     """
     GIVEN an empty database and a list of user data
     WHEN the seed_users function is called
-    THEN the users should be created in the database with hashed passwords.
+    THEN the users should be created in the database with hashed passwords
+    AND the correct roles.
     """
     # Arrange
     # define the user data we want to seed the database with
     sample_users = [
-        {"email": "test.admin@example.com", "password": "AdminPassword123"},
-        {"email": "test.user@example.com", "password": "UserPassword456"},
+        {"email": "test.admin@example.com", "password": "AdminPassword123", "role": "admin"},
+        {"email": "test.user@example.com", "password": "UserPassword456", "role": "user"},
     ]
 
     # Enter application context and
@@ -41,6 +42,11 @@ def test_seed_users_successfully(test_app):
         assert bcrypt.checkpw(
             b"AdminPassword123", admin_user["password"].encode("utf-8")
         )
+
+        # verify roles
+        assert admin_user["role"] == "admin"
+        test_user = mongo.db.users.find_one({"email": "test.user@example.com"})
+        assert test_user["role"] == "user"
     assert "Successfully seeded 2 users" in result_message
 
 
@@ -52,8 +58,8 @@ def test_seed_users_skips_if_user_already_exists(test_app, capsys):
     """
     # Arrange
     users_to_attempt_seeding = [
-        {"email": "existing.user@example.com", "password": "Password123"},
-        {"email": "new.user@example.com", "password": "Password456"},
+        {"email": "existing.user@example.com", "password": "Password123", "role": "user"},
+        {"email": "new.user@example.com", "password": "Password456", "role": "user"},
     ]
 
     with test_app.app_context():
