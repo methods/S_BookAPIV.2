@@ -3,10 +3,12 @@
 This module provides decorators for Flask routes, including JWT authentication.
 """
 import functools
+
 import jwt
-from flask import current_app, g, jsonify, request
-from bson.objectid import ObjectId
 from bson.errors import InvalidId
+from bson.objectid import ObjectId
+from flask import current_app, g, jsonify, request
+
 from app.extensions import mongo
 
 
@@ -34,7 +36,7 @@ def require_jwt(f):
         try:
             payload = jwt.decode(
                 token,
-                current_app.config["SECRET_KEY"],
+                current_app.config["JWT_SECRET_KEY"],
                 algorithms=["HS256"],
                 # options={"require": ["exp", "sub"]}  # optional: force required claims
             )

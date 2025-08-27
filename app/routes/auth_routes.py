@@ -104,11 +104,11 @@ def login_user():
         + datetime.timedelta(hours=24),  # expiration
     }
 
-    # 5. Encode the token with our app's SECRET_KEY
+    # 5. Encode the token with our app's JWT_SECRET_KEY
     try:
         token = jwt.encode(
             payload,
-            current_app.config["SECRET_KEY"],
+            current_app.config["JWT_SECRET_KEY"],
             algorithm="HS256",  # the standard signing algorithm
         )
         return jsonify({"token": token}), 200

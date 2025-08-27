@@ -9,6 +9,7 @@ from unittest.mock import patch
 import bcrypt
 import mongomock
 import pytest
+from bson.objectid import ObjectId
 
 from app import create_app
 from app.datastore.mongo_db import get_book_collection
@@ -76,6 +77,7 @@ def test_app():
             "TRAP_HTTP_EXCEPTIONS": True,
             "API_KEY": "test-key-123",
             "SECRET_KEY": "a-secure-key-for-testing-only",
+            "JWT_SECRET_KEY": "a-secure-jwt-key-for-testing-only",
             "MONGO_URI": "mongodb://localhost:27017/",
             "DB_NAME": "test_database",
             "COLLECTION_NAME": "test_books",
@@ -150,7 +152,7 @@ def mock_user_data():
     hashed_password = bcrypt.generate_password_hash(PLAIN_PASSWORD).decode("utf-8")
 
     return {
-        "_id": TEST_USER_ID,
+        "_id": ObjectId(TEST_USER_ID),
         "email": "testuser@example.com",
         "password": hashed_password,
     }
@@ -172,6 +174,10 @@ def seeded_user_in_db(
     with test_app.app_context():
         mongo.db.users.insert_one(mock_user_data)
 
-    # yield the user data in case a test needs it
-    # but often we just need the side-effect of the user being in the DB
-    yield mock_user_data
+    # When yielding the mock data back to the test,
+    # we must convert it back the ObjectId back to the string,
+    # because that's what 'auth_token' fixture expects to put into the JWT 'sub' claim
+    yield_data = mock_user_data.copy()
+    yield_data["_id"] = str(yield_data["_id"])
+
+    yield yield_data

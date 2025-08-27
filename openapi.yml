@@ -180,41 +180,34 @@ components:
 
   # ------- Reservation schemas ----------
 
-    # Schema for what a User looks like 
-    User:
-      type: object
-      properties:
-        userId:
-          type: string
-          example: "user-12345"
-        name:
-          type: string
-          example: "Jane Doe"
-
-    # Schema for the POST /reservations request body
-    ReservationInput:
-      type: object
-      required:
-        - user
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-
     # Schema for the PUT /reservations/{res_id} request body
-    ReservationUpdateInput:
+    ReservationUserOutput:
       type: object
-      description: The fields required to fully update a reservation. 
-      required:
-        - user
-        - reservationDate
       properties:
-        user:
-          $ref: '#/components/schemas/User'
-        reservationDate:
+        forenames:
           type: string
-          format: date-time
-          description: The new timestamp for the reservation.
-          example: "2023-10-28T12:00:00Z"
+          example: "John"
+        middlenames:
+          type: string
+          example: "Fitzgerald"
+        surname:
+          type: string
+          example: "Doe"
+          
+    # A schema for the 'links' object in the response.
+    ReservationLinks:
+      type: object
+      properties:
+        self:
+          type: string
+          format: uri
+          description: A link to the reservation resource itself.
+        book:
+          type: string
+          format: uri
+          description: A link to the parent book resource.
+      readOnly: true
+    
 
     # Schema for the full Reservation object returned by the API
     ReservationOutput:
@@ -225,18 +218,29 @@ components:
           description: The unique identifier for the reservation. 
           pattern: '^[a-f\d]{24}$'
           example: "635f3a7f3a8e3bcfc8e6a1f1"
-        bookId:
+        state:
+          type: string
+          description: The current state of the reservation.
+          example: "reserved"
+          readOnly: true
+        user_id:
+          type: string
+          description: The ID of the user who made the reservation.
+          pattern: '^[a-f\d]{24}$'
+          example: "635f3a7e3a8e3bcfc8e6a1e0"
+        book_id:
           type: string
           description: The ID of the book being reserved.
           pattern: '^[a-f\d]{24}$'
           example: "635f3a7e3a8e3bcfc8e6a1e0"
+        links:
+          $ref: '#/components/schemas/ReservationLinks'
         reservationDate:
           type: string
           format: date-time
           description: The timestamp when the reservation was made.
           example: "2023-10-27T10:00:00Z"
-        user:
-          $ref: "#/components/schemas/User"
+
 
     # Schema for the GET /reservations response body (a list)
     ReservationsOutput:
@@ -535,15 +539,15 @@ paths:
       tags:
         - Reservations
       summary: Create a reservation for a book.
-      description: Creates a reservation for the book identified by {book_id}.
-      operationId: create_book_reservation
+      description: Creates a reservation for the book identified by {book_id} on behalf of the authenticated user. A valid JWT Bearer token is required.
+      operationId: createBookReservation
+      security:
+        - bearerAuth: []
       requestBody:
-        description: User information for the reservation.
-        required: true
+        description: The request body for this endpoint is ignored. An empty JSON object `{}` is recommended.
         content:
           application/json:
-            schema:
-              $ref: '#/components/schemas/ReservationInput'
+            schema: {}
       responses:
         '201':
           description: Reservation created successfully.
@@ -552,11 +556,37 @@ paths:
               schema:
                 $ref: '#/components/schemas/ReservationOutput' 
         '400':
-          $ref: '#/components/responses/BadRequest'
+          description: |-
+            Bad Request. Possible reasons include:
+            - The book ID in the path is not a valid MongoDB ObjectId.
+            - The request body is malformed (e.g., not valid JSON).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              examples:
+                invalidId:
+                  summary: Invalid Book ID
+                  value:
+                    error: "Invalid Book ID"
         '401':
           $ref: '#/components/responses/Unauthorized' 
         '404':
-          $ref: '#/components/responses/NotFound'
+          description: The book with the specified ID was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Book not found"
+        '409':
+          description: A reservation for this book by the authenticated user already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "You have already reserved this book"
         '415':
           $ref: '#/components/responses/UnsupportedMediaType' 
         '500':
