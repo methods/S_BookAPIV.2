@@ -1,5 +1,10 @@
 # pylint: disable=redefined-outer-name
-"""..."""
+"""
+This module contains tests for the reservation functionality of the application,
+including setup fixtures and test cases for creating, validating, and handling reservations.
+Fixtures provide a clean database state and authentication for each test.
+"""
+
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -47,7 +52,7 @@ def auth_token(client_with_book, seeded_user_in_db):
     secret_key = app.config.get("JWT_SECRET_KEY")
 
     # Section 2: Define the token's payload
-    # Use the ID from the user seeded into the databse by the fixture
+    # Use the ID from the user seeded into the database by the fixture
     fake_user_id = seeded_user_in_db["_id"]
     payload = {
         "sub": fake_user_id,
@@ -102,7 +107,7 @@ def test_reservation_for_nonexistant_book(
     """
     GIVEN a FLASK APP WITH A PRE-EXISTING BOOK
     WHEN a POST request is made with a valid but non-existent book ID
-    THEN a 404 Not Found statu sis returned
+    THEN a 404 Not Found status is returned
     """
     _ = client_with_book
     _ = seeded_user_in_db
@@ -146,7 +151,7 @@ def test_create_reservation_for_already_reserved_book_fails(
 ):
     """
     GIVEN a user who already reserved a specific book
-    WHEN they attempy to reserve that same book again
+    WHEN they attempt to reserve that same book again
     THEN a 409 Conflict status is returned.
     """
     _ = client_with_book

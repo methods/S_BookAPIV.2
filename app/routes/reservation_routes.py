@@ -17,7 +17,12 @@ reservations_bp = Blueprint(
 @reservations_bp.route("/reservations", methods=["POST"])
 @require_jwt
 def create_reservation(book_id_str):
-    """..."""
+    """
+    This POST endpoint lets an authenticated user reserve a book by its ID.
+    It validates the ID, checks book availability, 
+    prevents duplicate reservations, 
+    creates the reservation, and returns its details.
+    """
 
     # ---------- VALIDATION 1 - check payload has valid id - mongoDB id shape
 

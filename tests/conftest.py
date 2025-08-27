@@ -174,9 +174,9 @@ def seeded_user_in_db(
     with test_app.app_context():
         mongo.db.users.insert_one(mock_user_data)
 
-    # When yeilding the mock data back to the test,
+    # When yielding the mock data back to the test,
     # we must convert it back the ObjectId back to the string,
-    # becasue that's what 'auth_token' fixture expects to put into the JWT 'sub' claim
+    # because that's what 'auth_token' fixture expects to put into the JWT 'sub' claim
     yield_data = mock_user_data.copy()
     yield_data["_id"] = str(yield_data["_id"])
 
