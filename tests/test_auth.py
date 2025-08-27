@@ -28,6 +28,8 @@ def test_register_with_valid_data(client, users_db_setup):
     user_in_db = mongo.db.users.find_one({"email": "newuser@example.com"})
     assert user_in_db is not None
     assert "password" in user_in_db
+    assert "role" in user_in_db
+    assert user_in_db["role"] == "user"
     # Check if the password hashes match!
     assert bcrypt.check_password_hash(user_in_db["password"], "a-secure-password")
 
