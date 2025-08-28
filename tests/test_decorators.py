@@ -242,7 +242,7 @@ def admin_client():
     Creates a minimal, isolated Flask app for unit testing the require_admin decorator. 
     """
     app = Flask(__name__)
-    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY
+    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY # used by JWT libs; kept for parity
 
     # Protected route to test against
     @app.route("/admin-protected")
