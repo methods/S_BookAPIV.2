@@ -190,6 +190,7 @@ def test_login_user_returns_jwt_for_valid_credentials(
             data["token"], test_app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
         )
         assert payload["sub"] == TEST_USER_ID
+        assert payload["role"] == "user"
 
 
 def test_login_user_fails_for_wrong_password(client, seeded_user_in_db):
@@ -269,7 +270,7 @@ def test_login_user_fails_with_missing_data(client, payload, expected_message):
     assert data["error"] == expected_message
 
 
-def test_login_handles_jwp_encoding_error(client, seeded_user_in_db):
+def test_login_handles_jwt_encoding_error(client, seeded_user_in_db):
     """
     GIVEN a valid user is logging in
     WHEN the internal PyJWT library fails to encode the token
