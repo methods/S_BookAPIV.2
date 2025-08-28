@@ -17,7 +17,7 @@ from bson.errors import InvalidId
 from flask import Flask, g, jsonify
 
 from app.utils import decorators
-from app.utils.decorators import require_jwt
+from app.utils.decorators import require_jwt, require_admin
 
 # A dummy secret key for testing
 TEST_SECRET_KEY = "test-secret-key"
@@ -229,3 +229,31 @@ def test_require_jwt_user_not_found(client):
     # Assert
     assert response.status_code == 401
     assert data["error"] == "User not found"
+
+
+
+# =======================================================
+#       NEW FIXTURE AND TESTS FOR @require_admin
+# =======================================================
+
+@pytest.fixture
+def admin_client():
+    """
+    Creates a minimal, isolated Flask app for unit testing the require_admin decorator. 
+    """
+    app = Flask(__name__)
+    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY
+
+    # Protected route to test against
+    @app.route("/admin-protected")
+    @require_admin
+    def admin_protected_route():
+        return jsonify({"message": "admin access granted"})
+
+    # This route is used to test the abort(403) case
+    @app.errorhandler(403)
+    def forbidden(e):
+        return jsonify({"message": "admin access granted"})
+
+    with app.test_client() as test_client:
+        yield test_client
