@@ -313,3 +313,18 @@ def test_require_admin_with_non_admin_role_fails(admin_client):
     # Check for a 403 Forbidden status and the correct error message from abort().
     assert response.status_code == 403
     assert data["error"] == "Admin privileges required."
+
+
+def test_require_admin_fails_if_jwt_is_invalid(admin_client):
+    """
+    GIVEN a request without a valid token
+    WHEN they access a route protected by @require_admin
+    THEN the inner @require_jwt decorator should reject it first (401)
+    """
+    # Arrange: No mocking is needed. We are testing the real failure case.
+
+    # Act: Make a request with no Authorization header.
+    response = admin_client.get("/admin-protected")
+
+    # Assert: We expect a 401 error from the @require_jwt decorator.
+    assert response.status_code == 401
