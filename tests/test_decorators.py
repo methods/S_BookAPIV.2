@@ -285,3 +285,31 @@ def test_require_admin_with_admin_role_succeeds(admin_client):
     # Assert
     assert response.status_code == 200
     assert data["message"] == "admin access granted"
+
+
+def test_require_admin_with_non_admin_role_fails(admin_client):
+    """
+    GIVEN a user WIHTOUT the "admin" role
+    WHEN they access a route protected by @require_admin
+    THEN the request should be forbidden (403)
+    """
+    # Arrange
+    test_user = {
+        "_id": ObjectId(),
+        "email": "test_user@example.com",
+        "role": "user" # CRUCIAL
+        }
+    # Patch the dependencies of the inner decorator (@require_jwt)
+    with patch("app.utils.decorators.jwt.decode", return_value={"sub": str(test_user["_id"])}), \
+        patch("app.utils.decorators.mongo.db.users.find_one", return_value=test_user):
+
+        response = admin_client.get(
+            "/admin-protected",
+            headers={"Authorization": "Bearer any-valid-token"}
+        )
+        data = response.get_json()
+
+    # Assert:
+    # Check for a 403 Forbidden status and the correct error message from abort().
+    assert response.status_code == 403
+    assert data["error"] == "Admin privileges required."
