@@ -253,7 +253,7 @@ def admin_client():
     # This route is used to test the abort(403) case
     @app.errorhandler(403)
     def forbidden(e):
-        return jsonify({"message": "admin access granted"})
-
+        return jsonify(error=str(e.description)), 403
+        
     with app.test_client() as test_client:
         yield test_client
