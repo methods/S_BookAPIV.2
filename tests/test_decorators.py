@@ -254,6 +254,34 @@ def admin_client():
     @app.errorhandler(403)
     def forbidden(e):
         return jsonify(error=str(e.description)), 403
-        
+
     with app.test_client() as test_client:
         yield test_client
+
+
+def test_require_admin_with_admin_role_succeeds(admin_client):
+    """
+    GIVEN a user with the 'admin' role
+    WHEN they access a route protected by @require_admin
+    THEN the request should succeed (200 OK)
+    """
+    # Arrange
+    admin_user = {
+        "_id": ObjectId(),
+        "email": "admin@example.com",
+        "role": "admin" # CRUCIAL
+        }
+    # Patch the dependencies of the inner decorator (@require_jwt)
+    with patch("app.utils.decorators.jwt.decode", return_value={"sub": str(admin_user["_id"])}), \
+        patch("app.utils.decorators.mongo.db.users.find_one", return_value=admin_user):
+
+        # ACT
+        response = admin_client.get(
+            "/admin-protected",
+            headers={"Authorization": "Bearer any-valid-token"}
+        )
+        data = response.get_json()
+
+    # Assert
+    assert response.status_code == 200
+    assert data["message"] == "admin access granted"
