@@ -113,7 +113,7 @@ def get_reservations_for_book_id(book_id_str):
             )
             continue
 
-        # Build the itme object according to spec
+        # Build the item object according to spec
         reservation_item = {
             "id": str(r["_id"]),
             "state": r.get("state", "UNKNOWN"),  # Use .get() for safety

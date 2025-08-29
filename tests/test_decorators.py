@@ -289,7 +289,7 @@ def test_require_admin_with_admin_role_succeeds(admin_client):
 
 def test_require_admin_with_non_admin_role_fails(admin_client):
     """
-    GIVEN a user WIHTOUT the "admin" role
+    GIVEN a user WITHOUT the "admin" role
     WHEN they access a route protected by @require_admin
     THEN the request should be forbidden (403)
     """

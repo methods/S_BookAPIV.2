@@ -129,7 +129,7 @@ def mongo_setup(test_app):  # pylint: disable=redefined-outer-name
     """
     Updated to a more robust setup fixture.
     Ensures all relevant collections ('users', 'books', 'reservations')
-    are clean before each test fucntion runs.
+    are clean before each test function runs.
     """
     with test_app.app_context():
         # Clear all collections before using in tests
@@ -174,7 +174,7 @@ def mock_admin_data():
     return {
         "email": "admin@example.com",
         "password": hashed_password,
-        "role": "admin", # Role explicityly set to 'admin'
+        "role": "admin", # Role explicitly set to 'admin'
     }
 
 @pytest.fixture
@@ -203,7 +203,7 @@ def seeded_user_in_db(
 def seeded_admin_in_db(test_app, mock_admin_data, mongo_setup): # pylint: disable=redefined-outer-name
     """
     Ensures the test database is clean and 
-    Contains exaclty one predefined admin
+    Contains exactly one predefined admin
     """
     _ = mongo_setup
 

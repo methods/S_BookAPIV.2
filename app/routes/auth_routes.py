@@ -59,7 +59,7 @@ def register_user():
             "email": email,
             # The hash is stored as a string in the DB
             "password": hashed_password,
-            "role": "user", # all users asssigned a default 'user' role
+            "role": "user", # all users assigned a default 'user' role
         }
     ).inserted_id
 
