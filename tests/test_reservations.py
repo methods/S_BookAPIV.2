@@ -298,3 +298,57 @@ def test_get_reservations_for_invalid_id(client, admin_token):
     data = response.get_json()
     assert "error" in data
     assert data["error"] == "Invalid Book ID"
+
+
+@patch('app.routes.reservation_routes.url_for')
+def test_get_reservations_skips_reservation_with_nonexistent_user(
+    mock_url_for, client, admin_token, seeded_user_in_db, test_app
+):
+    """
+    GIVEN a book with two reservations, one for a valid user and one for a user that does not exist
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return 200 OK and a list containing ONLY the valid reservation.
+    """
+    # --- ARRANGE ---
+    mock_url_for.return_value = "http://localhost/mock/url"
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    with test_app.app_context():
+        # 1. Create a book for the reservations to belong to
+        book_id = mongo.db.books.insert_one({"title": "Book With Orphans"}).inserted_id
+
+        # 2. Get the ID of a user that we know exists
+        valid_user_id = ObjectId(seeded_user_in_db["_id"])
+
+        # 3. Create a brand new, completely random ID for a user that does NOT exist
+        non_existent_user_id = ObjectId()
+
+        # 4. Insert two reservations into the database
+        # This one is VALID
+        mongo.db.reservations.insert_one({
+            "book_id": book_id,
+            "user_id": valid_user_id,
+            "state": "active"
+        })
+        # This one is an ORPHAN (the user_id doesn't exist in the users collection)
+        mongo.db.reservations.insert_one({
+            "book_id": book_id,
+            "user_id": non_existent_user_id,
+            "state": "pending"
+        })
+
+    # --- ACT ---
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+
+    # --- ASSERT ---
+    assert response.status_code == 200
+    data = response.get_json()
+
+    # The endpoint should successfully process the request and return only the valid data
+    assert data["total_count"] == 1
+    assert len(data["items"]) == 1
+
+    # The only item returned should be the one linked to the valid user
+    returned_reservation = data["items"][0]
+    # We can't check the user ID directly in the new format, but we can check the state
+    assert returned_reservation["state"] == "active"
