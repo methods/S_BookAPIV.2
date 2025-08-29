@@ -163,3 +163,36 @@ def test_create_reservation_for_already_reserved_book_fails(
     assert response2.status_code == 409
     data = response2.get_json()
     assert data["error"] == "You have already reserved this book"
+
+
+# ============= GET /books/{id}/reservations TESTS & Fixtures ======================
+
+# New fixture, SCOPED TO THIS FILE, that sets up the specific data we need.abs
+def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
+    """
+    Uses the app context and mock mongo to seed a book and a reservation.
+    Yields the IDSs of the created documents.
+    Depends on mongo_setup to ensure clean state.
+    """
+    _ = mongo_setup
+    _ = seeded_user_in_db
+
+    with test_app.app_context():
+        # Get the user ID from the user that's already in the mock DB
+        user_id = ObjectId(seeded_user_in_db("_id"))
+
+        book_id = test_app.app.mongo.books.insert_one(
+            {
+                "title": "The Admin's Guide",
+                "author": "Dr. Secure",
+            }
+        ).inserted_id
+
+        test_app.mongo.db.reservations.insert_one(
+            {
+                "book_id": book_id,
+                "user_id": user_id,
+                "status": "active",
+            }
+        )
+    yield {"book_id": str(book_id), "user_id": str(user_id)}
