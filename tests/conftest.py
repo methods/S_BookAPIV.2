@@ -197,3 +197,19 @@ def seeded_user_in_db(
     yield_data["_id"] = str(yield_data["_id"])
 
     yield yield_data
+
+
+@pytest.fixture
+def seeded_admin_in_db(test_app, mock_admin_data, mongo_setup): # pylint: disable=redefined-outer-name
+    """
+    Ensures the test database is clean and 
+    Contains exaclty one predefined admin
+    """
+    _ = mongo_setup
+
+    with test_app.app_context():
+        result = mongo.db.users.insert_one(mock_admin_data)
+
+    yield_data = mock_admin_data.copy()
+    yield_data["_id"] = str(result.inserted_id)
+    yield yield_data
