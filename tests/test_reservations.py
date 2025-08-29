@@ -233,3 +233,33 @@ def test_get_reservations_as_user(client, user_token, seeded_book_with_reservati
     data = response.get_json()
     assert "error" in data
     assert data["error"] == "Admin privileges required."
+
+
+def test_get_reservations_unauthenticated(client, seeded_book_with_reservation):
+    """
+    GIVEN a valid book ID but no JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 401 Unauthorized error
+    """
+    book_id = seeded_book_with_reservation["book_id"]
+    response = client.get(f"/books/{book_id}/reservations") # no header
+
+    assert response.status_code == 401
+    data = response.get_json()
+    assert data["error"] == "Authorization header missing"
+
+
+def test_get_reservations_for_nonexistent_book(client, admin_token):
+    """
+    GIVEN a non-existent book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 404 Not Found error
+    """
+    non_existent_id = ObjectId()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = client.get(f"/books/{non_existent_id}/reservations", headers=headers)
+
+    assert response.status_code == 404
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Book not found"
