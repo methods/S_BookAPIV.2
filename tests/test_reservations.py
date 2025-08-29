@@ -5,6 +5,7 @@ including setup fixtures and test cases for creating, validating, and handling r
 Fixtures provide a clean database state and authentication for each test.
 """
 
+from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 
 import jwt
@@ -182,6 +183,11 @@ def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
         # Get the user ID from the user that's already in the mock DB
         user_id = ObjectId(seeded_user_in_db["_id"])
 
+        mongo.db.users.update_one(
+            {"_id": user_id},
+            {"$set": {"forenames": "Testy", "surname": "McTestFace"}},
+        )
+
         book_id = mongo.db.books.insert_one(
             {
                 "title": "The Admin's Guide",
@@ -260,9 +266,8 @@ def test_get_reservations_for_nonexistent_book(client, admin_token):
     response = client.get(f"/books/{non_existent_id}/reservations", headers=headers)
 
     assert response.status_code == 404
-    data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Book not found"
+    assert response.headers["Content-Type"] == "text/plain"
+    assert response.data.decode() == "book not found"
 
 
 def test_get_reservations_for_invalid_id(client, admin_token):
