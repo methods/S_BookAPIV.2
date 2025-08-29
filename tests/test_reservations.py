@@ -206,7 +206,7 @@ def test_get_reservations_as_admin(client, admin_token, seeded_book_with_reserva
     """
     # Arrange
     book_id = seeded_book_with_reservation["book_id"]
-    headers = {"Authorization": f"Bearer {admin_token}"}
+    headers = {"Authorization": f"Bearer {admin_token }"}
     # Act
     response = client.get(f"/books/{book_id}/reservations", headers=headers)
     # Assert
@@ -263,3 +263,19 @@ def test_get_reservations_for_nonexistent_book(client, admin_token):
     data = response.get_json()
     assert "error" in data
     assert data["error"] == "Book not found"
+
+
+def test_get_reservations_for_invalid_id(client, admin_token):
+    """
+    GIVEN a non-existent book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 404 Not Found error
+    """
+    invalid_id = "invalid_format"
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = client.get(f"/books/{invalid_id}/reservations", headers=headers)
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid Book ID"
