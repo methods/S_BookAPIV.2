@@ -213,3 +213,32 @@ def seeded_admin_in_db(test_app, mock_admin_data, mongo_setup): # pylint: disabl
     yield_data = mock_admin_data.copy()
     yield_data["_id"] = str(result.inserted_id)
     yield yield_data
+
+
+@pytest.fixture
+def user_token(client, seeded_user_in_db): # pylint: disable=redefined-outer-name
+    """Logs in the seeded user and returns a valid JWT"""
+    _ = seeded_user_in_db
+    login_payload = {
+        "email": "testuser@example.com",
+        "password": PLAIN_PASSWORD
+    }
+
+    response = client.post("/auth/login", json=login_payload)
+    assert response.status_code == 200, "Failed to log in test user"
+    token = response.get_json()["token"]
+    return token
+
+@pytest.fixture
+def admin_token(client, seeded_admin_in_db): # pylint: disable=redefined-outer-name
+    """Logs in the seeded admin and returns a valid JWT."""
+    _ = seeded_admin_in_db
+    login_payload = {
+        "email": "admin@example.com",
+        "password": "admin-password"
+    }
+
+    resposne = client.post("/auth/login", json=login_payload)
+    assert resposne.status_code == 200, "Failed to log in test admin"
+    token = resposne.get_json(["token"])
+    return token
