@@ -1,6 +1,7 @@
 """Routes for /books/<id>/reservations endpoint"""
 
 import datetime
+import logging
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -104,8 +105,12 @@ def get_reservations_for_book_id(book_id_str):
         # For each reservation, fetch the associated user's details
         user = mongo.db.users.find_one({"_id": r["user_id"]})
 
-        # Skip if the yser for a reservation is not found, to avoid errors
+        # Skip if the user for a reservation is not found, to avoid errors
         if not user:
+            logging.warning(
+                "Data integrity issue: Reservation '%s' references a non-existent user_id '%s'. Skipping.", # pylint: disable=line-too-long
+                r['_id'], r['user_id']
+            )
             continue
 
         # Build the itme object according to spec
@@ -119,11 +124,11 @@ def get_reservations_for_book_id(book_id_str):
             "book_id": str(r["book_id"]),
             "links": {
                  "self": url_for(
-                    'reservations_bp.get_reservation_by_id',
+                    '.get_reservations_for_book_id',
                     reservation_id=str(r["_id"]),
                     _external=True),
                 "book": url_for(
-                    'books_bp.get_book_by_id',
+                    'get_book',
                     book_id=str(r["book_id"]),
                     _external=True)
             }
