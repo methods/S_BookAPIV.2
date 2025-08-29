@@ -94,17 +94,47 @@ def get_reservations_for_book_id(book_id_str):
     # Check if book exists
     book = mongo.db.books.find_one({"_id": oid})
     if not book:
-        return jsonify({"error": "Book not found"}), 404
+        return "book not found", 404, {"Content-Type": "text/plain"}
 
     # Fetch reservations for the given book_id
     reservations_cursor = mongo.db.reservations.find({"book_id": oid})
 
-    # Seralize reservations for JSON resposne
-    reservations_list = []
+    items = []
     for r in reservations_cursor:
-        r["_id"] = str(r["_id"])
-        r["user_id"] = str(r["user_id"])
-        r["book_id"] = str(r["book_id"])
-        reservations_list.append(r)
+        # For each reservation, fetch the associated user's details
+        user = mongo.db.users.find_one({"_id": r["user_id"]})
 
-    return jsonify({"reservations": reservations_list}), 200
+        # Skip if the yser for a reservation is not found, to avoid errors
+        if not user:
+            continue
+
+        # Build the itme object according to spec
+        reservation_item = {
+            "id": str(r["_id"]),
+            "state": r.get("state", "UNKNOWN"),  # Use .get() for safety
+            "user": {
+                    "forenames": user.get("forenames"),
+                    "surname": user.get("surname")
+                },
+            "book_id": str(r["book_id"]),
+            "links": {
+                 "self": url_for(
+                    'reservations_bp.get_reservation_by_id',
+                    reservation_id=str(r["_id"]),
+                    _external=True),
+                "book": url_for(
+                    'books_bp.get_book_by_id',
+                    book_id=str(r["book_id"]),
+                    _external=True)
+            }
+        }
+
+        items.append(reservation_item)
+
+        # Construct the final response body
+        response_body = {
+            "total_count": len(items),
+            "items": items
+        }
+
+    return jsonify(response_body), 200
