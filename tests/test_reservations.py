@@ -167,7 +167,8 @@ def test_create_reservation_for_already_reserved_book_fails(
 
 # ============= GET /books/{id}/reservations TESTS & Fixtures ======================
 
-# New fixture, SCOPED TO THIS FILE, that sets up the specific data we need.abs
+# New fixture, SCOPED TO THIS FILE, that sets up the specific data we need
+@pytest.fixture
 def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
     """
     Uses the app context and mock mongo to seed a book and a reservation.
@@ -179,16 +180,16 @@ def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
 
     with test_app.app_context():
         # Get the user ID from the user that's already in the mock DB
-        user_id = ObjectId(seeded_user_in_db("_id"))
+        user_id = ObjectId(seeded_user_in_db["_id"])
 
-        book_id = test_app.app.mongo.books.insert_one(
+        book_id = mongo.db.books.insert_one(
             {
                 "title": "The Admin's Guide",
                 "author": "Dr. Secure",
             }
         ).inserted_id
 
-        test_app.mongo.db.reservations.insert_one(
+        mongo.db.reservations.insert_one(
             {
                 "book_id": book_id,
                 "user_id": user_id,
