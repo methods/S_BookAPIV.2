@@ -136,10 +136,10 @@ def get_reservations_for_book_id(book_id_str):
 
         items.append(reservation_item)
 
-        # Construct the final response body
-        response_body = {
-            "total_count": len(items),
-            "items": items
-        }
+    # Construct the final response body
+    response_body = {
+        "total_count": len(items),
+        "items": items
+    }
 
     return jsonify(response_body), 200
