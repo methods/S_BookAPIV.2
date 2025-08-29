@@ -12,11 +12,11 @@ from app import bcrypt, mongo
 # -------- /auth/register TESTS ---------
 
 
-def test_register_with_valid_data(client, users_db_setup):
+def test_register_with_valid_data(client, mongo_setup):
     """GIVEN a clean users collection
     WHEN a POST request is sent to /auth/register with new user data
     THEN the response should be 201 CREATED and the user should exist in the DB"""
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup
 
     # Arrange
     new_user_data = {"email": "newuser@example.com", "password": "a-secure-password"}
@@ -28,16 +28,18 @@ def test_register_with_valid_data(client, users_db_setup):
     user_in_db = mongo.db.users.find_one({"email": "newuser@example.com"})
     assert user_in_db is not None
     assert "password" in user_in_db
+    assert "role" in user_in_db
+    assert user_in_db["role"] == "user"
     # Check if the password hashes match!
     assert bcrypt.check_password_hash(user_in_db["password"], "a-secure-password")
 
 
-def test_register_with_duplicate_email(client, users_db_setup):
+def test_register_with_duplicate_email(client, mongo_setup):
     """
     GIVEN a user already exists in the database
     WHEN a POST request is sent to /auth/register with the same email
     THEN the response should be 409 Conflict"""
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup
 
     # Arrange
     existing_user_data = {
@@ -58,12 +60,12 @@ def test_register_with_duplicate_email(client, users_db_setup):
     assert "email is already registered" in response.get_json()["message"].lower()
 
 
-def test_register_fails_with_empty_json(client, users_db_setup):
+def test_register_fails_with_empty_json(client, mongo_setup):
     """
     When a POST is sent with an empty JSON,
     it returns a 400 and an error message
     """
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup
 
     # Arrange
     json_body = ""
@@ -78,12 +80,12 @@ def test_register_fails_with_empty_json(client, users_db_setup):
     assert "request body cannot be empty" in response.get_json()["message"].lower()
 
 
-def test_request_fails_with_invalid_json(client, users_db_setup):
+def test_request_fails_with_invalid_json(client, mongo_setup):
     """
     When a POST is sent with an empty JSON,
     it returns a 400 and an error message
     """
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup
 
     # Arrange
     invalid_json_string = "this is not json"
@@ -106,14 +108,14 @@ def test_request_fails_with_invalid_json(client, users_db_setup):
     ],
 )
 def test_request_fails_with_missing_fields(
-    client, users_db_setup, payload, expected_message
+    client, mongo_setup, payload, expected_message
 ):
     """
     GIVEN a payload that is missing a required field (email or password)
     WHEN a POST request is sent to /auth/register
     THEN the response should be 400 Bad Request with an appropriate error message.
     """
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup
 
     # Act
     response = client.post("/auth/register", json=payload)
@@ -133,14 +135,14 @@ def test_request_fails_with_missing_fields(
         "test @ domain.com",  # Contains spaces
     ],
 )
-def test_register_fails_with_invalid_email(client, users_db_setup, invalid_email):
+def test_register_fails_with_invalid_email(client, mongo_setup, invalid_email):
     """
     GIVEN a Flask application client
     WHEN a POST request is made to /auth/register with an invalid email format
     THEN the response status code should be 400 (Bad Request)
     AND the response JSON should contain an appropriate error message.
     """
-    _ = users_db_setup  # pylint: disable=unused-variable
+    _ = mongo_setup  # pylint: disable=unused-variable
 
     # Arrange
     new_user_data = {"email": invalid_email, "password": "a-secure-password"}
@@ -188,6 +190,7 @@ def test_login_user_returns_jwt_for_valid_credentials(
             data["token"], test_app.config["JWT_SECRET_KEY"], algorithms=["HS256"]
         )
         assert payload["sub"] == TEST_USER_ID
+        assert payload["role"] == "user"
 
 
 def test_login_user_fails_for_wrong_password(client, seeded_user_in_db):
@@ -267,7 +270,7 @@ def test_login_user_fails_with_missing_data(client, payload, expected_message):
     assert data["error"] == expected_message
 
 
-def test_login_handles_jwp_encoding_error(client, seeded_user_in_db):
+def test_login_handles_jwt_encoding_error(client, seeded_user_in_db):
     """
     GIVEN a valid user is logging in
     WHEN the internal PyJWT library fails to encode the token

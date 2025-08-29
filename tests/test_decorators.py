@@ -17,7 +17,7 @@ from bson.errors import InvalidId
 from flask import Flask, g, jsonify
 
 from app.utils import decorators
-from app.utils.decorators import require_jwt
+from app.utils.decorators import require_admin, require_jwt
 
 # A dummy secret key for testing
 TEST_SECRET_KEY = "test-secret-key"
@@ -229,3 +229,102 @@ def test_require_jwt_user_not_found(client):
     # Assert
     assert response.status_code == 401
     assert data["error"] == "User not found"
+
+
+# =======================================================
+#       NEW FIXTURE AND TESTS FOR @require_admin
+# =======================================================
+
+
+@pytest.fixture
+def admin_client():
+    """
+    Creates a minimal, isolated Flask app for unit testing the require_admin decorator.
+    """
+    app = Flask(__name__)
+    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY  # used by JWT libs; kept for parity
+
+    # Protected route to test against
+    @app.route("/admin-protected")
+    @require_admin
+    def admin_protected_route():
+        return jsonify({"message": "admin access granted"})
+
+    # This route is used to test the abort(403) case
+    @app.errorhandler(403)
+    def forbidden(e):
+        return jsonify(error=str(e.description)), 403
+
+    with app.test_client() as test_client:
+        yield test_client
+
+
+def test_require_admin_with_admin_role_succeeds(admin_client):
+    """
+    GIVEN a user with the 'admin' role
+    WHEN they access a route protected by @require_admin
+    THEN the request should succeed (200 OK)
+    """
+    # Arrange
+    admin_user = {
+        "_id": ObjectId(),
+        "email": "admin@example.com",
+        "role": "admin",  # CRUCIAL
+    }
+    # Patch the dependencies of the inner decorator (@require_jwt)
+    with patch(
+        "app.utils.decorators.jwt.decode", return_value={"sub": str(admin_user["_id"])}
+    ), patch("app.utils.decorators.mongo.db.users.find_one", return_value=admin_user):
+
+        # ACT
+        response = admin_client.get(
+            "/admin-protected", headers={"Authorization": "Bearer any-valid-token"}
+        )
+        data = response.get_json()
+
+    # Assert
+    assert response.status_code == 200
+    assert data["message"] == "admin access granted"
+
+
+def test_require_admin_with_non_admin_role_fails(admin_client):
+    """
+    GIVEN a user WITHOUT the "admin" role
+    WHEN they access a route protected by @require_admin
+    THEN the request should be forbidden (403)
+    """
+    # Arrange
+    test_user = {
+        "_id": ObjectId(),
+        "email": "test_user@example.com",
+        "role": "user",  # CRUCIAL
+    }
+    # Patch the dependencies of the inner decorator (@require_jwt)
+    with patch(
+        "app.utils.decorators.jwt.decode", return_value={"sub": str(test_user["_id"])}
+    ), patch("app.utils.decorators.mongo.db.users.find_one", return_value=test_user):
+
+        response = admin_client.get(
+            "/admin-protected", headers={"Authorization": "Bearer any-valid-token"}
+        )
+        data = response.get_json()
+
+    # Assert:
+    # Check for a 403 Forbidden status and the correct error message from abort().
+    assert response.status_code == 403
+    assert data["error"] == "Admin privileges required."
+
+
+def test_require_admin_fails_if_jwt_is_invalid(admin_client):
+    """
+    GIVEN a request without a valid token
+    WHEN they access a route protected by @require_admin
+    THEN the inner @require_jwt decorator should reject it first (401)
+    """
+    # Arrange: No mocking is needed. We are testing the real failure case.
+
+    # Act: Make a request with no Authorization header.
+    response = admin_client.get("/admin-protected")
+
+    # Assert: We expect a 401 error from the @require_jwt decorator.
+    assert response.status_code == 401

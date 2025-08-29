@@ -59,6 +59,7 @@ def register_user():
             "email": email,
             # The hash is stored as a string in the DB
             "password": hashed_password,
+            "role": "user",  # all users assigned a default 'user' role
         }
     ).inserted_id
 
@@ -97,6 +98,7 @@ def login_user():
     # 4. Generate the JWT payload
     payload = {
         "sub": str(user["_id"]),  # sub (subject)- standard claim for user ID
+        "role": user.get("role", "user"),  # embed the role in token
         "iat": datetime.datetime.now(
             datetime.UTC
         ),  # iat (issued at)- when token was created

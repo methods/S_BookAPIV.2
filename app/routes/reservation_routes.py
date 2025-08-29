@@ -1,13 +1,14 @@
 """Routes for /books/<id>/reservations endpoint"""
 
 import datetime
+import logging
 
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Blueprint, g, jsonify, url_for
 
 from app.extensions import mongo
-from app.utils.decorators import require_jwt
+from app.utils.decorators import require_admin, require_jwt
 
 reservations_bp = Blueprint(
     "reservations_bp", __name__, url_prefix="/books/<book_id_str>"
@@ -19,8 +20,8 @@ reservations_bp = Blueprint(
 def create_reservation(book_id_str):
     """
     This POST endpoint lets an authenticated user reserve a book by its ID.
-    It validates the ID, checks book availability, 
-    prevents duplicate reservations, 
+    It validates the ID, checks book availability,
+    prevents duplicate reservations,
     creates the reservation, and returns its details.
     """
 
@@ -76,3 +77,65 @@ def create_reservation(book_id_str):
     }
 
     return jsonify(response_data), 201
+
+
+@reservations_bp.route("/reservations", methods=["GET"])
+@require_admin
+def get_reservations_for_book_id(book_id_str):
+    """
+    Retrieves all reservations for a specific book.
+    Accessible only by users with the 'admin' role.
+    """
+    # Validate the book_id format
+    try:
+        oid = ObjectId(book_id_str)
+    except (InvalidId, TypeError):
+        return jsonify({"error": "Invalid Book ID"}), 400
+
+    # Check if book exists
+    book = mongo.db.books.find_one({"_id": oid})
+    if not book:
+        return "book not found", 404, {"Content-Type": "text/plain"}
+
+    # Fetch reservations for the given book_id
+    reservations_cursor = mongo.db.reservations.find({"book_id": oid})
+
+    items = []
+    for r in reservations_cursor:
+        # For each reservation, fetch the associated user's details
+        user = mongo.db.users.find_one({"_id": r["user_id"]})
+
+        # Skip if the user for a reservation is not found, to avoid errors
+        if not user:
+            logging.warning(
+                "Data integrity issue: Reservation '%s' references a non-existent user_id '%s'. Skipping.",  # pylint: disable=line-too-long
+                r["_id"],
+                r["user_id"],
+            )
+            continue
+
+        # Build the item object according to spec
+        reservation_item = {
+            "id": str(r["_id"]),
+            "state": r.get("state", "UNKNOWN"),  # Use .get() for safety
+            "user": {
+                "forenames": user.get("forenames"),
+                "surname": user.get("surname"),
+            },
+            "book_id": str(r["book_id"]),
+            "links": {
+                "self": url_for(
+                    ".get_reservations_for_book_id",
+                    reservation_id=str(r["_id"]),
+                    _external=True,
+                ),
+                "book": url_for("get_book", book_id=str(r["book_id"]), _external=True),
+            },
+        }
+
+        items.append(reservation_item)
+
+    # Construct the final response body
+    response_body = {"total_count": len(items), "items": items}
+
+    return jsonify(response_body), 200

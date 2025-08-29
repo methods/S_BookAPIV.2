@@ -6,6 +6,7 @@ Fixtures provide a clean database state and authentication for each test.
 """
 
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import jwt
 import pytest
@@ -16,26 +17,19 @@ from app.extensions import mongo
 
 # ------------------- FILE SPECIFIC FIXTURES -----------------
 @pytest.fixture
-def client_with_book(test_app):
+def client_with_book(client, mongo_setup, test_app):
     """
     Provides a test client,
-    sets up the DB and
-    ensures the database is clean and
-    seeded with a single book for reservation tests.
+    ensures the database is clean (via mongo_setup) and
+    seeds a single book for reservation tests.
     """
+    _ = mongo_setup
     with test_app.app_context():
-        mongo.db.books.delete_many({})
-        mongo.db.reservations.delete_many({})
         mongo.db.books.insert_one(
             {"_id": ObjectId("5f8f8b8b8b8b8b8b8b8b8b8b"), "title": "Test Book"}
         )
 
-    yield test_app.test_client()
-
-    # Teardown: Clean up the database
-    with test_app.app_context():
-        mongo.db.books.delete_many({})
-        mongo.db.reservations.delete_many({})
+    yield client
 
 
 @pytest.fixture(scope="function")
@@ -170,3 +164,194 @@ def test_create_reservation_for_already_reserved_book_fails(
     assert response2.status_code == 409
     data = response2.get_json()
     assert data["error"] == "You have already reserved this book"
+
+
+# ============= GET /books/{id}/reservations TESTS & Fixtures ======================
+
+
+# New fixture, SCOPED TO THIS FILE, that sets up the specific data we need
+@pytest.fixture
+def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
+    """
+    Uses the app context and mock mongo to seed a book and a reservation.
+    Yields the IDSs of the created documents.
+    Depends on mongo_setup to ensure clean state.
+    """
+    _ = mongo_setup
+    _ = seeded_user_in_db
+
+    with test_app.app_context():
+        # Get the user ID from the user that's already in the mock DB
+        user_id = ObjectId(seeded_user_in_db["_id"])
+
+        mongo.db.users.update_one(
+            {"_id": user_id},
+            {"$set": {"forenames": "Testy", "surname": "McTestFace"}},
+        )
+
+        book_id = mongo.db.books.insert_one(
+            {
+                "title": "The Admin's Guide",
+                "author": "Dr. Secure",
+            }
+        ).inserted_id
+
+        mongo.db.reservations.insert_one(
+            {
+                "book_id": book_id,
+                "user_id": user_id,
+                "state": "active",
+            }
+        )
+    yield {"book_id": str(book_id), "user_id": str(user_id)}
+
+
+@patch("app.routes.reservation_routes.url_for")
+def test_get_reservations_as_admin(
+    mock_url_for, client, admin_token, seeded_book_with_reservation
+):
+    """
+    GIVEN a valid book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return 200 OK and list of reservations
+    """
+    # Arrange
+    # Tell our mock to return a predictable dummy URL whenever it's called.
+    # This prevents the BuildError from ever happening.
+    mock_url_for.return_value = "http://localhost/mock/url"
+
+    book_id = seeded_book_with_reservation["book_id"]
+    headers = {"Authorization": f"Bearer {admin_token }"}
+
+    # Act
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+
+    # Assert
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code} with data: {response.text}"  # pylint: disable=line-too-long
+    data = response.get_json()
+    assert data["total_count"] == 1
+    assert len(data["items"]) == 1
+
+    item = data["items"][0]
+    assert item["state"] == "active"
+    assert item["book_id"] == book_id
+    assert item["user"]["forenames"] == "Testy"
+    assert item["user"]["surname"] == "McTestFace"
+    assert (
+        item["links"]["self"] == "http://localhost/mock/url"
+    )  # It now contains our dummy URL
+    assert item["links"]["book"] == "http://localhost/mock/url"
+
+
+def test_get_reservations_as_user(client, user_token, seeded_book_with_reservation):
+    """
+    GIVEN a valid book ID and a regular user's JWT
+    WHEN the GET /books/{id}/ reservations endpoint is hit
+    THEN it should return a 403 Forbidden error
+    """
+    # Arrange
+    book_id = seeded_book_with_reservation["book_id"]
+    headers = {"Authorization": f"Bearer {user_token}"}
+    # Act
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+    # Assert
+    assert response.status_code == 403
+    data = response.get_json()
+    assert data["error"]["message"] == "Admin privileges required."
+
+
+def test_get_reservations_unauthenticated(client, seeded_book_with_reservation):
+    """
+    GIVEN a valid book ID but no JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 401 Unauthorized error
+    """
+    book_id = seeded_book_with_reservation["book_id"]
+    response = client.get(f"/books/{book_id}/reservations")  # no header
+
+    assert response.status_code == 401
+    data = response.get_json()
+    assert data["error"] == "Authorization header missing"
+
+
+def test_get_reservations_for_nonexistent_book(client, admin_token):
+    """
+    GIVEN a non-existent book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 404 Not Found error
+    """
+    non_existent_id = ObjectId()
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = client.get(f"/books/{non_existent_id}/reservations", headers=headers)
+
+    assert response.status_code == 404
+    assert response.headers["Content-Type"] == "text/plain"
+    assert response.data.decode() == "book not found"
+
+
+def test_get_reservations_for_invalid_id(client, admin_token):
+    """
+    GIVEN a non-existent book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return a 404 Not Found error
+    """
+    invalid_id = "invalid_format"
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    response = client.get(f"/books/{invalid_id}/reservations", headers=headers)
+
+    assert response.status_code == 400
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Invalid Book ID"
+
+
+@patch("app.routes.reservation_routes.url_for")
+def test_get_reservations_skips_reservation_with_nonexistent_user(
+    mock_url_for, client, admin_token, seeded_user_in_db, test_app
+):
+    """
+    GIVEN a book with two reservations, one for a valid user and one for a user that does not exist
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return 200 OK and a list containing ONLY the valid reservation.
+    """
+    # --- ARRANGE ---
+    mock_url_for.return_value = "http://localhost/mock/url"
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    with test_app.app_context():
+        # 1. Create a book for the reservations to belong to
+        book_id = mongo.db.books.insert_one({"title": "Book With Orphans"}).inserted_id
+
+        # 2. Get the ID of a user that we know exists
+        valid_user_id = ObjectId(seeded_user_in_db["_id"])
+
+        # 3. Create a brand new, completely random ID for a user that does NOT exist
+        non_existent_user_id = ObjectId()
+
+        # 4. Insert two reservations into the database
+        # This one is VALID
+        mongo.db.reservations.insert_one(
+            {"book_id": book_id, "user_id": valid_user_id, "state": "active"}
+        )
+        # This one is an ORPHAN (the user_id doesn't exist in the users collection)
+        mongo.db.reservations.insert_one(
+            {"book_id": book_id, "user_id": non_existent_user_id, "state": "pending"}
+        )
+
+    # --- ACT ---
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+
+    # --- ASSERT ---
+    assert response.status_code == 200
+    data = response.get_json()
+
+    # The endpoint should successfully process the request and return only the valid data
+    assert data["total_count"] == 1
+    assert len(data["items"]) == 1
+
+    # The only item returned should be the one linked to the valid user
+    returned_reservation = data["items"][0]
+    # We can't check the user ID directly in the new format, but we can check the state
+    assert returned_reservation["state"] == "active"

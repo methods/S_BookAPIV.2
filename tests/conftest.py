@@ -125,20 +125,25 @@ def db_setup(test_app):  # pylint: disable=redefined-outer-name
 
 # Fixture for tests/test_auth.py
 @pytest.fixture(scope="function")
-def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
+def mongo_setup(test_app):  # pylint: disable=redefined-outer-name
     """
-    Sets up and tears down the 'users' collection for a test.
+    Updated to a more robust setup fixture.
+    Ensures all relevant collections ('users', 'books', 'reservations')
+    are clean before each test function runs.
     """
     with test_app.app_context():
-        # Now, the 'mongo' variable is defined and linked to the test_app
-        users_collection = mongo.db.users
-        users_collection.delete_many({})
+        # Clear all collections before using in tests
+        mongo.db.users.delete_many({})
+        mongo.db.books.delete_many({})
+        mongo.db.reservations.delete_many({})
 
     yield
 
     with test_app.app_context():
-        users_collection = mongo.db.users
-        users_collection.delete_many({})
+        # Clear after tests have run
+        mongo.db.users.delete_many({})
+        mongo.db.books.delete_many({})
+        mongo.db.reservations.delete_many({})
 
 
 TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
@@ -155,29 +160,82 @@ def mock_user_data():
         "_id": ObjectId(TEST_USER_ID),
         "email": "testuser@example.com",
         "password": hashed_password,
+        "role": "user",
+    }
+
+
+@pytest.fixture(scope="session")
+def mock_admin_data():
+    """
+    PROVIDES a dictionary of a test admin's data,
+    WITH a hashed password
+    """
+    hashed_password = bcrypt.generate_password_hash("admin-password").decode("utf-8")
+
+    return {
+        "email": "admin@example.com",
+        "password": hashed_password,
+        "role": "admin",  # Role explicitly set to 'admin'
     }
 
 
 @pytest.fixture
 def seeded_user_in_db(
-    test_app, mock_user_data, users_db_setup
+    test_app, mock_user_data, mongo_setup
 ):  # pylint: disable=redefined-outer-name
     """
     Ensures the test database is clean and contains exactly one predefined user.
     Depends on:
     - test_app: To get the application context and correct mongo.db object
     - mock_user_data: To get the user data to insert.
-    - users_db_Setup: To ensure the users collection is empty before seeding.
+    - mongo_setup: To ensure the users collection is empty before seeding.
     """
-    _ = users_db_setup
+    _ = mongo_setup
 
     with test_app.app_context():
         mongo.db.users.insert_one(mock_user_data)
 
-    # When yielding the mock data back to the test,
-    # we must convert it back the ObjectId back to the string,
-    # because that's what 'auth_token' fixture expects to put into the JWT 'sub' claim
     yield_data = mock_user_data.copy()
     yield_data["_id"] = str(yield_data["_id"])
 
     yield yield_data
+
+
+@pytest.fixture
+def seeded_admin_in_db(
+    test_app, mock_admin_data, mongo_setup
+):  # pylint: disable=redefined-outer-name
+    """
+    Ensures the test database is clean and
+    Contains exactly one predefined admin
+    """
+    _ = mongo_setup
+
+    with test_app.app_context():
+        result = mongo.db.users.insert_one(mock_admin_data)
+
+    yield_data = mock_admin_data.copy()
+    yield_data["_id"] = str(result.inserted_id)
+    yield yield_data
+
+
+@pytest.fixture
+def user_token(client, seeded_user_in_db):  # pylint: disable=redefined-outer-name
+    """Logs in the seeded user and returns a valid JWT"""
+    _ = seeded_user_in_db
+    login_payload = {"email": "testuser@example.com", "password": PLAIN_PASSWORD}
+
+    response = client.post("/auth/login", json=login_payload)
+    assert response.status_code == 200, "Failed to log in test user"
+    return response.get_json()["token"]
+
+
+@pytest.fixture
+def admin_token(client, seeded_admin_in_db):  # pylint: disable=redefined-outer-name
+    """Logs in the seeded admin and returns a valid JWT."""
+    _ = seeded_admin_in_db
+    login_payload = {"email": "admin@example.com", "password": "admin-password"}
+
+    response = client.post("/auth/login", json=login_payload)
+    assert response.status_code == 200, "Failed to log in test admin"
+    return response.get_json()["token"]
