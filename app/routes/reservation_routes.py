@@ -7,7 +7,7 @@ from bson.errors import InvalidId
 from flask import Blueprint, g, jsonify, url_for
 
 from app.extensions import mongo
-from app.utils.decorators import require_jwt
+from app.utils.decorators import require_jwt, require_admin
 
 reservations_bp = Blueprint(
     "reservations_bp", __name__, url_prefix="/books/<book_id_str>"
@@ -76,3 +76,35 @@ def create_reservation(book_id_str):
     }
 
     return jsonify(response_data), 201
+
+
+@reservations_bp.route("/reservations", methods=["GET"])
+@require_admin
+def get_reservations_for_book_id(book_id_str):
+    """
+    Retrieves all reservations for a specific book.
+    Accessible only by users with the 'admin' role.
+    """
+    # Validate the book_id format
+    try:
+        oid = ObjectId(book_id_str)
+    except (InvalidId, TypeError):
+        return jsonify({"error": "Invalid Book ID"}), 400
+
+    # Check if book exists
+    book = mongo.db.books.find_one({"_id": oid})
+    if not book:
+        return jsonify({"error": "Book not found"}), 404
+
+    # Fetch reservations for the given book_id
+    reservations_cursor = mongo.db.reservations.find({"book_id": oid})
+
+    # Seralize reservations for JSON resposne
+    reservations_list = []
+    for r in reservations_cursor:
+        r["_id"] = str(r["_id"])
+        r["user_id"] = str(r["user_id"])
+        r["book_id"] = str(r["book_id"])
+        reservations_list.append(r)
+
+    return jsonify({"reservations": reservations_list}), 200
