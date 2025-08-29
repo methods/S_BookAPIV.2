@@ -232,8 +232,7 @@ def test_get_reservations_as_user(client, user_token, seeded_book_with_reservati
     # Assert
     assert response.status_code == 403
     data = response.get_json()
-    assert "error" in data
-    assert data["error"] == "Admin privileges required."
+    assert data["error"]["message"] == "Admin privileges required."
 
 
 def test_get_reservations_unauthenticated(client, seeded_book_with_reservation):
