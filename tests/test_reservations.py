@@ -196,3 +196,22 @@ def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
             }
         )
     yield {"book_id": str(book_id), "user_id": str(user_id)}
+
+def test_get_reservations_as_admin(client, admin_token, seeded_book_with_reservation):
+    """
+    GIVEN a valid book ID and an admin user's JWT
+    WHEN the GET /books/{id}/reservations endpoint is hit
+    THEN it should return 200 OK and list of reservations
+    """
+    # Arrange
+    book_id = seeded_book_with_reservation["book_id"]
+    headers = {"Authorization": f"Bearer {admin_token}"}
+    # Act
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+    # Assert
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "reservations" in data
+    assert len(data["reservations"]) == 1
+    assert data["reservations"][0]["status"] == "active"
+    assert data["reservations"][0]["user_id"] == seeded_book_with_reservation["user_id"]
