@@ -125,20 +125,25 @@ def db_setup(test_app):  # pylint: disable=redefined-outer-name
 
 # Fixture for tests/test_auth.py
 @pytest.fixture(scope="function")
-def users_db_setup(test_app):  # pylint: disable=redefined-outer-name
+def mongo_setup(test_app):  # pylint: disable=redefined-outer-name
     """
-    Sets up and tears down the 'users' collection for a test.
+    Updated to a more robust setup fixture.
+    Ensures all relevant collections ('users', 'books', 'reservations')
+    are clean before each test fucntion runs.
     """
     with test_app.app_context():
-        # Now, the 'mongo' variable is defined and linked to the test_app
-        users_collection = mongo.db.users
-        users_collection.delete_many({})
+        # Clear all collections before using in tests
+        mongo.db.users.delete_many({})
+        mongo.db.books.delete_many({})
+        mongo.db.reservations.delete_many({})
 
     yield
 
     with test_app.app_context():
-        users_collection = mongo.db.users
-        users_collection.delete_many({})
+        # Clear after tests have run
+        mongo.db.users.delete_many({})
+        mongo.db.books.delete_many({})
+        mongo.db.reservations.delete_many({})
 
 
 TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
@@ -160,7 +165,7 @@ def mock_user_data():
 
 @pytest.fixture
 def seeded_user_in_db(
-    test_app, mock_user_data, users_db_setup
+    test_app, mock_user_data, mongo_setup
 ):  # pylint: disable=redefined-outer-name
     """
     Ensures the test database is clean and contains exactly one predefined user.
@@ -169,7 +174,7 @@ def seeded_user_in_db(
     - mock_user_data: To get the user data to insert.
     - users_db_Setup: To ensure the users collection is empty before seeding.
     """
-    _ = users_db_setup
+    _ = mongo_setup
 
     with test_app.app_context():
         mongo.db.users.insert_one(mock_user_data)
