@@ -186,16 +186,13 @@ def seeded_user_in_db(
     Depends on:
     - test_app: To get the application context and correct mongo.db object
     - mock_user_data: To get the user data to insert.
-    - users_db_Setup: To ensure the users collection is empty before seeding.
+    - mongo_setup: To ensure the users collection is empty before seeding.
     """
     _ = mongo_setup
 
     with test_app.app_context():
         mongo.db.users.insert_one(mock_user_data)
 
-    # When yielding the mock data back to the test,
-    # we must convert it back the ObjectId back to the string,
-    # because that's what 'auth_token' fixture expects to put into the JWT 'sub' claim
     yield_data = mock_user_data.copy()
     yield_data["_id"] = str(yield_data["_id"])
 
