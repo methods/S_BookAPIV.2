@@ -238,7 +238,7 @@ def admin_token(client, seeded_admin_in_db): # pylint: disable=redefined-outer-n
         "password": "admin-password"
     }
 
-    resposne = client.post("/auth/login", json=login_payload)
-    assert resposne.status_code == 200, "Failed to log in test admin"
-    token = resposne.get_json(["token"])
+    response = client.post("/auth/login", json=login_payload)
+    assert response.status_code == 200, "Failed to log in test admin"
+    token = response.get_json(["token"])
     return token
