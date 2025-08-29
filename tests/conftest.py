@@ -163,6 +163,7 @@ def mock_user_data():
         "role": "user",
     }
 
+
 @pytest.fixture(scope="session")
 def mock_admin_data():
     """
@@ -174,8 +175,9 @@ def mock_admin_data():
     return {
         "email": "admin@example.com",
         "password": hashed_password,
-        "role": "admin", # Role explicitly set to 'admin'
+        "role": "admin",  # Role explicitly set to 'admin'
     }
+
 
 @pytest.fixture
 def seeded_user_in_db(
@@ -200,9 +202,11 @@ def seeded_user_in_db(
 
 
 @pytest.fixture
-def seeded_admin_in_db(test_app, mock_admin_data, mongo_setup): # pylint: disable=redefined-outer-name
+def seeded_admin_in_db(
+    test_app, mock_admin_data, mongo_setup
+):  # pylint: disable=redefined-outer-name
     """
-    Ensures the test database is clean and 
+    Ensures the test database is clean and
     Contains exactly one predefined admin
     """
     _ = mongo_setup
@@ -216,26 +220,21 @@ def seeded_admin_in_db(test_app, mock_admin_data, mongo_setup): # pylint: disabl
 
 
 @pytest.fixture
-def user_token(client, seeded_user_in_db): # pylint: disable=redefined-outer-name
+def user_token(client, seeded_user_in_db):  # pylint: disable=redefined-outer-name
     """Logs in the seeded user and returns a valid JWT"""
     _ = seeded_user_in_db
-    login_payload = {
-        "email": "testuser@example.com",
-        "password": PLAIN_PASSWORD
-    }
+    login_payload = {"email": "testuser@example.com", "password": PLAIN_PASSWORD}
 
     response = client.post("/auth/login", json=login_payload)
     assert response.status_code == 200, "Failed to log in test user"
     return response.get_json()["token"]
 
+
 @pytest.fixture
-def admin_token(client, seeded_admin_in_db): # pylint: disable=redefined-outer-name
+def admin_token(client, seeded_admin_in_db):  # pylint: disable=redefined-outer-name
     """Logs in the seeded admin and returns a valid JWT."""
     _ = seeded_admin_in_db
-    login_payload = {
-        "email": "admin@example.com",
-        "password": "admin-password"
-    }
+    login_payload = {"email": "admin@example.com", "password": "admin-password"}
 
     response = client.post("/auth/login", json=login_payload)
     assert response.status_code == 200, "Failed to log in test admin"

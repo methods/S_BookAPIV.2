@@ -8,7 +8,7 @@ from bson.errors import InvalidId
 from flask import Blueprint, g, jsonify, url_for
 
 from app.extensions import mongo
-from app.utils.decorators import require_jwt, require_admin
+from app.utils.decorators import require_admin, require_jwt
 
 reservations_bp = Blueprint(
     "reservations_bp", __name__, url_prefix="/books/<book_id_str>"
@@ -20,8 +20,8 @@ reservations_bp = Blueprint(
 def create_reservation(book_id_str):
     """
     This POST endpoint lets an authenticated user reserve a book by its ID.
-    It validates the ID, checks book availability, 
-    prevents duplicate reservations, 
+    It validates the ID, checks book availability,
+    prevents duplicate reservations,
     creates the reservation, and returns its details.
     """
 
@@ -108,8 +108,9 @@ def get_reservations_for_book_id(book_id_str):
         # Skip if the user for a reservation is not found, to avoid errors
         if not user:
             logging.warning(
-                "Data integrity issue: Reservation '%s' references a non-existent user_id '%s'. Skipping.", # pylint: disable=line-too-long
-                r['_id'], r['user_id']
+                "Data integrity issue: Reservation '%s' references a non-existent user_id '%s'. Skipping.",  # pylint: disable=line-too-long
+                r["_id"],
+                r["user_id"],
             )
             continue
 
@@ -118,28 +119,23 @@ def get_reservations_for_book_id(book_id_str):
             "id": str(r["_id"]),
             "state": r.get("state", "UNKNOWN"),  # Use .get() for safety
             "user": {
-                    "forenames": user.get("forenames"),
-                    "surname": user.get("surname")
-                },
+                "forenames": user.get("forenames"),
+                "surname": user.get("surname"),
+            },
             "book_id": str(r["book_id"]),
             "links": {
-                 "self": url_for(
-                    '.get_reservations_for_book_id',
+                "self": url_for(
+                    ".get_reservations_for_book_id",
                     reservation_id=str(r["_id"]),
-                    _external=True),
-                "book": url_for(
-                    'get_book',
-                    book_id=str(r["book_id"]),
-                    _external=True)
-            }
+                    _external=True,
+                ),
+                "book": url_for("get_book", book_id=str(r["book_id"]), _external=True),
+            },
         }
 
         items.append(reservation_item)
 
     # Construct the final response body
-    response_body = {
-        "total_count": len(items),
-        "items": items
-    }
+    response_body = {"total_count": len(items), "items": items}
 
     return jsonify(response_body), 200

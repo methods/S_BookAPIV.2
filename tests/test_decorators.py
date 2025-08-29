@@ -17,7 +17,7 @@ from bson.errors import InvalidId
 from flask import Flask, g, jsonify
 
 from app.utils import decorators
-from app.utils.decorators import require_jwt, require_admin
+from app.utils.decorators import require_admin, require_jwt
 
 # A dummy secret key for testing
 TEST_SECRET_KEY = "test-secret-key"
@@ -231,18 +231,18 @@ def test_require_jwt_user_not_found(client):
     assert data["error"] == "User not found"
 
 
-
 # =======================================================
 #       NEW FIXTURE AND TESTS FOR @require_admin
 # =======================================================
 
+
 @pytest.fixture
 def admin_client():
     """
-    Creates a minimal, isolated Flask app for unit testing the require_admin decorator. 
+    Creates a minimal, isolated Flask app for unit testing the require_admin decorator.
     """
     app = Flask(__name__)
-    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY # used by JWT libs; kept for parity
+    app.config["JWT_SECRET_KEY"] = TEST_SECRET_KEY  # used by JWT libs; kept for parity
 
     # Protected route to test against
     @app.route("/admin-protected")
@@ -269,16 +269,16 @@ def test_require_admin_with_admin_role_succeeds(admin_client):
     admin_user = {
         "_id": ObjectId(),
         "email": "admin@example.com",
-        "role": "admin" # CRUCIAL
-        }
+        "role": "admin",  # CRUCIAL
+    }
     # Patch the dependencies of the inner decorator (@require_jwt)
-    with patch("app.utils.decorators.jwt.decode", return_value={"sub": str(admin_user["_id"])}), \
-        patch("app.utils.decorators.mongo.db.users.find_one", return_value=admin_user):
+    with patch(
+        "app.utils.decorators.jwt.decode", return_value={"sub": str(admin_user["_id"])}
+    ), patch("app.utils.decorators.mongo.db.users.find_one", return_value=admin_user):
 
         # ACT
         response = admin_client.get(
-            "/admin-protected",
-            headers={"Authorization": "Bearer any-valid-token"}
+            "/admin-protected", headers={"Authorization": "Bearer any-valid-token"}
         )
         data = response.get_json()
 
@@ -297,15 +297,15 @@ def test_require_admin_with_non_admin_role_fails(admin_client):
     test_user = {
         "_id": ObjectId(),
         "email": "test_user@example.com",
-        "role": "user" # CRUCIAL
-        }
+        "role": "user",  # CRUCIAL
+    }
     # Patch the dependencies of the inner decorator (@require_jwt)
-    with patch("app.utils.decorators.jwt.decode", return_value={"sub": str(test_user["_id"])}), \
-        patch("app.utils.decorators.mongo.db.users.find_one", return_value=test_user):
+    with patch(
+        "app.utils.decorators.jwt.decode", return_value={"sub": str(test_user["_id"])}
+    ), patch("app.utils.decorators.mongo.db.users.find_one", return_value=test_user):
 
         response = admin_client.get(
-            "/admin-protected",
-            headers={"Authorization": "Bearer any-valid-token"}
+            "/admin-protected", headers={"Authorization": "Bearer any-valid-token"}
         )
         data = response.get_json()
 

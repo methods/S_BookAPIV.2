@@ -5,15 +5,14 @@ including setup fixtures and test cases for creating, validating, and handling r
 Fixtures provide a clean database state and authentication for each test.
 """
 
-from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
+from unittest.mock import patch
 
 import jwt
 import pytest
 from bson.objectid import ObjectId
 
 from app.extensions import mongo
-
 
 
 # ------------------- FILE SPECIFIC FIXTURES -----------------
@@ -169,6 +168,7 @@ def test_create_reservation_for_already_reserved_book_fails(
 
 # ============= GET /books/{id}/reservations TESTS & Fixtures ======================
 
+
 # New fixture, SCOPED TO THIS FILE, that sets up the specific data we need
 @pytest.fixture
 def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
@@ -205,8 +205,11 @@ def seeded_book_with_reservation(mongo_setup, seeded_user_in_db, test_app):
         )
     yield {"book_id": str(book_id), "user_id": str(user_id)}
 
-@patch('app.routes.reservation_routes.url_for')
-def test_get_reservations_as_admin(mock_url_for, client, admin_token, seeded_book_with_reservation):
+
+@patch("app.routes.reservation_routes.url_for")
+def test_get_reservations_as_admin(
+    mock_url_for, client, admin_token, seeded_book_with_reservation
+):
     """
     GIVEN a valid book ID and an admin user's JWT
     WHEN the GET /books/{id}/reservations endpoint is hit
@@ -224,7 +227,9 @@ def test_get_reservations_as_admin(mock_url_for, client, admin_token, seeded_boo
     response = client.get(f"/books/{book_id}/reservations", headers=headers)
 
     # Assert
-    assert response.status_code == 200, f"Expected 200, got {response.status_code} with data: {response.text}" # pylint: disable=line-too-long
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code} with data: {response.text}"  # pylint: disable=line-too-long
     data = response.get_json()
     assert data["total_count"] == 1
     assert len(data["items"]) == 1
@@ -234,7 +239,9 @@ def test_get_reservations_as_admin(mock_url_for, client, admin_token, seeded_boo
     assert item["book_id"] == book_id
     assert item["user"]["forenames"] == "Testy"
     assert item["user"]["surname"] == "McTestFace"
-    assert item["links"]["self"] == "http://localhost/mock/url" # It now contains our dummy URL
+    assert (
+        item["links"]["self"] == "http://localhost/mock/url"
+    )  # It now contains our dummy URL
     assert item["links"]["book"] == "http://localhost/mock/url"
 
 
@@ -262,7 +269,7 @@ def test_get_reservations_unauthenticated(client, seeded_book_with_reservation):
     THEN it should return a 401 Unauthorized error
     """
     book_id = seeded_book_with_reservation["book_id"]
-    response = client.get(f"/books/{book_id}/reservations") # no header
+    response = client.get(f"/books/{book_id}/reservations")  # no header
 
     assert response.status_code == 401
     data = response.get_json()
@@ -300,7 +307,7 @@ def test_get_reservations_for_invalid_id(client, admin_token):
     assert data["error"] == "Invalid Book ID"
 
 
-@patch('app.routes.reservation_routes.url_for')
+@patch("app.routes.reservation_routes.url_for")
 def test_get_reservations_skips_reservation_with_nonexistent_user(
     mock_url_for, client, admin_token, seeded_user_in_db, test_app
 ):
@@ -325,17 +332,13 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
 
         # 4. Insert two reservations into the database
         # This one is VALID
-        mongo.db.reservations.insert_one({
-            "book_id": book_id,
-            "user_id": valid_user_id,
-            "state": "active"
-        })
+        mongo.db.reservations.insert_one(
+            {"book_id": book_id, "user_id": valid_user_id, "state": "active"}
+        )
         # This one is an ORPHAN (the user_id doesn't exist in the users collection)
-        mongo.db.reservations.insert_one({
-            "book_id": book_id,
-            "user_id": non_existent_user_id,
-            "state": "pending"
-        })
+        mongo.db.reservations.insert_one(
+            {"book_id": book_id, "user_id": non_existent_user_id, "state": "pending"}
+        )
 
     # --- ACT ---
     response = client.get(f"/books/{book_id}/reservations", headers=headers)

@@ -7,7 +7,7 @@ import functools
 import jwt
 from bson.errors import InvalidId
 from bson.objectid import ObjectId
-from flask import current_app, g, jsonify, request, abort
+from flask import abort, current_app, g, jsonify, request
 
 from app.extensions import mongo
 
@@ -72,8 +72,9 @@ def require_jwt(f):
 
 def require_admin(f):
     """A decorator that requires a user to be admin"""
+
     @functools.wraps(f)
-    @require_jwt # ensure the user is logged in with a valid JWT
+    @require_jwt  # ensure the user is logged in with a valid JWT
     def decorated_function(*args, **kwargs):
         user_role = g.current_user.get("role")
 
@@ -81,4 +82,5 @@ def require_admin(f):
             abort(403, description="Admin privileges required.")
 
         return f(*args, **kwargs)
+
     return decorated_function
