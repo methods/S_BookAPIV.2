@@ -226,8 +226,7 @@ def user_token(client, seeded_user_in_db): # pylint: disable=redefined-outer-nam
 
     response = client.post("/auth/login", json=login_payload)
     assert response.status_code == 200, "Failed to log in test user"
-    token = response.get_json()["token"]
-    return token
+    return response.get_json()["token"]
 
 @pytest.fixture
 def admin_token(client, seeded_admin_in_db): # pylint: disable=redefined-outer-name
@@ -240,5 +239,4 @@ def admin_token(client, seeded_admin_in_db): # pylint: disable=redefined-outer-n
 
     response = client.post("/auth/login", json=login_payload)
     assert response.status_code == 200, "Failed to log in test admin"
-    token = response.get_json(["token"])
-    return token
+    return response.get_json()["token"]
