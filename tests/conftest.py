@@ -160,8 +160,22 @@ def mock_user_data():
         "_id": ObjectId(TEST_USER_ID),
         "email": "testuser@example.com",
         "password": hashed_password,
+        "role": "user",
     }
 
+@pytest.fixture(scope="session")
+def mock_admin_data():
+    """
+    PROVIDES a dictionary of a test admin's data,
+    WITH a hashed password
+    """
+    hashed_password = bcrypt.generate_password_hash("admin-password").decode("utf-8")
+
+    return {
+        "email": "admin@example.com",
+        "password": hashed_password,
+        "role": "admin", # Role explicityly set to 'admin'
+    }
 
 @pytest.fixture
 def seeded_user_in_db(
