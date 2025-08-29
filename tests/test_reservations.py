@@ -215,3 +215,21 @@ def test_get_reservations_as_admin(client, admin_token, seeded_book_with_reserva
     assert len(data["reservations"]) == 1
     assert data["reservations"][0]["status"] == "active"
     assert data["reservations"][0]["user_id"] == seeded_book_with_reservation["user_id"]
+
+
+def test_get_reservations_as_user(client, user_token, seeded_book_with_reservation):
+    """
+    GIVEN a valid book ID and a regular user's JWT
+    WHEN the GET /books/{id}/ reservations endpoint is hit
+    THEN it should return a 403 Forbidden error
+    """
+    # Arrange
+    book_id = seeded_book_with_reservation["book_id"]
+    headers = {"Authorization": f"Bearer {user_token}"}
+    # Act
+    response = client.get(f"/books/{book_id}/reservations", headers=headers)
+    # Assert
+    assert response.status_code == 403
+    data = response.get_json()
+    assert "error" in data
+    assert data["error"] == "Admin privileges required."
