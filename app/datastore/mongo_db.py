@@ -3,6 +3,7 @@
 from flask import current_app
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
+
 from app.extensions import mongo
 
 

@@ -1,10 +1,14 @@
 """
 This script completely clears all reservations from the configured MongoDB collection.
 """
+
 import sys
+
 from pymongo.errors import ConnectionFailure
+
 from app import create_app
 from app.datastore.mongo_db import get_reservation_collection
+
 
 def delete_all_reservations(collection):
     """
@@ -24,7 +28,7 @@ def delete_all_reservations(collection):
 
 def main():
     """
-    Starts the Flask app context, connects to MongoDB, and 
+    Starts the Flask app context, connects to MongoDB, and
     Deletes all documents in the reservations collection.
 
     Returns:
@@ -40,7 +44,9 @@ def main():
             if num_deleted > 0:
                 print(f"✅ Success: Removed {num_deleted} reservation(s).")
             else:
-                print("ℹ️ Info: The collection was already empty. No reservations were deleted.")
+                print(
+                    "ℹ️ Info: The collection was already empty. No reservations were deleted."
+                )
             # Return success code
             return 0
         except ConnectionFailure as e:

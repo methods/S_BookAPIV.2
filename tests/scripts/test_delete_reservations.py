@@ -1,14 +1,15 @@
 """..."""
-from unittest.mock import MagicMock, patch
-from flask import Flask
 
+from unittest.mock import MagicMock, patch
+
+from flask import Flask
 from pymongo.errors import ConnectionFailure
+
 from scripts.delete_reservations import delete_all_reservations, main
 
 
-
 def test_delete_all_reservations_clears_collection_and_returns_count():
-    """ 
+    """
     Unit test for delete_all_reservations: ensure it returns deleted_count
     when the collection.delete_many() result has deleted_count.
     """
@@ -33,9 +34,8 @@ def test_delete_all_reservations_clears_collection_and_returns_count():
     side_effect=ConnectionFailure("Mock DB connection error"),
 )
 def test_light_integration_main_handles_connection_failure_gracefully(
-    mock_delete_all_reservations,
-    capsys
-    ):
+    mock_delete_all_reservations, capsys
+):
     """
     Light integration test that relies on the REAL create_app() and get_reservation_collection()
     Verifies the essentials: exit code, stderr output, no stdout
@@ -55,15 +55,18 @@ def test_light_integration_main_handles_connection_failure_gracefully(
     assert "Mock DB connection error" in captured.err
 
 
-@patch("scripts.delete_reservations.delete_all_reservations",
-       side_effect=ConnectionFailure("Mock DB connection error"))
+@patch(
+    "scripts.delete_reservations.delete_all_reservations",
+    side_effect=ConnectionFailure("Mock DB connection error"),
+)
 @patch("scripts.delete_reservations.get_reservation_collection")
 @patch("scripts.delete_reservations.create_app")
 def test_unit_main_handles_connection_failure_gracefully(
     mock_create_app,
-    mock_get_reservation_collection,mock_delete_all_reservations,
-    capsys
-    ):
+    mock_get_reservation_collection,
+    mock_delete_all_reservations,
+    capsys,
+):
     """
     Fully isolated UNIT test:
     Patch delete_all_reservations to raise ConnectionFailure. Ensure main() catches it,
@@ -95,9 +98,9 @@ def test_unit_main_handles_connection_failure_gracefully(
 def test_main_success_prints_message_and_returns_zero(
     mock_create_app,
     mock_get_reservation_collection,
-    mock_delete_all_reservations, # unused argument
-    capsys
-    ):
+    mock_delete_all_reservations,  # unused argument
+    capsys,
+):
     """
     When delete_all_reservations returns > 0 we should print success to stdout and exit 0.
     """
@@ -112,14 +115,16 @@ def test_main_success_prints_message_and_returns_zero(
     assert captured.err == ""
     mock_delete_all_reservations.assert_called_once()
 
+
 @patch("scripts.delete_reservations.delete_all_reservations", return_value=0)
 @patch("scripts.delete_reservations.get_reservation_collection")
 @patch("scripts.delete_reservations.create_app")
 def test_main_info_when_zero_returns_zero_and_prints_info(
     mock_create_app,
-    mock_get_reservation_collection,mock_delete_all_reservations,
-    capsys
-    ):
+    mock_get_reservation_collection,
+    mock_delete_all_reservations,
+    capsys,
+):
     """
     When delete_all_reservations returns 0 we should print the informational message and return 0.
     """
@@ -130,6 +135,9 @@ def test_main_info_when_zero_returns_zero_and_prints_info(
 
     assert exit_code == 0
     captured = capsys.readouterr()
-    assert "ℹ️ Info: The collection was already empty. No reservations were deleted." in captured.out # pylint: disable=line-too-long
+    assert (
+        "ℹ️ Info: The collection was already empty. No reservations were deleted."
+        in captured.out
+    )  # pylint: disable=line-too-long
     assert captured.err == ""
     mock_delete_all_reservations.assert_called_once()
