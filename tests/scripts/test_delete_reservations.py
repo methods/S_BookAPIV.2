@@ -111,3 +111,25 @@ def test_main_success_prints_message_and_returns_zero(
     assert "✅ Success: Removed 2 reservation(s)." in captured.out
     assert captured.err == ""
     mock_delete_all_reservations.assert_called_once()
+
+@patch("scripts.delete_reservations.delete_all_reservations", return_value=0)
+@patch("scripts.delete_reservations.get_reservation_collection")
+@patch("scripts.delete_reservations.create_app")
+def test_main_info_when_zero_returns_zero_and_prints_info(
+    mock_create_app,
+    mock_get_reservation_collection,mock_delete_all_reservations,
+    capsys
+    ):
+    """
+    When delete_all_reservations returns 0 we should print the informational message and return 0.
+    """
+    mock_create_app.return_value = Flask(__name__)
+    mock_get_reservation_collection.return_value = MagicMock()
+
+    exit_code = main()
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "ℹ️ Info: The collection was already empty. No reservations were deleted." in captured.out # pylint: disable=line-too-long
+    assert captured.err == ""
+    mock_delete_all_reservations.assert_called_once()
