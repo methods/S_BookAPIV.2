@@ -87,3 +87,27 @@ def test_unit_main_handles_connection_failure_gracefully(
     # stderr should include the error header and details
     assert "❌ ERROR: Could not connect to MongoDB." in captured.err
     assert "Mock DB connection error" in captured.err
+
+
+@patch("scripts.delete_reservations.delete_all_reservations", return_value=2)
+@patch("scripts.delete_reservations.get_reservation_collection")
+@patch("scripts.delete_reservations.create_app")
+def test_main_success_prints_message_and_returns_zero(
+    mock_create_app,
+    mock_get_reservation_collection,
+    mock_delete_all_reservations, # unused argument
+    capsys
+    ):
+    """
+    When delete_all_reservations returns > 0 we should print success to stdout and exit 0.
+    """
+    mock_create_app.return_value = Flask(__name__)
+    mock_get_reservation_collection.return_value = MagicMock()
+
+    exit_code = main()
+
+    assert exit_code == 0
+    captured = capsys.readouterr()
+    assert "✅ Success: Removed 2 reservation(s)." in captured.out
+    assert captured.err == ""
+    mock_delete_all_reservations.assert_called_once()
