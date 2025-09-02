@@ -4,6 +4,8 @@ from flask import current_app
 from pymongo import MongoClient
 from pymongo.errors import ConnectionFailure
 
+from app.extensions import mongo
+
 
 def get_book_collection():
     """
@@ -21,3 +23,10 @@ def get_book_collection():
     except ConnectionFailure as e:
 
         raise ConnectionFailure(f"Could not connect to MongoDB: {str(e)}") from e
+
+
+def get_reservation_collection():
+    """Returns the PyMongo collection for reservations."""
+    reservations_collection = mongo.db.reservations
+
+    return reservations_collection
