@@ -1,4 +1,4 @@
-"""Test file for utility/helper functions that ineract with MongoDb"""
+"""Test file for utility/helper functions that interact with MongoDb"""
 
 import pytest
 from pymongo.collection import Collection
