@@ -56,7 +56,7 @@ def main():
             # Return the failure code.
             return 1
 
-
+# pylint: disable=duplicate-code
 if __name__ == "__main__":
     # A confirmation step is crucial for destructive scripts.
     confirm = input(
@@ -72,3 +72,4 @@ if __name__ == "__main__":
     # Use the returned code to exit the script.
     # This cleanly separates the script's logic from its execution.
     sys.exit(EXIT_CODE)
+# pylint: disable=duplicate-code
