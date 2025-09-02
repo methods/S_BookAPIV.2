@@ -1,0 +1,28 @@
+[
+  {
+    "book_title": "1984",
+    "user_identifier": "user_george_o",
+    "state": "reserved"
+  },
+  {
+    "book_title": "The Great Gatsby",
+    "user_identifier": "user_scott_f",
+    "state": "pending"
+  },
+  {
+    "book_title": "To Kill a Mockingbird",
+    "user_identifier": "user_harper_l",
+    "state": "reserved"
+  },
+  {
+    "book_title": "Pride and Prejudice",
+    "user_identifier": "user_jane_a",
+    "state": "cancelled"
+  },
+  {
+    "book_title": "1984",
+    "user_identifier": "user_jane_d",
+    "state": "reserved",
+    "_comment": "intentional last entry which creates a second reservation for '1984' by diffrent user- good test case"
+  }
+]
