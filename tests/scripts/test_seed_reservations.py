@@ -360,3 +360,38 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
 
     # Verify we attempted to load the JSON file.
     mock_load_json.assert_called_once()
+
+
+def test_skips_reservation_if_book_title_not_found(test_app, capsys):
+    """
+    GIVEN a reservation's book_title is not in the book_id_map
+    WHEN run_reservation_population is called
+    THEN it should print a warning and continue, eventually succeeding
+    """
+    # ARRANGE: Set up the entire function to run, controlling the inputs.
+
+    # 1. Create a book map with known books.
+    mock_books_collection = MagicMock()
+    sample_book_for_map = [{"_id": ObjectId(), "title": "The Hobbit"}]
+    mock_books_collection.find.return_value = sample_book_for_map
+
+    # 2. Create a reservation data from JSON that contains an UNKNOWN book title.
+    reservation_with_bad_title = [{"book_title": "A Book That Does Not Exist"}]
+
+    # 3. Patch all dependencies.
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=reservation_with_bad_title):
+
+        # ACT
+        with test_app.app_context():
+            response, status_code = run_reservation_population()
+
+    # ASSERT
+    # The function should still complete successfully overall.
+    assert status_code == 200
+
+    # Capture the printed output.
+    captured = capsys.readouterr()
+    expected_warning = "WARNING: Skipping reservation because book 'A Book That Does Not Exist' was not found.\n"
+    assert expected_warning in captured.out
