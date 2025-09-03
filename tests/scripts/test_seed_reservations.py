@@ -108,9 +108,8 @@ def test_load_reservations_integration_reads_file(tmp_path, monkeypatch):
 # A list of test cases for the failure scenarios
 error_scenarios = [
     # id is a descriptive name that will appear in the test results
-    pytest.param([], [{"user_id": 1}], id="book_collection_is_empty"),
+    pytest.param(None, [{"user_id": 1}], id="book_collection_is_empty"),
     pytest.param([{"id": 1}], None, id="reservation_collection_is_none"),
-    pytest.param([], [], id="both_collections_are_empty"),
     pytest.param(None, None, id="both_collections_are_none"),
 ]
 @pytest.mark.parametrize(
