@@ -385,7 +385,7 @@ def test_skips_reservation_if_book_title_not_found(test_app, capsys):
 
         # ACT
         with test_app.app_context():
-            response, status_code = run_reservation_population()
+            _response, status_code = run_reservation_population()
 
     # ASSERT
     # The function should still complete successfully overall.
@@ -395,3 +395,36 @@ def test_skips_reservation_if_book_title_not_found(test_app, capsys):
     captured = capsys.readouterr()
     expected_warning = "WARNING: Skipping reservation because book 'A Book That Does Not Exist' was not found.\n"
     assert expected_warning in captured.out
+
+def test_proceeds_if_book_title_is_found(test_app, capsys):
+    """
+    GIVEN a reservation's book_title IS in the book_id_map
+    WHEN run_reservation_population is called
+    THEN it should not print a warning and should proceed
+    """
+    # ARRANGE
+    # 1. The book map has a specific, known book.
+    mock_books_collection = MagicMock()
+    book_title_to_find = "The Lord of the Rings"
+    sample_book_for_map = [{"_id": ObjectId(), "title": book_title_to_find}]
+    mock_books_collection.find.return_value = sample_book_for_map
+
+    # 2. The reservation data refers to that EXACT book title.
+    reservation_with_good_title = [{"book_title": book_title_to_find}]
+
+    # 3. Patch dependencies.
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=reservation_with_good_title):
+
+        # ACT
+        with test_app.app_context():
+            _response, status_code = run_reservation_population()
+
+    # ASSERT
+    assert status_code == 200
+
+    # Crucially, assert that NO warning was printed.
+    captured = capsys.readouterr()
+    warning_message_to_avoid = "WARNING: Skipping reservation"
+    assert warning_message_to_avoid not in captured.out
