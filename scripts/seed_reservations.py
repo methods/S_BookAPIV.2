@@ -1,14 +1,18 @@
 """
 Script for populating reservations to a database
 """
+
 import json
 import os
 import sys
+
 from flask import jsonify
 from pymongo.errors import PyMongoError
 
 # Import MongoDB helper functions
-from app.datastore.mongo_db import get_book_collection, get_reservation_collection
+from app.datastore.mongo_db import (get_book_collection,
+                                    get_reservation_collection)
+
 
 # upload sample data json to be used
 def load_reservations_json():
@@ -21,15 +25,17 @@ def load_reservations_json():
         script_dir = os.path.dirname(__file__)
         data_path = os.path.join(script_dir, "test_data/sample_reservations.json")
 
-        with open(data_path, 'r', encoding='utf-8') as f:
+        with open(data_path, "r", encoding="utf-8") as f:
             return json.load(f)
     except FileNotFoundError:
         print(f"ERROR: Data file not found at '{data_path}'.", file=sys.stderr)
         return None
     except json.JSONDecodeError:
-        print(f"ERROR: Could not decode JSON from '{data_path}'. Check for syntax.", file=sys.stderr) # pylint: disable=line-too-long
+        print(
+            f"ERROR: Could not decode JSON from '{data_path}'. Check for syntax.",
+            file=sys.stderr,
+        )  # pylint: disable=line-too-long
         return None
-
 
 
 def run_reservation_population():
@@ -46,17 +52,17 @@ def run_reservation_population():
     print("Fetching existing books to create a title-to-ID map...")
     try:
         book_cursor = books_collection.find({}, {"_id": 1, "title": 1})
-        book_id_map = {book['title']: book["_id"] for book in book_cursor}
+        book_id_map = {book["title"]: book["_id"] for book in book_cursor}
         if not book_id_map:
-            return (True, "Warning: No books found in the database. Cannot create reservations.")
+            return (
+                True,
+                "Warning: No books found in the database. Cannot create reservations.",
+            )
     except PyMongoError as e:
         return (False, f"ERROR: Failed to fetch books from database: {e}")
 
-
     # success placeholder
     return jsonify({"status": "success", "message": "Collections loaded."}), 200
-
-
 
 
 # 4. Load the new reservations data from JSON - load_reservation_json helper function
@@ -64,9 +70,6 @@ def run_reservation_population():
 #       - initilize count for created and updated
 #       - loop through uploaded reservations JSON list
 #       -
-
-
-
 
 
 if __name__ == "__main__":

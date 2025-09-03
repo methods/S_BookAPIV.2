@@ -3,12 +3,14 @@
 
 import json
 from unittest.mock import MagicMock, mock_open, patch
+
+import pytest
 from bson import ObjectId
 from pymongo.errors import PyMongoError
-import pytest
 
-from scripts.seed_reservations import load_reservations_json, run_reservation_population
 from scripts import seed_reservations as load_reservations_module
+from scripts.seed_reservations import (load_reservations_json,
+                                       run_reservation_population)
 
 
 def test_load_reservations_json_success():
@@ -68,7 +70,7 @@ def test_load_reservations_json_decode_error(capsys):
     """
     GIVEN that the reservation data file contains invalid (malformed) JSON
     WHEN load_reservations_json is called
-    THEN the function should handle the JSONDecodeError, 
+    THEN the function should handle the JSONDecodeError,
     return None, and print a helpful error message to stderr.
     """
     bad_json = '{"broken": }'  # invalid JSON
@@ -106,6 +108,7 @@ def test_load_reservations_integration_reads_file(tmp_path, monkeypatch):
     result = load_reservations_json()
     assert result == sample_data
 
+
 # -------------- TESTS for run_reservation_population -----------------
 
 # A list of test cases for the failure scenarios
@@ -115,16 +118,19 @@ error_scenarios = [
     pytest.param([{"id": 1}], None, id="reservation_collection_is_none"),
     pytest.param(None, None, id="both_collections_are_none"),
 ]
+
+
 @pytest.mark.parametrize(
-    "mock_books_return_val, mock_reservations_return_val",
-    error_scenarios
+    "mock_books_return_val, mock_reservations_return_val", error_scenarios
 )
 @patch("scripts.seed_reservations.get_book_collection")
 @patch("scripts.seed_reservations.get_reservation_collection")
 def test_returns_404_if_any_collection_is_missing(
-    mock_get_books, mock_get_reservations, # Mocks come first
-    test_app, # fixture from conftest.py
-    mock_books_return_val, mock_reservations_return_val # Params come after
+    mock_get_books,
+    mock_get_reservations,  # Mocks come first
+    test_app,  # fixture from conftest.py
+    mock_books_return_val,
+    mock_reservations_return_val,  # Params come after
 ):
     """
     GIVEN that either the book or reservation collection is missing (falsy)
@@ -147,7 +153,9 @@ def test_returns_404_if_any_collection_is_missing(
     mock_get_books.assert_called_once()
 
 
-def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_book_data):
+def test_returns_200_when_collections_are_present(
+    test_app, mongo_setup, sample_book_data
+):
     """
     GIVEN a database with books and reservations
     WHEN run_reservations_population is called
@@ -157,7 +165,9 @@ def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_
 
     with test_app.app_context():
         # Get the collections from the GLOBAL `mongo` object
-        from app.extensions import mongo # pylint: disable=import-outside-toplevel
+        from app.extensions import \
+            mongo  # pylint: disable=import-outside-toplevel
+
         mock_books_collection_with_data = mongo.db.books
         mock_reservations_collection_with_data = mongo.db.reservations
 
@@ -165,8 +175,13 @@ def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_
         mock_books_collection_with_data.insert_many(sample_book_data)
 
         # 4. NOW, patch the helper functions to return THESE specific, seeded collection objects.
-        with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection_with_data), \
-                patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection_with_data):
+        with patch(
+            "scripts.seed_reservations.get_book_collection",
+            return_value=mock_books_collection_with_data,
+        ), patch(
+            "scripts.seed_reservations.get_reservation_collection",
+            return_value=mock_reservations_collection_with_data,
+        ):
 
             # ACT: Call the function. It will now use the seeded mongomock collection.
             with test_app.app_context():
@@ -191,8 +206,12 @@ def test_returns_warning_when_no_books_are_found(test_app):
     # make it return an empty list to simulate no books being found.
     mock_books_collection.find.return_value = []
 
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection),\
-        patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+    ):
         # ACT
         with test_app.app_context():
             # In Flask, non-jsonify responses don't get split into (response, status)
@@ -200,7 +219,10 @@ def test_returns_warning_when_no_books_are_found(test_app):
             result = run_reservation_population()
 
     # ASSERT
-    expected_warning = (True, "Warning: No books found in the database. Cannot create reservations.")
+    expected_warning = (
+        True,
+        "Warning: No books found in the database. Cannot create reservations.",
+    )
     assert result == expected_warning
 
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
@@ -220,15 +242,22 @@ def test_returns_error_on_pymongo_error(test_app):
     mock_books_collection.find.side_effect = PyMongoError(error_message)
 
     # 3. Patch the helpers
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+    ):
 
         # ACT
         with test_app.app_context():
             result = run_reservation_population()
 
     # ASSERT
-    expected_error = (False, f"ERROR: Failed to fetch books from database: {error_message}")
+    expected_error = (
+        False,
+        f"ERROR: Failed to fetch books from database: {error_message}",
+    )
     assert result == expected_error
 
 
@@ -249,8 +278,12 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     mock_books_collection.find.return_value = sample_books_cursor
 
     # 3. Patch the helpers
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+    ):
 
         # ACT
         with test_app.app_context():
