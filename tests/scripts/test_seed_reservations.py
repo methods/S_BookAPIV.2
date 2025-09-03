@@ -1,8 +1,10 @@
 """..."""
 
+import json
 from unittest.mock import mock_open, patch
 
 from scripts.seed_reservations import load_reservations_json
+from scripts import seed_reservations as load_reservations_module
 
 
 def test_load_reservations_json_success():
@@ -62,7 +64,8 @@ def test_load_reservations_json_decode_error(capsys):
     """
     GIVEN that the reservation data file contains invalid (malformed) JSON
     WHEN load_reservations_json is called
-    THEN the function should handle the JSONDecodeError, return None, and print a helpful error message to stderr.
+    THEN the function should handle the JSONDecodeError, 
+    return None, and print a helpful error message to stderr.
     """
     bad_json = '{"broken": }'  # invalid JSON
     m = mock_open(read_data=bad_json)
@@ -73,3 +76,28 @@ def test_load_reservations_json_decode_error(capsys):
     assert result is None
     captured = capsys.readouterr()
     assert "Could not decode JSON" in captured.err
+
+
+def test_load_reservations_integration_reads_file(tmp_path, monkeypatch):
+    """
+    Integration: create a temporary scripts/test_data/sample_reservations.json
+    and monkeypatch module __file__ so load_reservations_json resolves to that path.
+    """
+    # Prepare temporary dir structure
+    scripts_dir = tmp_path / "scripts"
+    scripts_dir.mkdir()
+    test_data_dir = scripts_dir / "test_data"
+    test_data_dir.mkdir()
+    # IMPORTANT: create the exact filename the function expects
+    file_path = test_data_dir / "sample_reservations.json"
+
+    sample_data = [{"reservation_id": "r1", "status": "active"}]
+    file_path.write_text(json.dumps(sample_data), encoding="utf-8")
+
+    # Monkeypatch the module's __file__ so os.path.dirname(__file__) -> scripts_dir
+    fake_module_file = scripts_dir / "seed_reservations.py"
+    monkeypatch.setattr(load_reservations_module, "__file__", str(fake_module_file))
+
+    # Call the function — it should read the created file
+    result = load_reservations_json()
+    assert result == sample_data
