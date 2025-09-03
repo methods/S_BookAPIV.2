@@ -61,11 +61,18 @@ def run_reservation_population():
     except PyMongoError as e:
         return (False, f"ERROR: Failed to fetch books from database: {e}")
 
+    # 4. Load the new reservations data from JSON - load_reservation_json helper function
+    reservations_to_create = load_reservations_json()
+    if reservations_to_create is None:
+        return (False, "Failed to load reservation data.")
+
     # success placeholder
     return jsonify({"status": "success", "message": "Collections loaded."}), 200
 
 
-# 4. Load the new reservations data from JSON - load_reservation_json helper function
+
+
+
 # 5. Process and insert each reservation
 #       - initilize count for created and updated
 #       - loop through uploaded reservations JSON list
