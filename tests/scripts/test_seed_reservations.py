@@ -1,7 +1,9 @@
+# pylint: disable=line-too-long
 """..."""
 
 import json
 from unittest.mock import MagicMock, mock_open, patch
+from pymongo.errors import PyMongoError
 import pytest
 
 from scripts.seed_reservations import load_reservations_json, run_reservation_population
@@ -170,3 +172,58 @@ def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_
         # ASSERT
         assert status_code == 200
         assert response.get_json()["status"] == "success"
+
+
+def test_returns_warning_when_no_books_are_found(test_app):
+    """
+    GIVEN get_book_collection returns a collection that finds no books
+    WHEN run_reservation_population is called
+    THEN it should return a tuple with a warning message
+    """
+    # ARRANGE
+    # 1. Create a mock collection object. This simulates the real collection.
+    mock_books_collection = MagicMock()
+
+    # 2. Control what `.find()` returns:
+    # make it return an empty list to simulate no books being found.
+    mock_books_collection.find.return_value = []
+
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection),\
+        patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+        # ACT
+        with test_app.app_context():
+            # In Flask, non-jsonify responses don't get split into (response, status)
+            # So we just capture the single return value.
+            result = run_reservation_population()
+
+    # ASSERT
+    expected_warning = (True, "Warning: No books found in the database. Cannot create reservations.")
+    assert result == expected_warning
+
+    mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
+
+
+def test_returns_error_on_pymongo_error(test_app):
+    """
+    GIVEN the database call to find books raises a PyMongoError
+    WHEN run_reservation_population is called
+    THEN it should catch the exception and return a tuple with an error message
+    """
+    # ARRANGE
+    mock_books_collection = MagicMock()
+
+    # 2. Control the BEHAVIOR of .find() with .side_effect
+    error_message = "Database connection failed"
+    mock_books_collection.find.side_effect = PyMongoError(error_message)
+
+    # 3. Patch the helpers
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+
+        # ACT
+        with test_app.app_context():
+            result = run_reservation_population()
+
+    # ASSERT
+    expected_error = (False, f"ERROR: Failed to fetch books from database: {error_message}")
+    assert result == expected_error
