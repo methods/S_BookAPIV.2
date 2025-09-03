@@ -153,26 +153,28 @@ def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_
     WHEN run_reservations_population is called
     THEN it should return a 200 success response
     """
-    # ARRANGE: Use the fixtures to seed the mock database with data.
-    # The `mongo_setup` fixture ensures the collections are clean.
     _ = mongo_setup
-
-    sample_reservations = [
-        {"user_id": "user123", "book_id": "550e8400-e29b-41d4-a716-446655440000"}
-    ]
 
     with test_app.app_context():
         # Get the collections from the GLOBAL `mongo` object
         from app.extensions import mongo # pylint: disable=import-outside-toplevel
-        mongo.db.books.insert_many(sample_book_data)
-        mongo.db.reservations.insert_many(sample_reservations)
+        mock_books_collection_with_data = mongo.db.books
+        mock_reservations_collection_with_data = mongo.db.reservations
 
-        # ACT: Call the function. It will now read from the mongomock db.
-        response, status_code = run_reservation_population()
+        # SEED the mock collection directly with your sample data.
+        mock_books_collection_with_data.insert_many(sample_book_data)
 
-        # ASSERT
-        assert status_code == 200
-        assert response.get_json()["status"] == "success"
+        # 4. NOW, patch the helper functions to return THESE specific, seeded collection objects.
+        with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection_with_data), \
+                patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection_with_data):
+
+            # ACT: Call the function. It will now use the seeded mongomock collection.
+            with test_app.app_context():
+                response, status_code = run_reservation_population()
+
+    # ASSERT
+    assert status_code == 200
+    assert response.get_json()["status"] == "success"
 
 
 def test_returns_warning_when_no_books_are_found(test_app):
