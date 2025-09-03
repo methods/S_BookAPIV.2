@@ -66,17 +66,29 @@ def run_reservation_population():
     if reservations_to_create is None:
         return (False, "Failed to load reservation data.")
 
+    # 5. Process and insert each reservation
+    # initilize count for created and updated
+    print("Processing and inserting/updating reservations...")
+    created_count = 0
+    updated_count = 0
+
+    # Loop through uploaded reservations JSON list
+    for res_data in reservations_to_create:
+        book_title = res_data.get("book_title")
+        book_id = book_id_map.get(book_title)
+
+        if not book_id:
+            print(f"WARNING: Skipping reservation because book '{book_title}' was not found.")
+            continue
+
+
+
     # success placeholder
     return jsonify({"status": "success", "message": "Collections loaded."}), 200
 
 
 
 
-
-# 5. Process and insert each reservation
-#       - initilize count for created and updated
-#       - loop through uploaded reservations JSON list
-#       -
 
 
 if __name__ == "__main__":
