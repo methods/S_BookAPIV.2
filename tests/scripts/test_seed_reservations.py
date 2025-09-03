@@ -296,3 +296,67 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
 
     # Crucially, verify that the database was queried correctly
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
+
+
+def test_returns_error_if_reservation_json_fails_to_load(test_app):
+    """
+    GIVEN the load_reservations_json helper returns None
+    WHEN run_reservation_population is called
+    THEN it should return a tuple with a failure message
+    """
+    # ARRANGE: Mock all previous steps to succeed so we can test the target logic.
+
+    # 1. Mock get_book_collection to return a collection...
+    mock_books_collection = MagicMock()
+    # ...that returns at least one book, so the book_id_map is created.
+    sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
+    mock_books_collection.find.return_value = sample_book_cursor
+
+    # 2. Need to patch all the external dependencies for this unit.
+    #    The key is patching `load_reservations_json` to return None.
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
+
+        # ACT
+        with test_app.app_context():
+            result = run_reservation_population()
+
+    # ASSERT
+    expected_error = (False, "Failed to load reservation data.")
+    assert result == expected_error
+
+    # Verify that we did attempt to load the JSON file.
+    mock_load_json.assert_called_once()
+
+
+def test_proceeds_when_reservation_json_loads_successfully(test_app):
+    """
+    GIVEN the load_reservations_json helper returns a list of data
+    WHEN run_reservation_population is called
+    THEN it should proceed successfully to the end of the function
+    """
+    # ARRANGE: Same setup as the failure test, but with a different return value for the key mock.
+
+    mock_books_collection = MagicMock()
+    sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
+    mock_books_collection.find.return_value = sample_book_cursor
+
+    # This is our simulated successful data load.
+    sample_reservation_data = [{"user_email": "test@example.com", "book_title": "A Book"}]
+
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=sample_reservation_data) as mock_load_json:
+
+        # ACT
+        with test_app.app_context():
+            # Expecting the final success response
+            response, status_code = run_reservation_population()
+
+    # ASSERT
+    assert status_code == 200
+    assert response.get_json()["status"] == "success"
+
+    # Verify we attempted to load the JSON file.
+    mock_load_json.assert_called_once()
