@@ -3,6 +3,7 @@
 
 import json
 from unittest.mock import MagicMock, mock_open, patch
+from bson import ObjectId
 from pymongo.errors import PyMongoError
 import pytest
 
@@ -227,3 +228,36 @@ def test_returns_error_on_pymongo_error(test_app):
     # ASSERT
     expected_error = (False, f"ERROR: Failed to fetch books from database: {error_message}")
     assert result == expected_error
+
+
+def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
+    """
+    GIVEN the database contains books
+    WHEN run_reservation_population is called
+    THEN it should create the book_id_map and proceed successfully
+    """
+    # ARRANGE
+    mock_books_collection = MagicMock()
+
+    # 2. Simulate a successful find() call that returns documents
+    sample_books_cursor = [
+        {"_id": ObjectId(), "title": "To Kill a Mockingbird"},
+        {"_id": ObjectId(), "title": "1984"},
+    ]
+    mock_books_collection.find.return_value = sample_books_cursor
+
+    # 3. Patch the helpers
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()):
+
+        # ACT
+        with test_app.app_context():
+            response, status_code = run_reservation_population()
+
+    # ASSERT
+    # Check that we made it to the end of the function successfully
+    assert status_code == 200
+    assert response.get_json()["status"] == "success"
+
+    # Crucially, verify that the database was queried correctly
+    mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
