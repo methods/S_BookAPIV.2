@@ -144,3 +144,30 @@ def test_returns_404_if_any_collection_is_missing(
     # You can also assert that the first function was always called
     mock_get_books.assert_called_once()
 
+
+def test_returns_200_when_collections_are_present(test_app, mongo_setup, sample_book_data):
+    """
+    GIVEN a database with books and reservations
+    WHEN run_reservations_population is called
+    THEN it should return a 200 success response
+    """
+    # ARRANGE: Use the fixtures to seed the mock database with data.
+    # The `mongo_setup` fixture ensures the collections are clean.
+    _ = mongo_setup
+
+    sample_reservations = [
+        {"user_id": "user123", "book_id": "550e8400-e29b-41d4-a716-446655440000"}
+    ]
+
+    with test_app.app_context():
+        # Get the collections from the GLOBAL `mongo` object
+        from app.extensions import mongo # pylint: disable=import-outside-toplevel
+        mongo.db.books.insert_many(sample_book_data)
+        mongo.db.reservations.insert_many(sample_reservations)
+
+        # ACT: Call the function. It will now read from the mongomock db.
+        response, status_code = run_reservation_population()
+
+        # ASSERT
+        assert status_code == 200
+        assert response.get_json()["status"] == "success"
