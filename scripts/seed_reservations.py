@@ -4,6 +4,10 @@ Script for populating reservations to a database
 import json
 import os
 import sys
+from flask import jsonify
+
+# Import MongoDB helper functions
+from app.datastore.mongo_db import get_book_collection, get_reservation_collection
 
 # upload sample data json to be used
 def load_reservations_json():
@@ -24,6 +28,33 @@ def load_reservations_json():
     except json.JSONDecodeError:
         print(f"ERROR: Could not decode JSON from '{data_path}'. Check for syntax.", file=sys.stderr) # pylint: disable=line-too-long
         return None
+
+
+
+def run_reservation_population():
+    """..."""
+    books_collection = get_book_collection()
+    reservations_collection = get_reservation_collection()
+
+    if books_collection is None or reservations_collection is None:
+        return jsonify({"error": "Required collections could not be loaded."}), 404
+
+    # success placeholder
+    return jsonify({"status": "success", "message": "Collections loaded."}), 200
+
+
+
+# 1. need to get the books collection  - mongo_db helper function
+# 2. need to get_reservation collection - mongo_db helper function
+# 3. Create a lookup map from book title to its DB _id
+# 4. Load the new reservations data from JSON - load_reservation_json helper function
+# 5. Process and insert each reservation
+#       - initilize count for created and updated
+#       - loop through uploaded reservations JSON list
+#       -
+
+
+
 
 
 if __name__ == "__main__":
