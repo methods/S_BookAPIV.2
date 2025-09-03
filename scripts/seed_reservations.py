@@ -5,6 +5,7 @@ import json
 import os
 import sys
 from flask import jsonify
+from pymongo.errors import PyMongoError
 
 # Import MongoDB helper functions
 from app.datastore.mongo_db import get_book_collection, get_reservation_collection
@@ -33,20 +34,31 @@ def load_reservations_json():
 
 def run_reservation_population():
     """..."""
+    # 1. need to get the books collection  - mongo_db helper function
+    # 2. need to get_reservation collection - mongo_db helper function
     books_collection = get_book_collection()
     reservations_collection = get_reservation_collection()
 
     if books_collection is None or reservations_collection is None:
         return jsonify({"error": "Required collections could not be loaded."}), 404
 
+    # 3. Create a lookup map from book title to its DB _id
+    print("Fetching existing books to create a title-to-ID map...")
+    try:
+        book_cursor = books_collection.find({}, {"_id": 1, "title": 1})
+        book_id_map = {book['title']: book["_id"] for book in book_cursor}
+        if not book_id_map:
+            return (True, "Warning: No books found in the database. Cannot create reservations.")
+    except PyMongoError as e:
+        return (False, f"ERROR: Failed to fetch books from database: {e}")
+
+
     # success placeholder
     return jsonify({"status": "success", "message": "Collections loaded."}), 200
 
 
 
-# 1. need to get the books collection  - mongo_db helper function
-# 2. need to get_reservation collection - mongo_db helper function
-# 3. Create a lookup map from book title to its DB _id
+
 # 4. Load the new reservations data from JSON - load_reservation_json helper function
 # 5. Process and insert each reservation
 #       - initilize count for created and updated
