@@ -1,9 +1,10 @@
 """..."""
 
 import json
-from unittest.mock import mock_open, patch
+from unittest.mock import MagicMock, mock_open, patch
+import pytest
 
-from scripts.seed_reservations import load_reservations_json
+from scripts.seed_reservations import load_reservations_json, run_reservation_population
 from scripts import seed_reservations as load_reservations_module
 
 
@@ -101,3 +102,45 @@ def test_load_reservations_integration_reads_file(tmp_path, monkeypatch):
     # Call the function — it should read the created file
     result = load_reservations_json()
     assert result == sample_data
+
+# -------------- TESTS for run_reservation_population -----------------
+
+# A list of test cases for the failure scenarios
+error_scenarios = [
+    # id is a descriptive name that will appear in the test results
+    pytest.param([], [{"user_id": 1}], id="book_collection_is_empty"),
+    pytest.param([{"id": 1}], None, id="reservation_collection_is_none"),
+    pytest.param([], [], id="both_collections_are_empty"),
+    pytest.param(None, None, id="both_collections_are_none"),
+]
+@pytest.mark.parametrize(
+    "mock_books_return_val, mock_reservations_return_val",
+    error_scenarios
+)
+@patch("scripts.seed_reservations.get_book_collection")
+@patch("scripts.seed_reservations.get_reservation_collection")
+def test_returns_404_if_any_collection_is_missing(
+    mock_get_books, mock_get_reservations, # Mocks come first
+    test_app, # fixture from conftest.py
+    mock_books_return_val, mock_reservations_return_val # Params come after
+):
+    """
+    GIVEN that either the book or reservation collection is missing (falsy)
+    WHEN run_reservations_population is called
+    THEN it should return a 404 error with a specific message
+    """
+    # ARRANGE: Use the parameters to set the return values of our mocks
+    mock_get_books.return_value = mock_books_return_val
+    mock_get_reservations.return_value = mock_reservations_return_val
+
+    # ACT
+    with test_app.app_context():
+        response, status_code = run_reservation_population()
+
+    # ASSERT: The expected outcome is the same for all parametrized cases
+    assert status_code == 404
+    assert response.get_json() == {"error": "Required collections could not be loaded."}
+
+    # You can also assert that the first function was always called
+    mock_get_books.assert_called_once()
+
