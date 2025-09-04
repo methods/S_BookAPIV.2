@@ -40,7 +40,21 @@ def load_reservations_json():
 
 
 def run_reservation_population():
-    """..."""
+    """
+    Populates the reservations collection in the database using sample data from a JSON file.
+    This function:
+        - Loads book and reservation collections from the database.
+        - Creates a mapping from book titles to their database IDs.
+        - Loads reservation seed data from a JSON file.
+        - Inserts new reservations or updates existing ones based on the data.
+        - Handles errors related to database access and data loading.
+    Returns:
+        tuple or Response: 
+            - On success or handled error, returns a tuple (success: bool, message: str).
+            - If required collections cannot be loaded, returns a Flask Response and status code.
+    Exceptions:
+        Does not raise exceptions directly; errors are caught and returned as part of the result.
+    """
     # 1. need to get the collections
     books_collection = get_book_collection()
     reservations_collection = get_reservation_collection()
@@ -71,7 +85,7 @@ def run_reservation_population():
         return (False, "Failed to load reservation data.")
 
     # 5. Process and insert each reservation
-    # initilize count for created and updated
+    # Initialize count for created and updated
     print("Processing and inserting/updating reservations...")
     created_count = 0
     updated_count = 0
@@ -79,7 +93,7 @@ def run_reservation_population():
     # Loop through uploaded reservations JSON list
     for res_data in reservations_to_create:
         # Take the book title value from the json
-        # look it up in the dictonary
+        # look it up in the dictionary
         book_title = res_data.get("book_title")
         book_id = book_id_map.get(book_title)
 
@@ -103,7 +117,7 @@ def run_reservation_population():
         }
 
         # $set = mongodb update operator
-        # replace if exists and upsert it doesnt exist
+        # replace if exists and upsert if it doesnt exist
         update_query = {"$set": reservation_doc}
 
         # the update call
