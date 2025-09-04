@@ -528,6 +528,49 @@ def test_creates_new_reservation_if_not_exists(test_app):
     assert response.get_json()["message"] == expected_message
 
 
+def test_updates_existing_reservation_if_found(test_app):
+    """
+    GIVEN a reservation already exists in the database
+    WHEN run_reservation_population processes it
+    THEN it should call update_one and increment updated_count
+    """
+    # ARRANGE
+    mock_book_id = ObjectId()
+    mock_user_id = "user456"
+    book_title = "1984"
+
+    mock_books_collection = MagicMock()
+    mock_books_collection.find.return_value = [{"_id": mock_book_id, "title": book_title}]
+
+    reservations_from_json = [
+        {"user_id": mock_user_id, "book_title": book_title, "state": "returned"}
+    ]
+
+    mock_reservations_collection = MagicMock()
+
+    # Create a MOCK result object for a successful UPDATE.
+    mock_update_result = MagicMock()
+    mock_update_result.upserted_id = None # None signals it was not a creation
+    mock_update_result.matched_count = 1 # A value > 0 signals an update
+    mock_reservations_collection.update_one.return_value = mock_update_result
+
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_from_json):
+
+        # ACT
+        with test_app.app_context():
+            response, status_code = run_reservation_population()
+
+    # ASSERT
+    assert status_code == 200
+    mock_reservations_collection.update_one.assert_called_once()
+
+    # Assert the final counts in the success message
+    expected_message = "Operation complete. Created: 0, Updated: 1."
+    assert response.get_json()["message"] == expected_message
+
+
 def test_returns_error_on_reservation_upsert_failure(test_app):
     """
     GIVEN the call to update_one raises a PyMongoError
