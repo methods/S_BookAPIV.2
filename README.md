@@ -73,21 +73,25 @@ make install
 
 ### Step 4: Set Up the Database
 
-See [Scripts Documentation](scripts/README.md)
+To perform a full database reset and populate it with initial data for development, run the main setup command:
+```bash
+make setup
+```
+This single command will clean the database and then populate it with books, users, and reservations, ensuring a consistent state for all developers.
+
+For more granular control, you can use the individual commands below. For more details on what each script does, see [Scripts Documentation](scripts/README.md)
 
 To use the API, you first need to populate the database with some initial data.
 
-| Command        | Description                                                                 |
-|----------------|-----------------------------------------------------------------------------|
-| `make db-setup`| **(Recommended)** Resets the database. Runs `db-clean` and then `db-seed`. |
-| `make db-seed` | Populates the database with the contents of `scripts/test_data/books.json`.           |
-| `make db-clean`| Deletes all documents from the 'books' collection. Useful for starting fresh. |
-| `make seed-users`| *** THIS IS WIP right now: The user data is required for the JWT authentication system. ***  Populates the database with initial user data for authentication from `scripts/test_data/sample_user_data.json`. |
+| Command | Description |
+|---------------------|-----------------------------------------------------------------------------|
+| make setup | (Recommended) Resets the entire database and seeds all data. |
+| make clean-db | Deletes ALL books and reservations. Useful for starting fresh. |
+| make books | Populates the database with books from scripts/test_data/books.json. |
+| make reservations | Populates the database with reservations from scripts/test_data/reservations.json. |
+| make seed-users | Populates the database with users from scripts/test_data/sample_user_data.json. |
 
-To perform a full database reset, run:
-```bash
-make db-setup
-```
+
 
 ### Step 5: Run the API
 
