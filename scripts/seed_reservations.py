@@ -55,7 +55,7 @@ def run_reservation_population():
         # collection.find(filter, projection: 1=include, 0=exclude )
         book_cursor = books_collection.find({}, {"_id": 1, "title": 1})
         book_id_map = {book["title"]: book["_id"] for book in book_cursor}
-        print(book_id_map)
+
         if not book_id_map:
             return (
                 True,
@@ -66,7 +66,7 @@ def run_reservation_population():
 
     # 4. Load the new reservations data from JSON - load_reservation_json helper function
     reservations_to_create = load_reservations_json()
-    print("reservations_to_create: ", reservations_to_create)
+
     if reservations_to_create is None:
         return (False, "Failed to load reservation data.")
 
@@ -129,4 +129,10 @@ def run_reservation_population():
 
 
 if __name__ == "__main__":
-    print(load_reservations_json())
+    from app import create_app  # Import the create_app function from your app module
+    app = create_app()  # create the Flask app
+    with app.app_context():  # activate app context
+        success, message = run_reservation_population()
+        print(message)
+        if not success:
+            sys.exit(1) # Exit with an error code if something failed
