@@ -171,8 +171,11 @@ def test_returns_200_when_collections_are_present(
         mock_books_collection_with_data = mongo.db.books
         mock_reservations_collection_with_data = mongo.db.reservations
 
-        # SEED the mock collection directly with your sample data.
+        # SEED the collection directly with your sample data.
         mock_books_collection_with_data.insert_many(sample_book_data)
+        mock_reservations_collection_with_data.insert_many([
+            {"user_id": "user_george_o", "book_title": "A Book", "state": "reserved"}
+        ])
 
         # 4. NOW, patch the helper functions to return THESE specific, seeded collection objects.
         with patch(
@@ -343,7 +346,11 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
     mock_books_collection.find.return_value = sample_book_cursor
 
     # This is our simulated successful data load.
-    sample_reservation_data = [{"user_email": "test@example.com", "book_title": "A Book"}]
+    sample_reservation_data = [{
+        "user_id": "test_user_123",
+        "book_title": "A Book",
+        "state": "reserved"
+        }]
 
     with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
          patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
@@ -410,7 +417,11 @@ def test_proceeds_if_book_title_is_found(test_app, capsys):
     mock_books_collection.find.return_value = sample_book_for_map
 
     # 2. The reservation data refers to that EXACT book title.
-    reservation_with_good_title = [{"book_title": book_title_to_find}]
+    reservation_with_good_title = [{
+        "book_title": book_title_to_find,
+        "user_id": "another_user_456",
+        "state": "pending"
+        }]
 
     # 3. Patch dependencies.
     with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
