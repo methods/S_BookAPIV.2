@@ -301,41 +301,41 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
 
 
-# def test_returns_error_if_reservation_json_fails_to_load(test_app):
-#     """
-#     GIVEN the load_reservations_json helper returns None
-#     WHEN run_reservation_population is called
-#     THEN it should return a tuple with a failure message
-#     """
-#     # ARRANGE: Mock all previous steps to succeed so we can test the target logic.
+def test_returns_error_if_reservation_json_fails_to_load(test_app):
+    """
+    GIVEN the load_reservations_json helper returns None
+    WHEN run_reservation_population is called
+    THEN it should return a tuple with a failure message
+    """
+    # ARRANGE: Mock all previous steps to succeed so we can test the target logic.
 
-#     # 1. Mock get_book_collection to return a collection...
-#     mock_books_collection = MagicMock()
-#     # ...that returns at least one book, so the book_id_map is created.
-#     sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
-#     mock_books_collection.find.return_value = sample_book_cursor
+    # 1. Mock get_book_collection to return a collection...
+    mock_books_collection = MagicMock()
+    # ...that returns at least one book, so the book_id_map is created.
+    sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
+    mock_books_collection.find.return_value = sample_book_cursor
 
-#     # 2. Need to patch all the external dependencies for this unit.
-#     #    The key is patching `load_reservations_json` to return None.
-#     with patch(
-#         "scripts.seed_reservations.get_book_collection",
-#         return_value=mock_books_collection,
-#     ), patch(
-#         "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-#     ), patch(
-#         "scripts.seed_reservations.load_reservations_json", return_value=None
-#     ) as mock_load_json:
+    # 2. Need to patch all the external dependencies for this unit.
+    #    The key is patching `load_reservations_json` to return None.
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json", return_value=None
+    ) as mock_load_json:
 
-#         # ACT
-#         with test_app.app_context():
-#             result = run_reservation_population()
+        # ACT
+        with test_app.app_context():
+            result = run_reservation_population()
 
-#     # ASSERT
-#     expected_error = (False, "Failed to load reservation data.")
-#     assert result == expected_error
+    # ASSERT
+    expected_error = (False, "Failed to load reservation data.")
+    assert result == expected_error
 
-#     # Verify that we did attempt to load the JSON file.
-#     mock_load_json.assert_called_once()
+    # Verify that we did attempt to load the JSON file.
+    mock_load_json.assert_called_once()
 
 
 def test_proceeds_when_reservation_json_loads_successfully(test_app):
@@ -539,7 +539,9 @@ def test_updates_existing_reservation_if_found(test_app):
     book_title = "1984"
 
     mock_books_collection = MagicMock()
-    mock_books_collection.find.return_value = [{"_id": mock_book_id, "title": book_title}]
+    mock_books_collection.find.return_value = [
+        {"_id": mock_book_id, "title": book_title}
+    ]
 
     reservations_from_json = [
         {"user_id": mock_user_id, "book_title": book_title, "state": "returned"}
@@ -549,13 +551,20 @@ def test_updates_existing_reservation_if_found(test_app):
 
     # Create a MOCK result object for a successful UPDATE.
     mock_update_result = MagicMock()
-    mock_update_result.upserted_id = None # None signals it was not a creation
-    mock_update_result.matched_count = 1 # A value > 0 signals an update
+    mock_update_result.upserted_id = None  # None signals it was not a creation
+    mock_update_result.matched_count = 1  # A value > 0 signals an update
     mock_reservations_collection.update_one.return_value = mock_update_result
 
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection), \
-         patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_from_json):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection",
+        return_value=mock_reservations_collection,
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json",
+        return_value=reservations_from_json,
+    ):
 
         # ACT
         with test_app.app_context():
