@@ -83,21 +83,23 @@ def run_reservation_population():
         book_id = book_id_map.get(book_title)
 
         if not book_id:
-            print(f"WARNING: Skipping reservation because book '{book_title}' was not found.")
+            print(
+                f"WARNING: Skipping reservation because book '{book_title}' was not found."
+            )
             continue
 
         # add book_id (the real Mongo _id) to the reservation_doc object
         reservation_doc = {
             "user_id": res_data["user_id"],
             "book_id": book_id,
-            "state": res_data["state"]
+            "state": res_data["state"],
         }
 
         # query to find which document we want to update
         filter_query = {
             "user_id": reservation_doc["user_id"],
-            "book_id": reservation_doc["book_id"]
-            }
+            "book_id": reservation_doc["book_id"],
+        }
 
         # $set = mongodb update operator
         # replace if exists and upsert it doesnt exist
@@ -106,9 +108,9 @@ def run_reservation_population():
         # the update call
         try:
             result = reservations_collection.update_one(
-                filter_query, # dict: criteria to find the target document(s)
-                update_query, # dict: update operators ($set, $inc, etc.) describing the changes
-                upsert=True # bool: if no document matches filter, insert a new one (merge filter + update) # pylint: disable=line-too-long
+                filter_query,  # dict: criteria to find the target document(s)
+                update_query,  # dict: update operators ($set, $inc, etc.) describing the changes
+                upsert=True,  # bool: if no document matches filter, insert a new one (merge filter + update) # pylint: disable=line-too-long
             )
 
             if result.upserted_id:
@@ -116,14 +118,13 @@ def run_reservation_population():
             elif result.matched_count > 0:
                 updated_count += 1
         except PyMongoError as e:
-            return(False, f"ERROR: Failed to upsert reservation for user 'res_data['user_id]: {e}")
+            return (
+                False,
+                f"ERROR: Failed to upsert reservation for user '{res_data['user_id']}': {e}",
+            )  # pylint: disable=line-too-long
 
     # success placeholder
     return jsonify({"status": "success", "message": "Collections loaded."}), 200
-
-
-
-
 
 
 if __name__ == "__main__":
