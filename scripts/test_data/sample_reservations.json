@@ -23,6 +23,6 @@
     "book_title": "1984",
     "user_id": "user_jane_d",
     "state": "reserved",
-    "_comment": "intentional last entry which creates a second reservation for '1984' by diffrent user- good test case"
+    "_comment": "intentional last entry which creates a second reservation for '1984' by different user- good test case"
   }
 ]
