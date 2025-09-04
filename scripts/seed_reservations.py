@@ -123,8 +123,8 @@ def run_reservation_population():
                 f"ERROR: Failed to upsert reservation for user '{res_data['user_id']}': {e}",
             )  # pylint: disable=line-too-long
 
-    # success placeholder
-    return jsonify({"status": "success", "message": "Collections loaded."}), 200
+    summary = f"Successfully created {created_count} and updated {updated_count} reservations."
+    return (True, summary)
 
 
 if __name__ == "__main__":
