@@ -4,6 +4,7 @@ Tests for the delete_reservations.py script functionality.
 This file contains unit and integration tests for reservation deletion,
 error handling, and output verification for the delete_reservations.py script.
 """
+
 from unittest.mock import MagicMock, patch
 
 from flask import Flask
