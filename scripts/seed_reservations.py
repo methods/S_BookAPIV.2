@@ -49,7 +49,7 @@ def run_reservation_population():
         - Inserts new reservations or updates existing ones based on the data.
         - Handles errors related to database access and data loading.
     Returns:
-        tuple or Response: 
+        tuple or Response:
             - On success or handled error, returns a tuple (success: bool, message: str).
             - If required collections cannot be loaded, returns a Flask Response and status code.
     Exceptions:
@@ -143,10 +143,12 @@ def run_reservation_population():
 
 
 if __name__ == "__main__":
-    from app import create_app  # Import the create_app function from your app module
+    from app import \
+        create_app  # Import the create_app function from your app module
+
     app = create_app()  # create the Flask app
     with app.app_context():  # activate app context
         success, message = run_reservation_population()
         print(message)
         if not success:
-            sys.exit(1) # Exit with an error code if something failed
+            sys.exit(1)  # Exit with an error code if something failed

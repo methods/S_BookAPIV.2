@@ -105,16 +105,28 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
         including the total count.
         """
         # --- 1. Get and Validate Query Parameters ---
-        offset_str = request.args.get('offset', '0') # 0 is default
-        limit_str = request.args.get('limit', '20') # 20 is default
+        offset_str = request.args.get("offset", "0")  # 0 is default
+        limit_str = request.args.get("limit", "20")  # 20 is default
         try:
             offset = int(offset_str)
             limit = int(limit_str)
         except ValueError:
-            return jsonify({"error": "Query parameters 'limit' and 'offset' must be integers."}), 400 # pylint: disable=line-too-long
+            return (
+                jsonify(
+                    {"error": "Query parameters 'limit' and 'offset' must be integers."}
+                ),
+                400,
+            )  # pylint: disable=line-too-long
 
         if offset < 0 or limit < 0:
-            return jsonify({"error": "Query parameters 'limit' and 'offset' cannot be negative."}), 400 # pylint: disable=line-too-long
+            return (
+                jsonify(
+                    {
+                        "error": "Query parameters 'limit' and 'offset' cannot be negative."
+                    }
+                ),
+                400,
+            )  # pylint: disable=line-too-long
 
         # --- 2. Call the Service Layer to Fetch Data ---
         try:
