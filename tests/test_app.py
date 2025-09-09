@@ -1,7 +1,7 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import ANY, MagicMock, patch
-
+import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
 
@@ -347,25 +347,53 @@ def test_get_books_retrieves_and_formats_books_correctly(mock_find_books, client
     assert len(response_data["items"]) == 2
 
 
-@patch("app.services.book_service.get_book_collection")
-def test_get_books_handles_database_connection_error(mock_get_collection, client):
+# @patch("app.services.book_service.get_book_collection")
+# def test_get_books_handles_database_connection_error(mock_get_collection, client):
+#     """
+#     GIVEN the database connection fails
+#     WHEN the /books endpoint is called
+#     THEN a 503 Service Unavailable error should be returned with a friendly message.
+#     """
+#     # ARRANGE: Configure the mock to raise the exception when called
+#     mock_get_collection.side_effect = ConnectionFailure("Could not connect to DB")
+
+#     # ACT
+#     response = client.get("/books")
+
+#     # ASSERT
+#     assert response.status_code == 503
+
+#     # This assertion will now pass because your controller is returning the correct message
+#     expected_error = "The database service is temporarily unavailable."
+#     assert expected_error in response.json["error"]["message"]
+
+
+@pytest.mark.parametrize("function_to_patch, _scenario_id", [
+    ("app.routes.legacy_routes.count_active_books", "count_fails"),
+    ("app.routes.legacy_routes.fetch_active_books", "fetch_fails")
+    ]
+)
+def test_get_books_handles_database_connection_error(function_to_patch, _scenario_id, client):
     """
-    GIVEN the database connection fails
+    GIVEN the database connection fails during either the count or fetch call
     WHEN the /books endpoint is called
-    THEN a 503 Service Unavailable error should be returned with a friendly message.
+    THEN a 503 Service Unavailable error should be returned.
     """
-    # ARRANGE: Configure the mock to raise the exception when called
-    mock_get_collection.side_effect = ConnectionFailure("Could not connect to DB")
+    # Arrange
+    with patch(function_to_patch) as mock_db_call:
+        mock_db_call.side_effect = ConnectionFailure("Could not connect to DB")
 
-    # ACT
-    response = client.get("/books")
+        # Act
+        response = client.get("/books")
 
-    # ASSERT
-    assert response.status_code == 503  # Now asserting the correct code
+    # Assert
+    assert response.status_code == 503
+    json_data = response.get_json()
 
-    # This assertion will now pass because your controller is returning the correct message
-    expected_error = "The database service is temporarily unavailable."
-    assert expected_error in response.json["error"]["message"]
+    assert "error" in json_data
+    assert json_data["error"]["code"] == 503
+    assert "The database service is temporarily unavailable" in json_data["error"]["message"]
+
 
 
 # -------- Tests for GET a single resource ----------------
