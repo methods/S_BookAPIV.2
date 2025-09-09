@@ -1,6 +1,7 @@
 # pylint: disable=missing-docstring
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
@@ -193,6 +194,7 @@ def test_500_response_is_json(client):
 
 # ------------------------ Tests for GET --------------------------------------------
 
+
 @patch("app.routes.legacy_routes.format_books_for_api")
 @patch("app.routes.legacy_routes.count_active_books")
 @patch("app.routes.legacy_routes.fetch_active_books")
@@ -230,6 +232,7 @@ def test_get_all_books_success_path(mock_fetch, mock_count, mock_format, client)
     mock_count.assert_called_once_with()
     mock_fetch.assert_called_once_with(offset=0, limit=20)
     mock_format.assert_called_once_with(mock_raw_books_from_db, "http://localhost")
+
 
 @patch("app.routes.legacy_routes.fetch_active_books")
 def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
@@ -269,14 +272,16 @@ def test_get_books_success_default_pagination(mock_fetch, mock_count, client):
     """
     # Arrange:
     # 1. Configure the mock for fetch_active_books
-    mock_fetch.return_value = [{
-        "_id": "book1",
-        "title": "A Great Book",
-        "author": "Jane Doe",
-        "synopsis": "An amazing story.",
-        "links": {"self": "/books/book1"},
-        "state": "active",
-    }]
+    mock_fetch.return_value = [
+        {
+            "_id": "book1",
+            "title": "A Great Book",
+            "author": "Jane Doe",
+            "synopsis": "An amazing story.",
+            "links": {"self": "/books/book1"},
+            "state": "active",
+        }
+    ]
     # 2. Configure the mock for count_active_books
     mock_count.return_value = 50
 
@@ -299,12 +304,16 @@ def test_get_books_success_default_pagination(mock_fetch, mock_count, client):
     assert "state" not in json_data["items"][0]
 
 
-@pytest.mark.parametrize("function_to_patch, _scenario_id", [
-    ("app.routes.legacy_routes.count_active_books", "count_fails"),
-    ("app.routes.legacy_routes.fetch_active_books", "fetch_fails")
-    ]
+@pytest.mark.parametrize(
+    "function_to_patch, _scenario_id",
+    [
+        ("app.routes.legacy_routes.count_active_books", "count_fails"),
+        ("app.routes.legacy_routes.fetch_active_books", "fetch_fails"),
+    ],
 )
-def test_get_books_handles_database_connection_error(function_to_patch, _scenario_id, client):
+def test_get_books_handles_database_connection_error(
+    function_to_patch, _scenario_id, client
+):
     """
     GIVEN the database connection fails during either the count or fetch call
     WHEN the /books endpoint is called
@@ -323,8 +332,10 @@ def test_get_books_handles_database_connection_error(function_to_patch, _scenari
 
     assert "error" in json_data
     assert json_data["error"]["code"] == 503
-    assert "The database service is temporarily unavailable" in json_data["error"]["message"]
-
+    assert (
+        "The database service is temporarily unavailable"
+        in json_data["error"]["message"]
+    )
 
 
 # -------- Tests for GET a single resource ----------------

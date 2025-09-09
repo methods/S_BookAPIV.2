@@ -107,9 +107,12 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
 #         assert book["links"]["reviews"].startswith("http://localhost")
 #         assert book["links"]["self"].endswith(f"books/{new_book_id}")
 
+
 @patch("app.routes.legacy_routes.count_active_books")
 @patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_books_correctly_formats_links_with_hostname(mock_fetch, mock_count, client):
+def test_get_books_correctly_formats_links_with_hostname(
+    mock_fetch, mock_count, client
+):
     """
     GIVEN a mocked database that returns raw book data with relative links
     WHEN the /books endpoint is called
@@ -117,17 +120,19 @@ def test_get_books_correctly_formats_links_with_hostname(mock_fetch, mock_count,
     """
     # ARRANGE
     # 1. Mock the raw, unformatted data from the database
-    raw_book_data = [{
-        "_id": "123",
-        "title": "A Test Book",
-        "author": "The Tester",
-        "synopsis": "A book for testing.",
-        "links": {
-            "self": "/books/123",
-            "reservations": "/books/123/reservations",
-        },
-        "state": "active"
-    }]
+    raw_book_data = [
+        {
+            "_id": "123",
+            "title": "A Test Book",
+            "author": "The Tester",
+            "synopsis": "A book for testing.",
+            "links": {
+                "self": "/books/123",
+                "reservations": "/books/123/reservations",
+            },
+            "state": "active",
+        }
+    ]
     mock_fetch.return_value = raw_book_data
 
     # 2. Mock the total count of books
@@ -145,7 +150,10 @@ def test_get_books_correctly_formats_links_with_hostname(mock_fetch, mock_count,
     # Verify the link formatting
     formatted_book = response_data["items"][0]
     assert formatted_book["links"]["self"] == "http://localhost/books/123"
-    assert formatted_book["links"]["reservations"] == "http://localhost/books/123/reservations"
+    assert (
+        formatted_book["links"]["reservations"]
+        == "http://localhost/books/123/reservations"
+    )
 
     # Verify that the formatter did its job cleaning up
     assert "state" not in formatted_book

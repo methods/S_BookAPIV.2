@@ -10,7 +10,8 @@ from app.datastore.mongo_helper import (delete_book_by_id,
                                         insert_book_to_mongo,
                                         replace_book_by_id,
                                         validate_book_put_payload)
-from app.services.book_service import fetch_active_books, format_books_for_api, count_active_books
+from app.services.book_service import (count_active_books, fetch_active_books,
+                                       format_books_for_api)
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 
@@ -160,9 +161,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
             return jsonify({"error": error}), 500
 
         return (
-            jsonify(
-                {"total_count": total_count, "items": all_formatted_books}
-            ),
+            jsonify({"total_count": total_count, "items": all_formatted_books}),
             200,
         )
 

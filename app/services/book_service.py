@@ -10,7 +10,6 @@ def count_active_books():
     """
     query_filter = {"state": {"$ne": "deleted"}}
     count = mongo.db.books.count_documents(query_filter)
-    print("count: ", count)
 
     return count
 

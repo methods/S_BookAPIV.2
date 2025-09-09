@@ -25,7 +25,7 @@ def test_count_active_books_returns_correct_count(test_app):
         mock_mongo.db.books.count_documents.assert_called_once_with(expected_query)
 
 
-@patch('app.services.book_service.mongo')
+@patch("app.services.book_service.mongo")
 def test_fetch_active_books_uses_default_pagination(mock_mongo, test_app):
     """
     GIVEN no arguments are provided
@@ -48,10 +48,12 @@ def test_fetch_active_books_uses_default_pagination(mock_mongo, test_app):
     expected_filter = {"state": {"$ne": "deleted"}}
     mock_mongo.db.books.find.assert_called_once_with(expected_filter)
     mock_mongo.db.books.find.return_value.skip.assert_called_once_with(0)
-    mock_mongo.db.books.find.return_value.skip.return_value.limit.assert_called_once_with(20)
+    mock_mongo.db.books.find.return_value.skip.return_value.limit.assert_called_once_with(
+        20
+    )
 
 
-@patch('app.services.book_service.mongo')
+@patch("app.services.book_service.mongo")
 def test_fetch_active_books_uses_custom_pagination(mock_mongo, test_app):
     """
     GIVEN custom offset and limit arguments
@@ -70,4 +72,6 @@ def test_fetch_active_books_uses_custom_pagination(mock_mongo, test_app):
     expected_filter = {"state": {"$ne": "deleted"}}
     mock_mongo.db.books.find.assert_called_once_with(expected_filter)
     mock_mongo.db.books.find.return_value.skip.assert_called_once_with(10)
-    mock_mongo.db.books.find.return_value.skip.return_value.limit.assert_called_once_with(5)
+    mock_mongo.db.books.find.return_value.skip.return_value.limit.assert_called_once_with(
+        5
+    )
