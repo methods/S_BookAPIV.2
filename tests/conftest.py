@@ -146,6 +146,27 @@ def mongo_setup(test_app):  # pylint: disable=redefined-outer-name
         mongo.db.reservations.delete_many({})
 
 
+@pytest.fixture
+def seeded_books_in_db(test_app, mongo_setup):  # pylint: disable=redefined-outer-name
+    """
+    Ensures the books collection is clean and then seeds it with 50 books
+    for pagination testting.
+    """
+    _ = mongo_setup
+
+    with test_app.app_context():
+        collection = get_book_collection()
+        books_to_insert = [
+            {"_id": f"book_{i}", "title": f"Test Book {i}", "state": "active"}
+            for i in range(50)
+        ]
+        if books_to_insert:
+            collection.insert_many(books_to_insert)
+        print("books_to_insert: ", books_to_insert)
+
+    return books_to_insert()
+
+
 TEST_USER_ID = "6154b3a3e4a5b6c7d8e9f0a1"
 PLAIN_PASSWORD = "a-secure-password"
 

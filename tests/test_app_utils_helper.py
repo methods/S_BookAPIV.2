@@ -68,11 +68,59 @@ def test_add_book_response_contains_absolute_urls(client, monkeypatch):
     assert actual_link is not None, "Response JSON must contain a 'links' object"
 
 
-@patch("app.services.book_service.find_books")
-def test_append_host_to_links_in_get(mock_find_books, client):
+# @patch("app.services.book_service.find_books")
+# def test_append_host_to_links_in_get(mock_find_books, client):
 
-    # ARRANGE: Provide sample data for the mock to return
-    mock_find_books.return_value = [
+#     # ARRANGE: Provide sample data for the mock to return
+#     mock_find_books.return_value = [
+#         {
+#             "_id": "123",
+#             "title": "A Test Book",
+#             "author": "The Tester",
+#             "synopsis": "A book for testing.",
+#             "links": {
+#                 "self": "/books/123",
+#                 "reservations": "/books/123",
+#                 "reviews": "/books/123",
+#             },
+#         }
+#     ]
+
+#     # ACT
+#     response = client.get("/books")
+#     response_data = response.get_json()
+
+#     # ASSERT
+#     assert response.status_code == 200
+
+#     book = response_data["items"][0]
+#     assert response.headers["content-type"] == "application/json"
+#     assert isinstance(response_data, dict)
+#     assert "total_count" in response_data
+#     assert "items" in response_data
+#     # response_data["items"]["links"]["self"]
+#     for book in response_data["items"]:
+#         new_book_id = book.get("id")
+#         assert book["links"]["self"].startswith("http://localhost")
+#         assert book["links"]["self"] == "http://localhost/books/123"
+#         assert book["links"]["reservations"].startswith("http://localhost")
+#         assert book["links"]["reviews"].startswith("http://localhost")
+#         assert book["links"]["self"].endswith(f"books/{new_book_id}")
+
+
+@patch("app.routes.legacy_routes.count_active_books")
+@patch("app.routes.legacy_routes.fetch_active_books")
+def test_get_books_correctly_formats_links_with_hostname(
+    mock_fetch, mock_count, client
+):
+    """
+    GIVEN a mocked database that returns raw book data with relative links
+    WHEN the /books endpoint is called
+    THEN the final JSON response should contain absolute URLs with the correct hostname.
+    """
+    # ARRANGE
+    # 1. Mock the raw, unformatted data from the database
+    raw_book_data = [
         {
             "_id": "123",
             "title": "A Test Book",
@@ -80,11 +128,15 @@ def test_append_host_to_links_in_get(mock_find_books, client):
             "synopsis": "A book for testing.",
             "links": {
                 "self": "/books/123",
-                "reservations": "/books/123",
-                "reviews": "/books/123",
+                "reservations": "/books/123/reservations",
             },
+            "state": "active",
         }
     ]
+    mock_fetch.return_value = raw_book_data
+
+    # 2. Mock the total count of books
+    mock_count.return_value = 1
 
     # ACT
     response = client.get("/books")
@@ -92,20 +144,21 @@ def test_append_host_to_links_in_get(mock_find_books, client):
 
     # ASSERT
     assert response.status_code == 200
+    assert response_data["total_count"] == 1
+    assert len(response_data["items"]) == 1
 
-    book = response_data["items"][0]
-    assert response.headers["content-type"] == "application/json"
-    assert isinstance(response_data, dict)
-    assert "total_count" in response_data
-    assert "items" in response_data
-    # response_data["items"]["links"]["self"]
-    for book in response_data["items"]:
-        new_book_id = book.get("id")
-        assert book["links"]["self"].startswith("http://localhost")
-        assert book["links"]["self"] == "http://localhost/books/123"
-        assert book["links"]["reservations"].startswith("http://localhost")
-        assert book["links"]["reviews"].startswith("http://localhost")
-        assert book["links"]["self"].endswith(f"books/{new_book_id}")
+    # Verify the link formatting
+    formatted_book = response_data["items"][0]
+    assert formatted_book["links"]["self"] == "http://localhost/books/123"
+    assert (
+        formatted_book["links"]["reservations"]
+        == "http://localhost/books/123/reservations"
+    )
+
+    # Verify that the formatter did its job cleaning up
+    assert "state" not in formatted_book
+    assert "_id" not in formatted_book
+    assert formatted_book["id"] == "123"
 
 
 def test_append_host_to_links_in_get_book(client, monkeypatch):

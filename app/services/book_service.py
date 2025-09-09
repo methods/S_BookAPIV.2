@@ -1,20 +1,26 @@
 """Service layer for handling book-related operations."""
 
-from app.datastore.mongo_db import get_book_collection
-from app.datastore.mongo_helper import find_books
+from app.extensions import mongo
 from app.utils.helper import append_hostname
 
 
-def fetch_active_books():
+def count_active_books():
     """
-    Fetches a cursor for all non-deleted books from the database.
-    Returns a Python list.
+    Counts the total number of active books in the database.
     """
+    query_filter = {"state": {"$ne": "deleted"}}
+    count = mongo.db.books.count_documents(query_filter)
 
-    collection = get_book_collection()
+    return count
+
+
+def fetch_active_books(offset: int = 0, limit: int = 20):
+    """
+    Fetches a paginated list of all active (non-deleted) books from the database.
+    """
     query_filter = {"state": {"$ne": "deleted"}}  # Only non-deleted books
+    cursor = mongo.db.books.find(query_filter).skip(offset).limit(limit)
 
-    cursor = find_books(collection, query_filter=query_filter)
     return list(cursor)
 
 

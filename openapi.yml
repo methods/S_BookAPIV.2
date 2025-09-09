@@ -409,6 +409,28 @@ paths:
       summary: Returns all books in the database
       description: Retrieve all books from the database and return them in a JSON response including the total count.
       operationId: getAllBooks
+      parameters:
+        - name: offset
+          in: query
+          description: The number of items to skip before starting to collect the result set.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+            example: 20
+        - name: limit
+          in: query
+          description: The number of items to return.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
+            example: 10
       responses:
         '200':
           description: A list of all books including the total count.
@@ -416,6 +438,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BookListResponse'
+        '400':
+          description: Invalid query parameters provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
+              example:
+                error: "Query parameters 'limit' and 'offset' cannot be negative."
         '404':
           $ref: '#/components/responses/NotFound' 
         '500':

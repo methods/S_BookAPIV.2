@@ -10,7 +10,8 @@ from app.datastore.mongo_helper import (delete_book_by_id,
                                         insert_book_to_mongo,
                                         replace_book_by_id,
                                         validate_book_put_payload)
-from app.services.book_service import fetch_active_books, format_books_for_api
+from app.services.book_service import (count_active_books, fetch_active_books,
+                                       format_books_for_api)
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 
@@ -104,8 +105,39 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
         return them in a JSON response
         including the total count.
         """
+        # --- 1. Get and Validate Query Parameters ---
+        offset_str = request.args.get("offset", "0")  # 0 is default
+        limit_str = request.args.get("limit", "20")  # 20 is default
         try:
-            raw_books = fetch_active_books()
+            offset = int(offset_str)
+            limit = int(limit_str)
+        except ValueError:
+            return (
+                jsonify(
+                    {"error": "Query parameters 'limit' and 'offset' must be integers."}
+                ),
+                400,
+            )  # pylint: disable=line-too-long
+
+        if offset < 0 or limit < 0:
+            return (
+                jsonify(
+                    {
+                        "error": "Query parameters 'limit' and 'offset' cannot be negative."
+                    }
+                ),
+                400,
+            )  # pylint: disable=line-too-long
+
+        # --- 2. Call the Service Layer to Fetch Data ---
+
+        try:
+            # Get total count for the response metadata
+            total_count = count_active_books()
+
+            # Next, get a paginated list of documents
+            raw_books = fetch_active_books(offset=offset, limit=limit)
+
         except ConnectionFailure:
             error_payload = {
                 "error": {
@@ -117,8 +149,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
 
             return jsonify(error_payload), 503
 
-        if not raw_books:
-            return jsonify({"error": "No books found"}), 404
+        # --- 3. Format and Return the Response ---
 
         # extract host from the request
         host = request.host_url.rstrip("/")
@@ -130,9 +161,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
             return jsonify({"error": error}), 500
 
         return (
-            jsonify(
-                {"total_count": len(all_formatted_books), "items": all_formatted_books}
-            ),
+            jsonify({"total_count": total_count, "items": all_formatted_books}),
             200,
         )
 

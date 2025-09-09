@@ -1,7 +1,8 @@
 # pylint: disable=missing-docstring
 
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
+import pytest
 from bson.objectid import ObjectId
 from pymongo.errors import ConnectionFailure
 
@@ -195,34 +196,42 @@ def test_500_response_is_json(client):
 
 
 @patch("app.routes.legacy_routes.format_books_for_api")
+@patch("app.routes.legacy_routes.count_active_books")
 @patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_all_books_returns_all_books(mock_fetch, mock_format, client):
+def test_get_all_books_success_path(mock_fetch, mock_count, mock_format, client):
+    """
+    GIVEN a mocked service layer
+    WHEN the /books endpoint is called with default parameters
+    THEN the controller calls its dependencies with correct pagination
+    AND formats the final API response correctly.
+    """
+    # Arrange:
+    # Mock the data that would come from the database
+    mock_raw_books_from_db = [{"_id": "1", "title": "A Book"}]
+    mock_fetch.return_value = mock_raw_books_from_db
 
-    mock_books_list = MagicMock()
-    mock_fetch.return_value = mock_books_list
+    # Mock the total count of ALL books
+    mock_count.return_value = 150
 
-    mock_formatted_data = [
-        {"id": "1", "title": "A", "synopsis": "x", "author": "y", "links": {}},
-        {"id": "2", "title": "B", "synopsis": "z", "author": "w", "links": {}},
-    ]
+    # Mock the final, formatted list of books for the API
+    mock_formatted_books_for_api = [{"id": "1", "title": "A Book", "links": {}}]
+    mock_format.return_value = (mock_formatted_books_for_api, None)
 
-    mock_format.return_value = (mock_formatted_data, None)
-
+    # ACT
     response = client.get("/books")
 
-    # Assert HTTP properties
+    # ASSERT
     assert response.status_code == 200
-    assert response.headers["content-type"] == "application/json"
 
-    # Assert the response body
+    # Assert response body is correct
     response_data = response.get_json()
-    assert isinstance(response_data, dict)
-    assert response_data["total_count"] == 2
-    assert response_data["items"] == mock_formatted_data
+    assert response_data["total_count"] == 150
+    assert response_data["items"] == mock_formatted_books_for_api
 
-    # Assert that mocks were called correctly
-    mock_fetch.assert_called_once()
-    mock_format.assert_called_once_with(mock_books_list, "http://localhost")
+    # Assert controller logic is correct by checking calls to dependencies
+    mock_count.assert_called_once_with()
+    mock_fetch.assert_called_once_with(offset=0, limit=20)
+    mock_format.assert_called_once_with(mock_raw_books_from_db, "http://localhost")
 
 
 @patch("app.routes.legacy_routes.fetch_active_books")
@@ -252,120 +261,81 @@ def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
     mock_fetch.assert_called_once()
 
 
+@patch("app.routes.legacy_routes.count_active_books")
 @patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_all_books_returns_error_404_when_list_is_empty(mock_fetch, client):
-    empty_data = []
-    mock_fetch.return_value = empty_data
-    response = client.get("/books")
-    assert response.status_code == 404
-    assert "No books found" in response.get_json()["error"]
-
-
-@patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_book_returns_404_when_books_is_none(mock_fetch, client):
-    none_data = None
-    mock_fetch.return_value = none_data
-    response = client.get("/books")
-    assert response.status_code == 404
-    assert "No books found" in response.get_json()["error"]
-
-
-@patch("app.services.book_service.find_books")
-def test_get_books_retrieves_and_formats_books_correctly(mock_find_books, client):
+def test_get_books_success_default_pagination(mock_fetch, mock_count, client):
     """
-    GIVEN a mocked database service
-    WHEN the /books endpoint is called
-    THEN the service layer correctly queries the database for non-deleted books
-    AND the API response is correctly formatted with absolute URLs
+    GIVEN the service layer will return a list of books and a total count
+    WHEN the /books endpoint is called with no parameters
+    THEN the controller should call its dependencies with default pagination values (0, 20)
+    AND the API response is correctly formatted with the right total_count and items.
     """
-    # ARRANGE
-    filtered_db_result = [
+    # Arrange:
+    # 1. Configure the mock for fetch_active_books
+    mock_fetch.return_value = [
         {
-            "_id": "2",
-            "title": "Mystery of the Old Manor",
-            "author": "John Smith",
-            "synopsis": "A detective story set in an old manor with many secrets.",
-            "links": {
-                "self": "/books/2",
-                "reservations": "/books/2/reservations",
-                "reviews": "/books/2/reviews",
-            },
+            "_id": "book1",
+            "title": "A Great Book",
+            "author": "Jane Doe",
+            "synopsis": "An amazing story.",
+            "links": {"self": "/books/book1"},
             "state": "active",
-        },
-        {
-            "_id": "3",
-            "title": "The Science of Everything",
-            "author": "Alice Johnson",
-            "synopsis": "An in-depth look at the scientific principles that govern our world.",
-            "links": {
-                "self": "/books/3",
-                "reservations": "/books/3/reservations",
-                "reviews": "/books/3/reviews",
-            },
-            # No 'state' field, correctly simulating a record that is implicitly active.
-        },
+        }
     ]
-    mock_find_books.return_value = filtered_db_result
+    # 2. Configure the mock for count_active_books
+    mock_count.return_value = 50
 
-    base_url = "http://localhost"
-    expected_response_items = [
-        {
-            "id": "2",  # Renamed from _id
-            "title": "Mystery of the Old Manor",
-            "author": "John Smith",
-            "synopsis": "A detective story set in an old manor with many secrets.",
-            "links": {
-                "self": f"{base_url}/books/2",
-                "reservations": f"{base_url}/books/2/reservations",
-                "reviews": f"{base_url}/books/2/reviews",
-            },
-        },
-        {
-            "id": "3",  # Renamed from _id
-            "title": "The Science of Everything",
-            "author": "Alice Johnson",
-            "synopsis": "An in-depth look at the scientific principles that govern our world.",
-            "links": {
-                "self": f"{base_url}/books/3",
-                "reservations": f"{base_url}/books/3/reservations",
-                "reviews": f"{base_url}/books/3/reviews",
-            },
-        },
-    ]
-
-    # ACT
+    # Act
     response = client.get("/books")
 
-    # ASSERT
+    # Assert
     assert response.status_code == 200
-    # 1) Service layer called with correct filter
-    expected_db_filter = {"state": {"$ne": "deleted"}}
-    mock_find_books.assert_called_once_with(ANY, query_filter=expected_db_filter)
-    # 2) Response formatting is exactly as expected
-    response_data = response.get_json()
-    assert response_data["items"] == expected_response_items
-    assert len(response_data["items"]) == 2
+
+    # Assert that the controller called its dependencies as expected
+    mock_count.assert_called_once_with()
+    mock_fetch.assert_called_once_with(offset=0, limit=20)
+
+    # Assert that final JSON response is correct
+    json_data = response.get_json()
+    assert json_data["total_count"] == 50
+    assert len(json_data["items"]) == 1
+    assert json_data["items"][0]["id"] == "book1"
+    # Check that a sensitive field like 'state' was removed
+    assert "state" not in json_data["items"][0]
 
 
-@patch("app.services.book_service.get_book_collection")
-def test_get_books_handles_database_connection_error(mock_get_collection, client):
+@pytest.mark.parametrize(
+    "function_to_patch, _scenario_id",
+    [
+        ("app.routes.legacy_routes.count_active_books", "count_fails"),
+        ("app.routes.legacy_routes.fetch_active_books", "fetch_fails"),
+    ],
+)
+def test_get_books_handles_database_connection_error(
+    function_to_patch, _scenario_id, client
+):
     """
-    GIVEN the database connection fails
+    GIVEN the database connection fails during either the count or fetch call
     WHEN the /books endpoint is called
-    THEN a 503 Service Unavailable error should be returned with a friendly message.
+    THEN a 503 Service Unavailable error should be returned.
     """
-    # ARRANGE: Configure the mock to raise the exception when called
-    mock_get_collection.side_effect = ConnectionFailure("Could not connect to DB")
+    # Arrange
+    with patch(function_to_patch) as mock_db_call:
+        mock_db_call.side_effect = ConnectionFailure("Could not connect to DB")
 
-    # ACT
-    response = client.get("/books")
+        # Act
+        response = client.get("/books")
 
-    # ASSERT
-    assert response.status_code == 503  # Now asserting the correct code
+    # Assert
+    assert response.status_code == 503
+    json_data = response.get_json()
 
-    # This assertion will now pass because your controller is returning the correct message
-    expected_error = "The database service is temporarily unavailable."
-    assert expected_error in response.json["error"]["message"]
+    assert "error" in json_data
+    assert json_data["error"]["code"] == 503
+    assert (
+        "The database service is temporarily unavailable"
+        in json_data["error"]["message"]
+    )
 
 
 # -------- Tests for GET a single resource ----------------
