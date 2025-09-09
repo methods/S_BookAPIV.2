@@ -10,7 +10,7 @@ from app.datastore.mongo_helper import (delete_book_by_id,
                                         insert_book_to_mongo,
                                         replace_book_by_id,
                                         validate_book_put_payload)
-from app.services.book_service import fetch_active_books, format_books_for_api
+from app.services.book_service import fetch_active_books, format_books_for_api, count_active_books
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
 
@@ -129,8 +129,14 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
             )  # pylint: disable=line-too-long
 
         # --- 2. Call the Service Layer to Fetch Data ---
+
         try:
-            raw_books = fetch_active_books()
+            # Get total count for the response metadata
+            total_count = count_active_books()
+
+            # Next, get a paginated list of documents
+            raw_books = fetch_active_books(offset=offset, limit=limit)
+
         except ConnectionFailure:
             error_payload = {
                 "error": {
