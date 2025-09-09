@@ -238,5 +238,245 @@
       "reviews": "/books/550e8400-e29b-41d4-a716-446655440013/reviews"
     },
     "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440014",
+    "title": "The Iliad",
+    "synopsis": "An ancient epic poem recounting the events of the Trojan War and the wrath of Achilles.",
+    "author": "Homer",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440014",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440014/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440014/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440015",
+    "title": "Great Expectations",
+    "synopsis": "The coming-of-age story of Pip and his growth amid wealth, class, and personal expectations.",
+    "author": "Charles Dickens",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440015",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440015/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440015/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440016",
+    "title": "A Tale of Two Cities",
+    "synopsis": "A historical novel contrasting life in London and Paris before and during the French Revolution.",
+    "author": "Charles Dickens",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440016",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440016/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440016/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440017",
+    "title": "The Stranger",
+    "synopsis": "A novel about an emotionally detached man whose actions lead to an existential crisis.",
+    "author": "Albert Camus",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440017",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440017/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440017/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440018",
+    "title": "One Hundred Years of Solitude",
+    "synopsis": "A multi-generational tale weaving magical realism and the history of the Buendía family.",
+    "author": "Gabriel García Márquez",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440018",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440018/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440018/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440019",
+    "title": "Beloved",
+    "synopsis": "A powerful story of memory, trauma, and the legacy of slavery centered on a former enslaved woman.",
+    "author": "Toni Morrison",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440019",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440019/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440019/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001a",
+    "title": "The Road",
+    "synopsis": "A bleak, moving post-apocalyptic journey of a father and son struggling to survive.",
+    "author": "Cormac McCarthy",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001a",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001a/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001a/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001b",
+    "title": "The Handmaid's Tale",
+    "synopsis": "A dystopian novel about a theocratic society that subjugates women and controls reproduction.",
+    "author": "Margaret Atwood",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001b",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001b/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001b/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001c",
+    "title": "Invisible Man",
+    "synopsis": "A novel following an African American man's search for identity amid racial prejudice.",
+    "author": "Ralph Ellison",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001c",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001c/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001c/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001d",
+    "title": "Slaughterhouse-Five",
+    "synopsis": "A darkly comic account of World War II and time travel, following Billy Pilgrim's experiences.",
+    "author": "Kurt Vonnegut",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001d",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001d/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001d/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001e",
+    "title": "The Color Purple",
+    "synopsis": "An epistolary novel recounting the hardships and resilience of African American women in the early 20th century.",
+    "author": "Alice Walker",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001e",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001e/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001e/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-44665544001f",
+    "title": "Don Quixote",
+    "synopsis": "A comic and tragic tale of a man who becomes a knight-errant and his misadventures across Spain.",
+    "author": "Miguel de Cervantes",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-44665544001f",
+      "reservations": "/books/550e8400-e29b-41d4-a716-44665544001f/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-44665544001f/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440020",
+    "title": "The Kite Runner",
+    "synopsis": "A story of friendship, betrayal, and redemption set against Afghanistan's turbulent history.",
+    "author": "Khaled Hosseini",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440020",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440020/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440020/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440021",
+    "title": "The Alchemist",
+    "synopsis": "A philosophical fable about a shepherd's journey to discover his personal legend and purpose.",
+    "author": "Paulo Coelho",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440021",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440021/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440021/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440022",
+    "title": "Lord of the Flies",
+    "synopsis": "A group of boys stranded on an island descend into savagery as social order collapses.",
+    "author": "William Golding",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440022",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440022/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440022/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440023",
+    "title": "Catch-22",
+    "synopsis": "A satirical novel about the absurdities of war and the paradoxical rules that trap its characters.",
+    "author": "Joseph Heller",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440023",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440023/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440023/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440024",
+    "title": "The Grapes of Wrath",
+    "synopsis": "A moving portrayal of a family's struggle during the Great Depression as they seek a better life.",
+    "author": "John Steinbeck",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440024",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440024/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440024/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440025",
+    "title": "The Hitchhiker's Guide to the Galaxy",
+    "synopsis": "A comic science-fiction romp following Arthur Dent's absurd adventures through space.",
+    "author": "Douglas Adams",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440025",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440025/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440025/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440026",
+    "title": "Fahrenheit 451",
+    "synopsis": "A dystopian novel where books are banned and 'firemen' burn any that are found.",
+    "author": "Ray Bradbury",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440026",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440026/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440026/reviews"
+    },
+    "state": "active"
+  },
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440027",
+    "title": "The Old Man and the Sea",
+    "synopsis": "A short, lyrical novel about an aging fisherman's epic struggle with a giant marlin.",
+    "author": "Ernest Hemingway",
+    "links": {
+      "self": "/books/550e8400-e29b-41d4-a716-446655440027",
+      "reservations": "/books/550e8400-e29b-41d4-a716-446655440027/reservations",
+      "reviews": "/books/550e8400-e29b-41d4-a716-446655440027/reviews"
+    },
+    "state": "active"
   }
 ]
