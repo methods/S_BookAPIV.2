@@ -148,8 +148,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
 
             return jsonify(error_payload), 503
 
-        if not raw_books:
-            return jsonify({"error": "No books found"}), 404
+        # --- 3. Format and Return the Response ---
 
         # extract host from the request
         host = request.host_url.rstrip("/")
@@ -162,7 +161,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
 
         return (
             jsonify(
-                {"total_count": len(all_formatted_books), "items": all_formatted_books}
+                {"total_count": total_count, "items": all_formatted_books}
             ),
             200,
         )

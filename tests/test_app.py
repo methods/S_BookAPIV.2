@@ -258,24 +258,6 @@ def test_missing_fields_in_book_object_returned_by_database(mock_fetch, client):
     mock_fetch.assert_called_once()
 
 
-@patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_all_books_returns_error_404_when_list_is_empty(mock_fetch, client):
-    empty_data = []
-    mock_fetch.return_value = empty_data
-    response = client.get("/books")
-    assert response.status_code == 404
-    assert "No books found" in response.get_json()["error"]
-
-
-@patch("app.routes.legacy_routes.fetch_active_books")
-def test_get_book_returns_404_when_books_is_none(mock_fetch, client):
-    none_data = None
-    mock_fetch.return_value = none_data
-    response = client.get("/books")
-    assert response.status_code == 404
-    assert "No books found" in response.get_json()["error"]
-
-
 @patch("app.routes.legacy_routes.count_active_books")
 @patch("app.routes.legacy_routes.fetch_active_books")
 def test_get_books_success_default_pagination(mock_fetch, mock_count, client):
