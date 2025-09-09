@@ -4,13 +4,22 @@ from app.extensions import mongo
 from app.utils.helper import append_hostname
 
 
+def count_active_books():
+    """
+    Counts the total number of active books in the database.
+    """
+    query_filter = {"state": {"$ne": "deleted"}}
+    count = mongo.db.books.count_documents(query_filter)
+    print("count: ", count)
+
+    return count
+
+
 def fetch_active_books(offset: int = 0, limit: int = 20):
     """
     Fetches a paginated list of all active (non-deleted) books from the database.
     """
-
     query_filter = {"state": {"$ne": "deleted"}}  # Only non-deleted books
-
     cursor = mongo.db.books.find(query_filter).skip(offset).limit(limit)
 
     return list(cursor)
