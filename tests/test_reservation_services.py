@@ -7,7 +7,7 @@ from bson import ObjectId
 from app.services.reservation_services import count_reservations_for_book
 
 
-@patch("app.services.reservation_service.mongo")
+@patch("app.services.reservation_services.mongo")
 def test_count_reservations_for_book(mock_mongo, test_app):
     """
     WHEN count_reservations_for_book is called with a book_id
