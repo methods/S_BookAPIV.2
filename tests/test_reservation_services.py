@@ -1,10 +1,12 @@
+# pylint: disable=line-too-long
 """..."""
 
 from unittest.mock import patch
 
 from bson import ObjectId
 
-from app.services.reservation_services import count_reservations_for_book
+from app.services.reservation_services import (count_reservations_for_book,
+                                               fetch_reservations_for_book)
 
 
 @patch("app.services.reservation_services.mongo")
@@ -27,3 +29,48 @@ def test_count_reservations_for_book(mock_mongo, test_app):
     mock_mongo.db.reservations.count_documents.assert_called_once_with(
         {"book_id": book_id_obj}
     )
+
+
+# Plan: Write unit tests that mock the .aggregate method
+# the tests will not check the data returned, instead will inspect the piepline arugment that is passed to aggregate to enusre it's constructed propertly based in the book_od, offset, and limit provided
+# KEY PRINCIPLE- we are not testing if MongoDB can perform an aggregation- we trust it can.
+# we are testing that our function correctly builds the list of instructions (the pipeline) that we send to MongoDB.
+# THEREFORE: our test's most important job is to "capture" the pipeline variable that the fucntion creates
+# and assert that its contents are exactly what we expect.
+
+
+@patch("app.services.reservation_services.mongo")
+def test_fetch_reservations_for_book_builds_pipeline_with_defaults(
+    mock_mongo, test_app
+):
+    """
+    GIVEN a book_id is provided
+    WHEN fetch_reservations_for_book is called with no offset or limit
+    THEN it should call the aggregate method with a correctly structured pipeline,
+    using the default offset of 0 and limit of 20.
+    """
+    # ARRANGE
+    book_id_obj = ObjectId()
+    # The actual data returned doesn't matter for this test, only the call itself.
+    mock_mongo.db.reservations.aggregate.return_value = []
+
+    with test_app.app_context():
+        # ACT: Call the function with only the required argument
+        fetch_reservations_for_book(book_id_obj)
+
+    # ASSERT
+    # 1. Ensure the aggregate method was called exactly once.
+    mock_mongo.db.reservations.aggregate.assert_called_once()
+
+    # 2. Capture the arguments that were passed to the aggregate method.
+    # call_args is a tuple: (args, kwargs). The pipeline is the first positional arg.
+    actual_pipeline = mock_mongo.db.reservations.aggregate.call_args[0][0]
+
+    # 3. Verify the structure and content of the pipeline.
+    assert isinstance(actual_pipeline, list)
+    assert len(actual_pipeline) == 5  # We expect 5 stages in our pipeline
+
+    # Check the critical stages
+    assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
+    assert actual_pipeline[3] == {"$skip": 0}  # Default value
+    assert actual_pipeline[4] == {"$limit": 20}  # Default value
