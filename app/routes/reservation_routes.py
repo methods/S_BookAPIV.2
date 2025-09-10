@@ -1,13 +1,14 @@
 """Routes for /books/<id>/reservations endpoint"""
 
 import datetime
-import logging
 
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import Blueprint, g, jsonify, request, url_for
 
 from app.extensions import mongo
+from app.services.reservation_services import (count_reservations_for_book,
+                                               fetch_reservations_for_book)
 from app.utils.decorators import require_admin, require_jwt
 
 reservations_bp = Blueprint(
@@ -83,7 +84,7 @@ def create_reservation(book_id_str):
 @require_admin
 def get_reservations_for_book_id(book_id_str):
     """
-    Retrieves all paginated reservations for a specific book including total count.
+    Retrieves a paginated list of reservations for a specific book, including total count.
     Accessible only by users with the 'admin' role.
     """
     # --- 1. Get and Validate Query Parameters ---
@@ -114,35 +115,26 @@ def get_reservations_for_book_id(book_id_str):
     except (InvalidId, TypeError):
         return jsonify({"error": "Invalid Book ID"}), 400
 
+    # --- 2. Call Service Layer ---
     # Check if book exists
     book = mongo.db.books.find_one({"_id": oid})
     if not book:
         return "book not found", 404, {"Content-Type": "text/plain"}
 
-    # Fetch reservations for the given book_id
-    reservations_cursor = mongo.db.reservations.find({"book_id": oid})
+    # Use service helper functions
+    total_count = count_reservations_for_book(oid)
+    raw_reservations = fetch_reservations_for_book(oid, offset=offset, limit=limit)
 
+    # Format Response
     items = []
-    for r in reservations_cursor:
-        # For each reservation, fetch the associated user's details
-        user = mongo.db.users.find_one({"_id": r["user_id"]})
-
-        # Skip if the user for a reservation is not found, to avoid errors
-        if not user:
-            logging.warning(
-                "Data integrity issue: Reservation '%s' references a non-existent user_id '%s'. Skipping.",  # pylint: disable=line-too-long
-                r["_id"],
-                r["user_id"],
-            )
-            continue
-
+    for r in raw_reservations:
         # Build the item object according to spec
         reservation_item = {
             "id": str(r["_id"]),
             "state": r.get("state", "UNKNOWN"),  # Use .get() for safety
             "user": {
-                "forenames": user.get("forenames"),
-                "surname": user.get("surname"),
+                "forenames": r["userDetails"].get("forenames"),
+                "surname": r["userDetails"].get("surname"),
             },
             "book_id": str(r["book_id"]),
             "links": {
@@ -158,6 +150,6 @@ def get_reservations_for_book_id(book_id_str):
         items.append(reservation_item)
 
     # Construct the final response body
-    response_body = {"total_count": len(items), "items": items}
+    response_body = {"total_count": total_count, "items": items}
 
     return jsonify(response_body), 200
