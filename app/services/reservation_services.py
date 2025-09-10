@@ -1,4 +1,4 @@
-"""..."""
+"""Service layer functions for reservation data operations"""
 
 from bson import ObjectId
 

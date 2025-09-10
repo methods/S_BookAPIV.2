@@ -1,5 +1,5 @@
 # pylint: disable=line-too-long
-"""..."""
+"""Tests for reservation service layer functions."""
 
 from unittest.mock import patch
 
@@ -32,10 +32,10 @@ def test_count_reservations_for_book(mock_mongo, test_app):
 
 
 # Plan: Write unit tests that mock the .aggregate method
-# the tests will not check the data returned, instead will inspect the piepline arugment that is passed to aggregate to enusre it's constructed propertly based in the book_od, offset, and limit provided
+# the tests will not check the data returned, instead will inspect the pipeline argument that is passed to aggregate to ensure it's constructed properly based on the book_id, offset, and limit provided
 # KEY PRINCIPLE- we are not testing if MongoDB can perform an aggregation- we trust it can.
 # we are testing that our function correctly builds the list of instructions (the pipeline) that we send to MongoDB.
-# THEREFORE: our test's most important job is to "capture" the pipeline variable that the fucntion creates
+# THEREFORE: our test's most important job is to "capture" the pipeline variable that the function creates
 # and assert that its contents are exactly what we expect.
 
 

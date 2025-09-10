@@ -152,7 +152,6 @@ def seeded_books_in_db(test_app):  # pylint: disable=redefined-outer-name
     Ensures the books collection is clean and then seeds it with 50 books
     for pagination testing.
     """
-    # _ = mongo_setup
 
     with test_app.app_context():
         collection = get_book_collection()
