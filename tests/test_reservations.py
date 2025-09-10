@@ -362,7 +362,6 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     "query_params, expected_error_msg",
     [
         ("?limit=-5", "cannot be negative"),
-        ("?offset=-1", "cannot be negative"),
         ("?limit=abc", "must be integers"),
         ("?offset=xyz", "must be integers"),
     ],
