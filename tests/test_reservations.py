@@ -357,24 +357,31 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     assert returned_reservation["state"] == "active"
 
 
-@pytest.mark.parametrize("query_params, expected_error_msg", [
-    ("?limit=-5", "cannot be negative"),
-    ("?offset=-1", "cannot be negative"),
-    ("?limit=abc", "must be integers"),
-    ("?offset=xyz", "must be integers"),
-])
-def test_get_reservations_with_invalid_params(client, seeded_books_in_db, admin_token, query_params, expected_error_msg): # pylint: disable=line-too-long
+@pytest.mark.parametrize(
+    "query_params, expected_error_msg",
+    [
+        ("?limit=-5", "cannot be negative"),
+        ("?offset=-1", "cannot be negative"),
+        ("?limit=abc", "must be integers"),
+        ("?offset=xyz", "must be integers"),
+    ],
+)
+def test_get_reservations_with_invalid_params(
+    client, seeded_books_in_db, admin_token, query_params, expected_error_msg
+):  # pylint: disable=line-too-long
     """
     GIVEN a valid book ID and admin credentials
     WHEN a GET request is made to the reservations endpoint with invalid pagination parameters
     THEN it should return a 400 Bad Request with a relevant error message.
     """
     # ARRANGE: Get a valid book ID from our seeded data
-    book_id_str = seeded_books_in_db[0]['_id']
+    book_id_str = seeded_books_in_db[0]["_id"]
     auth_headers = {"Authorization": f"Bearer {admin_token}"}
 
     # ACT
-    response = client.get(f"/books/{book_id_str}/reservations{query_params}", headers=auth_headers)
+    response = client.get(
+        f"/books/{book_id_str}/reservations{query_params}", headers=auth_headers
+    )
     json_data = response.get_json()
 
     # ASSERT

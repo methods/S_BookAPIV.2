@@ -5,7 +5,7 @@ import logging
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import Blueprint, g, jsonify, url_for, request
+from flask import Blueprint, g, jsonify, request, url_for
 
 from app.extensions import mongo
 from app.utils.decorators import require_admin, require_jwt
@@ -103,9 +103,7 @@ def get_reservations_for_book_id(book_id_str):
     if offset < 0 or limit < 0:
         return (
             jsonify(
-                {
-                    "error": "Query parameters 'limit' and 'offset' cannot be negative."
-                }
+                {"error": "Query parameters 'limit' and 'offset' cannot be negative."}
             ),
             400,
         )

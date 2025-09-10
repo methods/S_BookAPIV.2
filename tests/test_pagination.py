@@ -4,12 +4,16 @@ Tests for the GET /books endpoint, specifically focusing on pagination logic.
 
 import pytest
 
-@pytest.mark.parametrize("query_params, expected_error_msg", [
-    ("?limit=-5", "cannot be negative"),
-    ("?offset=-1", "cannot be negative"),
-    ("?limit=abc", "must be integers"),
-    ("?offset=abc", "must be integers"),
-])
+
+@pytest.mark.parametrize(
+    "query_params, expected_error_msg",
+    [
+        ("?limit=-5", "cannot be negative"),
+        ("?offset=-1", "cannot be negative"),
+        ("?limit=abc", "must be integers"),
+        ("?offset=abc", "must be integers"),
+    ],
+)
 def test_get_books_with_invalid_params(client, query_params, expected_error_msg):
     """
     GIVEN any client
