@@ -34,3 +34,7 @@ class Config:
     MONGO_URI = os.environ.get("MONGO_CONNECTION")
     DB_NAME = os.environ.get("PROJECT_DATABASE")
     COLLECTION_NAME = os.environ.get("PROJECT_COLLECTION")
+    try:
+        MAX_OFFSET = int(os.environ.get("MAX_OFFSET", "5000"))
+    except (ValueError, TypeError):
+        MAX_OFFSET = 5000
