@@ -162,7 +162,6 @@ def seeded_books_in_db(test_app):  # pylint: disable=redefined-outer-name
         ]
         if books_to_insert:
             collection.insert_many(books_to_insert)
-        print("books_to_insert: ", books_to_insert)
 
     return books_to_insert
 
