@@ -312,9 +312,10 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     mock_url_for, client, admin_token, seeded_user_in_db, test_app
 ):
     """
-    GIVEN a book with two reservations, one for a valid user and one for a user that does not exist
+    GIVEN a book with an orphan reservation (non-existent user)
     WHEN the GET /books/{id}/reservations endpoint is hit
-    THEN it should return 200 OK and a list containing ONLY the valid reservation.
+    THEN it should return 200 OK, a total_count reflecting all reservations,
+    AND an items list containing ONLY the valid reservation.
     """
     # --- ARRANGE ---
     mock_url_for.return_value = "http://localhost/mock/url"
@@ -348,10 +349,43 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     data = response.get_json()
 
     # The endpoint should successfully process the request and return only the valid data
-    assert data["total_count"] == 1
+    assert data["total_count"] == 2
     assert len(data["items"]) == 1
 
     # The only item returned should be the one linked to the valid user
     returned_reservation = data["items"][0]
     # We can't check the user ID directly in the new format, but we can check the state
     assert returned_reservation["state"] == "active"
+
+
+@pytest.mark.parametrize(
+    "query_params, expected_error_msg",
+    [
+        ("?limit=-5", "cannot be negative"),
+        ("?offset=-1", "cannot be negative"),
+        ("?limit=abc", "must be integers"),
+        ("?offset=xyz", "must be integers"),
+    ],
+)
+def test_get_reservations_with_invalid_params(
+    client, seeded_books_in_db, admin_token, query_params, expected_error_msg
+):  # pylint: disable=line-too-long
+    """
+    GIVEN a valid book ID and admin credentials
+    WHEN a GET request is made to the reservations endpoint with invalid pagination parameters
+    THEN it should return a 400 Bad Request with a relevant error message.
+    """
+    # ARRANGE: Get a valid book ID from our seeded data
+    book_id_str = seeded_books_in_db[0]["_id"]
+    auth_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # ACT
+    response = client.get(
+        f"/books/{book_id_str}/reservations{query_params}", headers=auth_headers
+    )
+    json_data = response.get_json()
+
+    # ASSERT
+    assert response.status_code == 400
+    assert "error" in json_data
+    assert expected_error_msg in json_data["error"]

@@ -242,11 +242,15 @@ components:
           example: "2023-10-27T10:00:00Z"
 
 
-    # Schema for the GET /reservations response body (a list)
-    ReservationsOutput:
+    # Schema for a paginated list of reservations
+    ReservationsListResponse:
       type: object
       properties:
-        reservations:
+        total_count:
+          type: integer
+          description: Total number of reservations for this book.
+          example: 5
+        items:
           type: array
           items:
             $ref: '#/components/schemas/ReservationOutput'
@@ -629,15 +633,41 @@ paths:
       tags:
         - Reservations
       summary: Get all reservations for a book
-      description: Fetches a list of all active reservations for the book identified by {book_id}.
+      description: Fetches a paginated list of all active reservations for the book identified by {book_id}.
       operationId: get_book_reservations
+      parameters:
+        - name: offset
+          in: query
+          description: The number of reservations to skip before starting to collect the result set.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 0
+            minimum: 0
+        - name: limit
+          in: query
+          description: The maximum number of reservations to return.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            default: 20
+            minimum: 1
+            maximum: 100
       responses:
         '200': 
           description: Successfully retrieved the list of reservations.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ReservationsOutput'
+                $ref: '#/components/schemas/ReservationsListResponse'
+        '400':
+          description: Invalid query parameters provided (e.g., negative offset).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleError'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
