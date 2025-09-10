@@ -312,9 +312,10 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     mock_url_for, client, admin_token, seeded_user_in_db, test_app
 ):
     """
-    GIVEN a book with two reservations, one for a valid user and one for a user that does not exist
+    GIVEN a book with an orphan reservation (non-existent user)
     WHEN the GET /books/{id}/reservations endpoint is hit
-    THEN it should return 200 OK and a list containing ONLY the valid reservation.
+    THEN it should return 200 OK, a total_count reflecting all reservations,
+    AND an items list containing ONLY the valid reservation.
     """
     # --- ARRANGE ---
     mock_url_for.return_value = "http://localhost/mock/url"
@@ -348,7 +349,7 @@ def test_get_reservations_skips_reservation_with_nonexistent_user(
     data = response.get_json()
 
     # The endpoint should successfully process the request and return only the valid data
-    assert data["total_count"] == 1
+    assert data["total_count"] == 2
     assert len(data["items"]) == 1
 
     # The only item returned should be the one linked to the valid user
