@@ -5,7 +5,7 @@ import logging
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import Blueprint, g, jsonify, url_for
+from flask import Blueprint, g, jsonify, url_for, request
 
 from app.extensions import mongo
 from app.utils.decorators import require_admin, require_jwt
@@ -83,9 +83,33 @@ def create_reservation(book_id_str):
 @require_admin
 def get_reservations_for_book_id(book_id_str):
     """
-    Retrieves all reservations for a specific book.
+    Retrieves all paginated reservations for a specific book including total count.
     Accessible only by users with the 'admin' role.
     """
+    # --- 1. Get and Validate Query Parameters ---
+    offset_str = request.args.get("offset", "0")  # 0 is default
+    limit_str = request.args.get("limit", "20")  # 20 is default
+    try:
+        offset = int(offset_str)
+        limit = int(limit_str)
+    except ValueError:
+        return (
+            jsonify(
+                {"error": "Query parameters 'limit' and 'offset' must be integers."}
+            ),
+            400,
+        )  # pylint: disable=line-too-long
+
+    if offset < 0 or limit < 0:
+        return (
+            jsonify(
+                {
+                    "error": "Query parameters 'limit' and 'offset' cannot be negative."
+                }
+            ),
+            400,
+        )
+
     # Validate the book_id format
     try:
         oid = ObjectId(book_id_str)
