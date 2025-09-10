@@ -4,6 +4,7 @@ Tests for the GET /books endpoint, specifically focusing on pagination logic.
 
 import pytest
 
+
 @pytest.mark.parametrize(
     "query_params, expected_error_msg",
     [
@@ -25,7 +26,9 @@ def test_get_books_with_invalid_params(client, query_params, expected_error_msg)
     assert "error" in json_data
     assert expected_error_msg in json_data["error"]
 
+
 invalid_offset_values = [-1, 2001]
+
 
 @pytest.mark.parametrize("invalid_offset", invalid_offset_values)
 def test_get_books_fails_for_out_of_range_offset(client, invalid_offset):
@@ -36,8 +39,10 @@ def test_get_books_fails_for_out_of_range_offset(client, invalid_offset):
     """
     # Arrange
     # Get the max_offset from the app's config to build the expected message.
-    max_offset = client.application.config['MAX_OFFSET']
-    expected_error_msg = f"Offset has to be a positive number no greater then {max_offset}."
+    max_offset = client.application.config["MAX_OFFSET"]
+    expected_error_msg = (
+        f"Offset has to be a positive number no greater then {max_offset}."
+    )
 
     # Act
     response = client.get(f"/books?offset={invalid_offset}")

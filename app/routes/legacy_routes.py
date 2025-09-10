@@ -134,11 +134,14 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
         max_offset = current_app.config["MAX_OFFSET"]
         print(max_offset, offset)
         if offset < 0 or offset > max_offset:
-            return jsonify(
-                {
-                    "error": f"Offset has to be a positive number no greater then {max_offset}."
-                }
-            ), 400
+            return (
+                jsonify(
+                    {
+                        "error": f"Offset has to be a positive number no greater then {max_offset}."
+                    }
+                ),
+                400,
+            )
 
         # --- 2. Call the Service Layer to Fetch Data ---
 

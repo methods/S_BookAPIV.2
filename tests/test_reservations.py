@@ -389,9 +389,14 @@ def test_get_reservations_with_invalid_params(
     assert "error" in json_data
     assert expected_error_msg in json_data["error"]
 
+
 invalid_offset_values = [-1, 2001]
+
+
 @pytest.mark.parametrize("invalid_offset", invalid_offset_values)
-def test_get_reservations_fails_for_out_of_range_offset(client, seeded_books_in_db, admin_token, invalid_offset): # pylint: disable=line-too-long
+def test_get_reservations_fails_for_out_of_range_offset(
+    client, seeded_books_in_db, admin_token, invalid_offset
+):  # pylint: disable=line-too-long
     """
     GIVEN an offset that is either negative or exceeds the configured max
     WHEN a GET request is made to /books/{id}/endpoint with that offset
@@ -402,13 +407,15 @@ def test_get_reservations_fails_for_out_of_range_offset(client, seeded_books_in_
     auth_headers = {"Authorization": f"Bearer {admin_token}"}
     # Arrange
     # Get the max_offset from the app's config to build the expected message.
-    max_offset = client.application.config['MAX_OFFSET']
-    expected_error_msg = f"Offset has to be a positive number no greater then {max_offset}."
+    max_offset = client.application.config["MAX_OFFSET"]
+    expected_error_msg = (
+        f"Offset has to be a positive number no greater then {max_offset}."
+    )
 
     # Act
     response = client.get(
         f"/books/{book_id_str}/reservations?offset={invalid_offset}",
-        headers=auth_headers
+        headers=auth_headers,
     )
     json_data = response.get_json()
 

@@ -5,7 +5,7 @@ import datetime
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import Blueprint, g, jsonify, request, url_for, current_app
+from flask import Blueprint, current_app, g, jsonify, request, url_for
 
 from app.extensions import mongo
 from app.services.reservation_services import (count_reservations_for_book,
@@ -114,11 +114,14 @@ def get_reservations_for_book_id(book_id_str):
     max_offset = current_app.config["MAX_OFFSET"]
     print(max_offset, offset)
     if offset < 0 or offset > max_offset:
-        return jsonify(
-            {
-                "error": f"Offset has to be a positive number no greater then {max_offset}."
-            }
-        ), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Offset has to be a positive number no greater then {max_offset}."
+                }
+            ),
+            400,
+        )
 
     # Validate the book_id format
     try:
