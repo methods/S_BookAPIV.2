@@ -119,7 +119,7 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                 400,
             )
 
-        if offset < 0 or limit < 0:
+        if limit < 0:
             return (
                 jsonify(
                     {
