@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """Routes for /books/<id>/reservations endpoint"""
 
 import datetime
