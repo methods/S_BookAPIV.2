@@ -74,3 +74,35 @@ def test_fetch_reservations_for_book_builds_pipeline_with_defaults(
     assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
     assert actual_pipeline[3] == {"$skip": 0}  # Default value
     assert actual_pipeline[4] == {"$limit": 20}  # Default value
+
+
+@patch("app.services.reservation_services.mongo")
+def test_fetch_reservations_for_book_builds_pipeline_with_custom_params(
+    mock_mongo, test_app
+):
+    """
+    GIVEN a book_id, a custom offset, and a custom limit
+    WHEN fetch_reservations_for_book is called
+    THEN it should call the aggregate method with a pipeline that reflects
+    those custom pagination values.
+    """
+    # ARRANGE
+    book_id_obj = ObjectId()
+    mock_mongo.db.reservations.aggregate.return_value = []
+    custom_offset = 10
+    custom_limit = 5
+
+    with test_app.app_context():
+        # ACT: Call the function with custom pagination arguments
+        fetch_reservations_for_book(
+            book_id_obj, offset=custom_offset, limit=custom_limit
+        )
+
+    # ASSERT
+    mock_mongo.db.reservations.aggregate.assert_called_once()
+    actual_pipeline = mock_mongo.db.reservations.aggregate.call_args[0][0]
+
+    # Verify the custom values are in the correct stages
+    assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
+    assert actual_pipeline[3] == {"$skip": custom_offset}  # Custom value
+    assert actual_pipeline[4] == {"$limit": custom_limit}  # Custom value
