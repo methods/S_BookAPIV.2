@@ -391,6 +391,7 @@ def test_get_reservations_with_invalid_params(
 
 invalid_offset_values = [-1, 2001]
 
+
 @pytest.mark.parametrize("invalid_offset", invalid_offset_values)
 def test_get_reservations_fails_for_out_of_range_offset(
     client, seeded_books_in_db, admin_token, invalid_offset
@@ -422,7 +423,10 @@ def test_get_reservations_fails_for_out_of_range_offset(
     assert "error" in json_data
     assert json_data["error"] in expected_error_msg
 
+
 invalid_limit_values = [-1, 1001]
+
+
 @pytest.mark.parametrize("invalid_limit", invalid_limit_values)
 def test_get_reservations_fails_for_out_of_range_limit(
     client, seeded_books_in_db, admin_token, invalid_limit
