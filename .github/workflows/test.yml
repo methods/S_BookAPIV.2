@@ -39,5 +39,6 @@ jobs:
           MONGO_CONNECTION: ${{ secrets.MONGO_CONNECTION }}
           PROJECT_DATABASE: ${{ secrets.PROJECT_DATABASE }}
           PROJECT_COLLECTION: ${{ secrets.PROJECT_COLLECTION}}
+          MAX_OFFSET: 2000
         run: |
           ./run_tests.sh

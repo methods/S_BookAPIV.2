@@ -1,7 +1,7 @@
 """Flask application module for managing a collection of books."""
 
 from bson.objectid import InvalidId, ObjectId
-from flask import jsonify, request
+from flask import current_app, jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
@@ -117,9 +117,9 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                     {"error": "Query parameters 'limit' and 'offset' must be integers."}
                 ),
                 400,
-            )  # pylint: disable=line-too-long
+            )
 
-        if offset < 0 or limit < 0:
+        if limit < 0:
             return (
                 jsonify(
                     {
@@ -127,7 +127,21 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                     }
                 ),
                 400,
-            )  # pylint: disable=line-too-long
+            )
+
+        # Validate MAX_OFFSET
+        # get the MAX_OFFSET value from env and check
+        max_offset = current_app.config["MAX_OFFSET"]
+
+        if offset < 0 or offset > max_offset:
+            return (
+                jsonify(
+                    {
+                        "error": f"Offset has to be a positive number no greater than {max_offset}."
+                    }
+                ),
+                400,
+            )
 
         # --- 2. Call the Service Layer to Fetch Data ---
 

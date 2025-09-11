@@ -1,6 +1,7 @@
 [run]
 omit =
     */conftest.py
+    app/config.py
 
 [report]
 # Exclude lines from coverage report

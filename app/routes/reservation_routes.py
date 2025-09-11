@@ -5,7 +5,7 @@ import datetime
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import Blueprint, g, jsonify, request, url_for
+from flask import Blueprint, current_app, g, jsonify, request, url_for
 
 from app.extensions import mongo
 from app.services.reservation_services import (count_reservations_for_book,
@@ -102,10 +102,23 @@ def get_reservations_for_book_id(book_id_str):
             400,
         )  # pylint: disable=line-too-long
 
-    if offset < 0 or limit < 0:
+    if limit < 0:
         return (
             jsonify(
                 {"error": "Query parameters 'limit' and 'offset' cannot be negative."}
+            ),
+            400,
+        )
+    # Validate MAX_OFFSET
+    # get the MAX_OFFSET value from env and check
+    max_offset = current_app.config["MAX_OFFSET"]
+
+    if offset < 0 or offset > max_offset:
+        return (
+            jsonify(
+                {
+                    "error": f"Offset has to be a positive number no greater than {max_offset}."
+                }
             ),
             400,
         )
