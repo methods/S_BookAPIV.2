@@ -35,6 +35,10 @@ class Config:
     DB_NAME = os.environ.get("PROJECT_DATABASE")
     COLLECTION_NAME = os.environ.get("PROJECT_COLLECTION")
     try:
-        MAX_OFFSET = int(os.environ.get("MAX_OFFSET", "5000"))
+        MAX_OFFSET = int(os.environ.get("MAX_OFFSET", "2000"))
     except (ValueError, TypeError):
         MAX_OFFSET = 2000
+    try:
+        MAX_LIMIT = int(os.environ.get("MAX_LIMIT", "1000"))
+    except (ValueError, TypeError):
+        MAX_LIMIT = 1000
