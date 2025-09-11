@@ -68,6 +68,7 @@ def run_reservation_population():
     try:
         # collection.find(filter, projection: 1=include, 0=exclude )
         book_cursor = books_collection.find({}, {"_id": 1, "title": 1})
+        # MAP book title to book id
         book_id_map = {book["title"]: book["_id"] for book in book_cursor}
 
         if not book_id_map:
@@ -108,6 +109,8 @@ def run_reservation_population():
             "user_id": res_data["user_id"],
             "book_id": book_id,
             "state": res_data["state"],
+            "surname": res_data["surname"],
+            "forenames": res_data["forenames"],
         }
 
         # query to find which document we want to update
