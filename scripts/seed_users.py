@@ -27,6 +27,8 @@ def seed_users(users_to_seed: list) -> str:
     for user_data in users_to_seed:
         email = user_data["email"]
         role = user_data["role"]
+        forenames = user_data["forenames"]
+        surname = user_data["surname"]
 
         # Check if data already exists
         if mongo.db.users.find_one({"email": email}):
@@ -40,7 +42,13 @@ def seed_users(users_to_seed: list) -> str:
 
         # insert to new user
         mongo.db.users.insert_one(
-            {"email": email, "password": hashed_password.decode("utf-8"), "role": role}
+            {
+                "email": email,
+                "password": hashed_password.decode("utf-8"), 
+                "forenames": forenames,
+                "surname": surname,
+                "role": role
+            }
         )
         count += 1
         print(f"Created user: {email}")
