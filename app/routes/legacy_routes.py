@@ -119,15 +119,15 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                 400,
             )
 
-        if limit < 0:
-            return (
-                jsonify(
-                    {
-                        "error": "Query parameters 'limit' and 'offset' cannot be negative."
-                    }
-                ),
-                400,
-            )
+        # if limit < 0:
+        #     return (
+        #         jsonify(
+        #             {
+        #                 "error": "Query parameters 'limit' and 'offset' cannot be negative."
+        #             }
+        #         ),
+        #         400,
+        #     )
 
         # Validate MAX_OFFSET
         # get the MAX_OFFSET value from env and check
@@ -143,6 +143,18 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                 400,
             )
 
+        # Validate MAX_LIMIT
+        max_limit = current_app.config["MAX_LIMIT"]
+
+        if limit < 0 or limit > max_limit:
+            return (
+                jsonify(
+                    {
+                        "error": f"Limit has to be a positive number no greater than {max_limit}."
+                    }
+                ),
+                400,
+            )
         # --- 2. Call the Service Layer to Fetch Data ---
 
         try:
