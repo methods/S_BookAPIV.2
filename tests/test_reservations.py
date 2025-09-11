@@ -444,7 +444,7 @@ def test_get_reservations_fails_for_out_of_range_limit(
     )
     # Act
     response = client.get(
-        f"/books/{book_id_str}/reservations?offset={invalid_limit}",
+        f"/books/{book_id_str}/reservations?limit={invalid_limit}",
         headers=auth_headers,
     )
     json_data = response.get_json()
