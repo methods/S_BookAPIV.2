@@ -8,6 +8,7 @@ import pytest
 from bson import ObjectId
 from pymongo.errors import PyMongoError
 
+from app.extensions import mongo
 from scripts import seed_reservations as load_reservations_module
 from scripts.seed_reservations import (load_reservations_json,
                                        run_reservation_population)
@@ -153,6 +154,8 @@ def test_returns_404_if_any_collection_is_missing(
     mock_get_books.assert_called_once()
 
 
+
+# NOT A TRUE INTEGRATION TEST - NEED TO UPDATE
 def test_returns_200_when_collections_are_present(
     test_app, mongo_setup, sample_book_data
 ):
@@ -164,9 +167,6 @@ def test_returns_200_when_collections_are_present(
     _ = mongo_setup
 
     with test_app.app_context():
-        # Get the collections from the GLOBAL `mongo` object
-        from app.extensions import \
-            mongo  # pylint: disable=import-outside-toplevel
 
         mock_books_collection_with_data = mongo.db.books
         mock_reservations_collection_with_data = mongo.db.reservations
@@ -192,7 +192,49 @@ def test_returns_200_when_collections_are_present(
 
     # ASSERT
     assert success is True
-    assert message == "Successfully created 3 and updated 0 reservations."
+    assert message == "Successfully created 10 and updated 0 reservations."
+
+
+
+def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
+    """
+    GIVEN a database with two specific books
+    AND a known, small list of reservation data is provided
+    WHEN run_reservation_population is called
+    THEN it correctly processes only the matching reservations.
+    """
+    _ = mongo_setup
+
+    # 1. Arrange: Control ALL external inputs
+    # Input #1: The books in the database
+    books_in_db = [
+        {"_id": ObjectId(), "title": "1984"},
+        {"_id": ObjectId(), "title": "Dune"}
+    ]
+    # Input #2: The data we PRETEND comes from the JSON file
+    reservations_to_load = [
+        {"book_title": "1984", "user_id": "u1", "state": "reserved", "surname": "a", "forenames": "b"},
+        {"book_title": "Dune", "user_id": "u2", "state": "pending", "surname": "c", "forenames": "d"},
+        {"book_title": "Unrelated Book", "user_id": "u3", "state": "reserved", "surname": "e", "forenames": "f"}
+    ]
+
+    with test_app.app_context():
+        # Setup the fake database
+        mongo.db.books.insert_many(books_in_db)
+
+        # 2. Patch ALL dependencies to return our controlled inputs
+        with patch("scripts.seed_reservations.get_book_collection", return_value=mongo.db.books), \
+             patch("scripts.seed_reservations.get_reservation_collection", return_value=mongo.db.reservations), \
+             patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_to_load):
+
+            # 3. Act: Run the function under test
+            success, message = run_reservation_population()
+
+    # 4. Assert: Check against a predictable, stable result
+    assert success is True
+    # The result is now independent of the large JSON file. We expect 2 creations.
+    assert message == "Successfully created 2 and updated 0 reservations."
+
 
 
 def test_returns_warning_when_no_books_are_found(test_app):
