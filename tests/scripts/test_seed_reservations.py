@@ -154,7 +154,6 @@ def test_returns_404_if_any_collection_is_missing(
     mock_get_books.assert_called_once()
 
 
-
 # NOT A TRUE INTEGRATION TEST - NEED TO UPDATE
 def test_returns_200_when_collections_are_present(
     test_app, mongo_setup, sample_book_data
@@ -195,7 +194,6 @@ def test_returns_200_when_collections_are_present(
     assert message == "Successfully created 10 and updated 0 reservations."
 
 
-
 def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
     """
     GIVEN a database with two specific books
@@ -209,13 +207,31 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
     # Input #1: The books in the database
     books_in_db = [
         {"_id": ObjectId(), "title": "1984"},
-        {"_id": ObjectId(), "title": "Dune"}
+        {"_id": ObjectId(), "title": "Dune"},
     ]
     # Input #2: The data we PRETEND comes from the JSON file
     reservations_to_load = [
-        {"book_title": "1984", "user_id": "u1", "state": "reserved", "surname": "a", "forenames": "b"},
-        {"book_title": "Dune", "user_id": "u2", "state": "pending", "surname": "c", "forenames": "d"},
-        {"book_title": "Unrelated Book", "user_id": "u3", "state": "reserved", "surname": "e", "forenames": "f"}
+        {
+            "book_title": "1984",
+            "user_id": "u1",
+            "state": "reserved",
+            "surname": "a",
+            "forenames": "b",
+        },
+        {
+            "book_title": "Dune",
+            "user_id": "u2",
+            "state": "pending",
+            "surname": "c",
+            "forenames": "d",
+        },
+        {
+            "book_title": "Unrelated Book",
+            "user_id": "u3",
+            "state": "reserved",
+            "surname": "e",
+            "forenames": "f",
+        },
     ]
 
     with test_app.app_context():
@@ -223,9 +239,15 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
         mongo.db.books.insert_many(books_in_db)
 
         # 2. Patch ALL dependencies to return our controlled inputs
-        with patch("scripts.seed_reservations.get_book_collection", return_value=mongo.db.books), \
-             patch("scripts.seed_reservations.get_reservation_collection", return_value=mongo.db.reservations), \
-             patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_to_load):
+        with patch(
+            "scripts.seed_reservations.get_book_collection", return_value=mongo.db.books
+        ), patch(
+            "scripts.seed_reservations.get_reservation_collection",
+            return_value=mongo.db.reservations,
+        ), patch(
+            "scripts.seed_reservations.load_reservations_json",
+            return_value=reservations_to_load,
+        ):
 
             # 3. Act: Run the function under test
             success, message = run_reservation_population()
@@ -234,7 +256,6 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
     assert success is True
     # The result is now independent of the large JSON file. We expect 2 creations.
     assert message == "Successfully created 2 and updated 0 reservations."
-
 
 
 def test_returns_warning_when_no_books_are_found(test_app):
@@ -324,14 +345,26 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
 
     # Also mock the file read to return a small, predictable list
     mock_reservation_data = [
-        {"book_title": "1984", "user_id": "u1", "state": "reserved", "surname": "a", "forenames": "b"}
+        {
+            "book_title": "1984",
+            "user_id": "u1",
+            "state": "reserved",
+            "surname": "a",
+            "forenames": "b",
+        }
     ]
 
     # 3. Patch ALL external dependencies
     # Patch ALL external dependencies
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
-         patch("scripts.seed_reservations.load_reservations_json", return_value=mock_reservation_data):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json",
+        return_value=mock_reservation_data,
+    ):
 
         # ACT
         with test_app.app_context():
@@ -396,7 +429,13 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
 
     # This is our simulated successful data load.
     sample_reservation_data = [
-        {"user_id": "test_user_123", "book_title": "A Book", "state": "reserved", "surname": "test1", "forenames": "test1fore"}
+        {
+            "user_id": "test_user_123",
+            "book_title": "A Book",
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
     ]
 
     with patch(
@@ -482,7 +521,7 @@ def test_proceeds_if_book_title_is_found(test_app, capsys):
             "user_id": "another_user_456",
             "state": "pending",
             "surname": "test1",
-            "forenames": "test1fore"
+            "forenames": "test1fore",
         }
     ]
 
@@ -528,7 +567,13 @@ def test_creates_new_reservation_if_not_exists(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
+        {
+            "user_id": mock_user_id,
+            "book_title": book_title,
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
     ]
 
     # 2. This is the crucial part: Mock the reservations collection and its method results.
@@ -562,7 +607,13 @@ def test_creates_new_reservation_if_not_exists(test_app):
     # Assert that the database method was called with the correct data
     expected_filter = {"user_id": mock_user_id, "book_id": mock_book_id}
     expected_update = {
-        "$set": {"user_id": mock_user_id, "book_id": mock_book_id, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
+        "$set": {
+            "user_id": mock_user_id,
+            "book_id": mock_book_id,
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
     }
     mock_reservations_collection.update_one.assert_called_once_with(
         expected_filter, expected_update, upsert=True
@@ -590,7 +641,13 @@ def test_updates_existing_reservation_if_found(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "returned", "surname": "test1", "forenames": "test1fore"}
+        {
+            "user_id": mock_user_id,
+            "book_title": book_title,
+            "state": "returned",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
     ]
 
     mock_reservations_collection = MagicMock()
@@ -643,7 +700,13 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
+        {
+            "user_id": mock_user_id,
+            "book_title": book_title,
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
     ]
 
     mock_reservations_collection = MagicMock()
