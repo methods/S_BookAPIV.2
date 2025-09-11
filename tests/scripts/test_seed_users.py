@@ -24,11 +24,15 @@ def test_seed_users_successfully(test_app):
             "email": "test.admin@example.com",
             "password": "AdminPassword123",
             "role": "admin",
+            "forenames": "Testing",
+            "surname": "Jones"
         },
         {
             "email": "test.user@example.com",
             "password": "UserPassword456",
             "role": "user",
+            "forenames": "Tetris",
+            "surname": "Dawn"
         },
     ]
 
@@ -70,8 +74,16 @@ def test_seed_users_skips_if_user_already_exists(test_app, capsys):
             "email": "existing.user@example.com",
             "password": "Password123",
             "role": "user",
+            "forenames": "Testing",
+            "surname": "Jones"
         },
-        {"email": "new.user@example.com", "password": "Password456", "role": "user"},
+        {
+            "email": "new.user@example.com",
+            "password": "Password456", 
+            "role": "user",
+            "forenames": "Tetris",
+            "surname": "Dawn"
+        }
     ]
 
     with test_app.app_context():
