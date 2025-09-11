@@ -1,5 +1,23 @@
 [
-    {"email": "test.admin@example.com", "password": "AdminPassword123", "role": "admin"},
-    {"email": "test.user@example.com", "password": "UserPassword456", "role": "user"},
-    {"email": "miss.s.rai@outlook.com", "password": "DAYSend1991", "role": "user"}
+  {
+    "email": "test.admin@example.com",
+    "forenames": "Test",
+    "surname": "Admin",
+    "password": "AdminPassword123",
+    "role": "admin"
+  },
+  {
+    "email": "test.user@example.com",
+    "forenames": "Test",
+    "surname": "User",
+    "password": "UserPassword456",
+    "role": "user"
+  },
+  {
+    "email": "miss.s.rai@outlook.com",
+    "forenames": "Shanti",
+    "surname": "Rai",
+    "password": "DAYSend1991",
+    "role": "user"
+  }
 ]
