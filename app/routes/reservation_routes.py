@@ -112,12 +112,12 @@ def get_reservations_for_book_id(book_id_str):
     # Validate MAX_OFFSET
     # get the MAX_OFFSET value from env and check
     max_offset = current_app.config["MAX_OFFSET"]
-    print(max_offset, offset)
+
     if offset < 0 or offset > max_offset:
         return (
             jsonify(
                 {
-                    "error": f"Offset has to be a positive number no greater then {max_offset}."
+                    "error": f"Offset has to be a positive number no greater than {max_offset}."
                 }
             ),
             400,

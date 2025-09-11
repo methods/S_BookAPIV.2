@@ -42,7 +42,7 @@ def test_get_books_fails_for_out_of_range_offset(client, invalid_offset):
     # Get the max_offset from the app's config to build the expected message.
     max_offset = client.application.config["MAX_OFFSET"]
     expected_error_msg = (
-        f"Offset has to be a positive number no greater then {max_offset}."
+        f"Offset has to be a positive number no greater than {max_offset}."
     )
 
     # Act

@@ -37,4 +37,4 @@ class Config:
     try:
         MAX_OFFSET = int(os.environ.get("MAX_OFFSET", "5000"))
     except (ValueError, TypeError):
-        MAX_OFFSET = 5000
+        MAX_OFFSET = 2000
