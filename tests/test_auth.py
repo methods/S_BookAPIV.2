@@ -19,7 +19,12 @@ def test_register_with_valid_data(client, mongo_setup):
     _ = mongo_setup
 
     # Arrange
-    new_user_data = {"email": "newuser@example.com", "password": "a-secure-password"}
+    new_user_data = {
+        "email": "newuser@example.com",
+        "password": "a-secure-password",
+        "forenames": "John",
+        "surname": "Smith"
+    }
     # ACT
     response = client.post("/auth/register", json=new_user_data)
 
@@ -45,6 +50,8 @@ def test_register_with_duplicate_email(client, mongo_setup):
     existing_user_data = {
         "email": "newuser@example.com",
         "password": "a-secure-password",
+        "forenames": "John",
+        "surname": "Smith"
     }
     client.post("/auth/register", json=existing_user_data)
     # sanity-check
@@ -100,20 +107,33 @@ def test_request_fails_with_invalid_json(client, mongo_setup):
 
 
 @pytest.mark.parametrize(
-    "payload, expected_message",  # Define the names of the variables for the test
+    "payload, expected_message",
     [
-        ({"password": "a-password"}, "Email and password are required"),  # 1st test
-        ({"email": "test@example.com"}, "Email and password are required"),  # 2nd test
-        ({}, "Request body cannot be empty"),  # 3rd test
+        (
+            {"password": "a-password", "forenames": "John"},
+            "Missing required fields: email, surname",
+        ),
+        (
+            {"email": "test@example.com", "forenames": "Jane", "surname": "Doe"},
+            "Missing required fields: password",
+        ),
+        (
+             {"email": "test@example.com", "password": "a-password", "surname": "Smith"},
+             "Missing required fields: forenames",
+        ),
+        (
+            {},
+            "Request body cannot be empty",
+        )
     ],
 )
 def test_request_fails_with_missing_fields(
     client, mongo_setup, payload, expected_message
 ):
     """
-    GIVEN a payload that is missing a required field (email or password)
+    GIVEN a payload that is missing one or more required fields
     WHEN a POST request is sent to /auth/register
-    THEN the response should be 400 Bad Request with an appropriate error message.
+    THEN the response should be 400 Bad Request with a specific error message.
     """
     _ = mongo_setup
 

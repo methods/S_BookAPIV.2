@@ -17,7 +17,7 @@ auth_bp = Blueprint("auth_bp", __name__, url_prefix="/auth")
 def register_user():
     """
     Registers a new user.
-    Takes a JSON payload with "email" and "password".
+    Takes a JSON payload with "email", "password", "forenames" and "surname".
     It verfies it is not a duplicate email,
     Hashes the password and stores the new user in the database.
     """
@@ -28,11 +28,21 @@ def register_user():
         if not data:
             return jsonify({"message": "Request body cannot be empty"}), 400
 
+        # VALIDATION. Define all required fields in a single list.
+        required_fields = ["email", "password", "forenames", "surname"]
+
+        missing_fields = [field for field in required_fields if not data.get(field)]
+
+        if missing_fields:
+            # Create a specific, helpful error message.
+            message = f"Missing required fields: {', '.join(missing_fields)}"
+            return jsonify({"message": message}), 400
+
+
         email = data.get("email")
         password = data.get("password")
-
-        if not email or not password:
-            return jsonify({"message": "Email and password are required"}), 400
+        forenames = data.get("forenames")
+        surname = data.get("surname")
 
         # email-validator
         try:
@@ -59,6 +69,8 @@ def register_user():
             "email": email,
             # The hash is stored as a string in the DB
             "password": hashed_password,
+            "forenames": forenames,
+            "surname": surname,
             "role": "user",  # all users assigned a default 'user' role
         }
     ).inserted_id
