@@ -322,13 +322,16 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     ]
     mock_books_collection.find.return_value = sample_books_cursor
 
-    # 3. Patch the helpers
-    with patch(
-        "scripts.seed_reservations.get_book_collection",
-        return_value=mock_books_collection,
-    ), patch(
-        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-    ):
+    # Also mock the file read to return a small, predictable list
+    mock_reservation_data = [
+        {"book_title": "1984", "user_id": "u1", "state": "reserved", "surname": "a", "forenames": "b"}
+    ]
+
+    # 3. Patch ALL external dependencies
+    # Patch ALL external dependencies
+    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
+         patch("scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()), \
+         patch("scripts.seed_reservations.load_reservations_json", return_value=mock_reservation_data):
 
         # ACT
         with test_app.app_context():
@@ -337,7 +340,7 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     # ASSERT
     # Check that we made it to the end of the function successfully
     assert success is True
-    assert message == "Successfully created 3 and updated 0 reservations."
+    assert message == "Successfully created 1 and updated 0 reservations."
 
     # Crucially, verify that the database was queried correctly
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
