@@ -392,20 +392,19 @@ def test_get_reservations_with_invalid_params(
 
 invalid_offset_values = [-1, 2001]
 
-
 @pytest.mark.parametrize("invalid_offset", invalid_offset_values)
 def test_get_reservations_fails_for_out_of_range_offset(
     client, seeded_books_in_db, admin_token, invalid_offset
-):  # pylint: disable=line-too-long
+):
     """
     GIVEN an offset that is either negative or exceeds the configured max
-    WHEN a GET request is made to /books/{id}/endpoint with that offset
+    WHEN a GET request is made to /books/{id}/reservations endpoint with that offset
     THEN it should return a 400 Bad Request with the correct error message.
     """
     # ARRANGE: Get a valid book ID from our seeded data
     book_id_str = seeded_books_in_db[0]["_id"]
     auth_headers = {"Authorization": f"Bearer {admin_token}"}
-    # Arrange
+
     # Get the max_offset from the app's config to build the expected message.
     max_offset = client.application.config["MAX_OFFSET"]
     expected_error_msg = (
@@ -415,6 +414,37 @@ def test_get_reservations_fails_for_out_of_range_offset(
     # Act
     response = client.get(
         f"/books/{book_id_str}/reservations?offset={invalid_offset}",
+        headers=auth_headers,
+    )
+    json_data = response.get_json()
+
+    # Assert
+    assert response.status_code == 400
+    assert "error" in json_data
+    assert json_data["error"] in expected_error_msg
+
+invalid_limit_values = [-1, 1001]
+@pytest.mark.parametrize("invalid_limit", invalid_limit_values)
+def test_get_reservations_fails_for_out_of_range_limit(
+    client, seeded_books_in_db, admin_token, invalid_limit
+):
+    """
+    GIVEN an limit that is either negative or exceeds the configured max
+    WHEN a GET request is made to /books/{id}/reservations endpoint with that offset
+    THEN it should return a 400 Bad Request with the correct error message.
+    """
+    # ARRANGE: Get a valid book ID from our seeded data
+    book_id_str = seeded_books_in_db[0]["_id"]
+    auth_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # Get the max_offset from the app's config to build the expected message.
+    max_limit = client.application.config["MAX_LIMIT"]
+    expected_error_msg = (
+        f"Limit has to be a positive number no greater than {max_limit}."
+    )
+    # Act
+    response = client.get(
+        f"/books/{book_id_str}/reservations?offset={invalid_limit}",
         headers=auth_headers,
     )
     json_data = response.get_json()
