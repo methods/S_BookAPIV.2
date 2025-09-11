@@ -432,15 +432,15 @@ def test_get_reservations_fails_for_out_of_range_limit(
     client, seeded_books_in_db, admin_token, invalid_limit
 ):
     """
-    GIVEN an limit that is either negative or exceeds the configured max
-    WHEN a GET request is made to /books/{id}/reservations endpoint with that offset
+    GIVEN a limit that is either negative or exceeds the configured max
+    WHEN a GET request is made to /books/{id}/reservations endpoint with that limit
     THEN it should return a 400 Bad Request with the correct error message.
     """
     # ARRANGE: Get a valid book ID from our seeded data
     book_id_str = seeded_books_in_db[0]["_id"]
     auth_headers = {"Authorization": f"Bearer {admin_token}"}
 
-    # Get the max_offset from the app's config to build the expected message.
+    # Get the max_limit from the app's config to build the expected message.
     max_limit = client.application.config["MAX_LIMIT"]
     expected_error_msg = (
         f"Limit has to be a positive number no greater than {max_limit}."

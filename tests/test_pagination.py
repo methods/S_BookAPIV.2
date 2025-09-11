@@ -58,14 +58,14 @@ invalid_limit_values = [-1, 1001]
 
 
 @pytest.mark.parametrize("invalid_limit", invalid_limit_values)
-def test_get_books_fail_got_out_of_range_limit(client, invalid_limit):
+def test_get_books_fails_for_out_of_range_limit(client, invalid_limit):
     """
     GIVEN an limit that is either negative or exceeds the configured max
-    WHEN a GET request is made to /books with that offset
+    WHEN a GET request is made to /books with that limit
     THEN it should return a 400 Bad Request with the correct error message.
     """
     # Arrange
-    # Get the max_offset from the app's config to build the expected message.
+    # Get the max_limit from the app's config to build the expected message.
     max_limit = client.application.config["MAX_LIMIT"]
     expected_error_msg = (
         f"Limit has to be a positive number no greater than {max_limit}."
