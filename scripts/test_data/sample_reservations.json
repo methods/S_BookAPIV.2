@@ -1,28 +1,88 @@
 [
-  {
-    "book_title": "1984",
-    "user_id": "user_george_o",
-    "state": "reserved"
-  },
-  {
-    "book_title": "The Great Gatsby",
-    "user_id": "user_scott_f",
-    "state": "pending"
-  },
-  {
-    "book_title": "To Kill a Mockingbird",
-    "user_id": "user_harper_l",
-    "state": "reserved"
-  },
-  {
-    "book_title": "Pride and Prejudice",
-    "user_id": "user_jane_a",
-    "state": "cancelled"
-  },
-  {
-    "book_title": "1984",
-    "user_id": "user_jane_d",
-    "state": "reserved",
-    "_comment": "intentional last entry which creates a second reservation for '1984' by different user- good test case"
-  }
+
+  { "book_title": "1984", "user_id": "user_alex_1", "surname": "Johnson", "forenames": "Alex", "state": "reserved" },
+  { "book_title": "1984", "user_id": "user_maya_2", "surname": "Nguyen", "forenames": "Maya", "state": "reserved" },
+  { "book_title": "1984", "user_id": "user_omar_3", "surname": "Reyes", "forenames": "Omar", "state": "pending" },
+  { "book_title": "1984", "user_id": "user_claire_4", "surname": "Hayes", "forenames": "Claire", "state": "reserved" },
+  { "book_title": "1984", "user_id": "user_daniel_5", "surname": "Khan", "forenames": "Daniel", "state": "reserved" },
+
+
+  { "book_title": "The Hobbit", "user_id": "user_olivia_1", "surname": "Reid", "forenames": "Olivia", "state": "reserved" },
+  { "book_title": "The Hobbit", "user_id": "user_brian_2", "surname": "Walker", "forenames": "Brian", "state": "reserved" },
+  { "book_title": "The Hobbit", "user_id": "user_sam_3", "surname": "Gonzalez", "forenames": "Samuel", "state": "pending" },
+  { "book_title": "The Hobbit", "user_id": "user_emma_4", "surname": "Lewis", "forenames": "Emma", "state": "reserved" },
+  { "book_title": "The Hobbit", "user_id": "user_raj_5", "surname": "Prasad", "forenames": "Raj", "state": "reserved" },
+
+  { "book_title": "The Great Gatsby", "user_id": "user_samira_1", "surname": "Patel", "forenames": "Samira", "state": "pending" },
+  { "book_title": "The Great Gatsby", "user_id": "user_liam_2", "surname": "Williams", "forenames": "Liam", "state": "reserved" },
+  { "book_title": "The Great Gatsby", "user_id": "user_chloe_3", "surname": "Martin", "forenames": "Chloe", "state": "reserved" },
+  { "book_title": "The Great Gatsby", "user_id": "user_julia_4", "surname": "Turner", "forenames": "Julia", "state": "reserved" },
+  { "book_title": "The Great Gatsby", "user_id": "user_noah_5", "surname": "Bell", "forenames": "Noah", "state": "cancelled" },
+
+  { "book_title": "To Kill a Mockingbird", "user_id": "user_harper_1", "surname": "Lee", "forenames": "Harper", "state": "reserved" },
+  { "book_title": "To Kill a Mockingbird", "user_id": "user_zoe_2", "surname": "Day", "forenames": "Zoe", "state": "reserved" },
+  { "book_title": "To Kill a Mockingbird", "user_id": "user_isla_3", "surname": "Patel", "forenames": "Isla", "state": "pending" },
+  { "book_title": "To Kill a Mockingbird", "user_id": "user_mike_4", "surname": "Price", "forenames": "Michael", "state": "reserved" },
+  { "book_title": "To Kill a Mockingbird", "user_id": "user_ella_5", "surname": "Green", "forenames": "Ella", "state": "reserved" },
+
+  { "book_title": "Pride and Prejudice", "user_id": "user_jane_1", "surname": "Austen", "forenames": "Jane", "state": "cancelled" },
+  { "book_title": "Pride and Prejudice", "user_id": "user_henry_2", "surname": "Fisher", "forenames": "Henry", "state": "reserved" },
+  { "book_title": "Pride and Prejudice", "user_id": "user_rachel_3", "surname": "Baker", "forenames": "Rachel", "state": "reserved" },
+  { "book_title": "Pride and Prejudice", "user_id": "user_oscar_4", "surname": "Foster", "forenames": "Oscar", "state": "pending" },
+  { "book_title": "Pride and Prejudice", "user_id": "user_emma_5", "surname": "Brown", "forenames": "Emma", "state": "reserved" },
+
+
+  { "book_title": "The Catcher in the Rye", "user_id": "user_noah_1", "surname": "Taylor", "forenames": "Noah", "state": "pending" },
+  { "book_title": "The Catcher in the Rye", "user_id": "user_jack_2", "surname": "Smith", "forenames": "Jack", "state": "cancelled" },
+  { "book_title": "The Catcher in the Rye", "user_id": "user_zoe_3", "surname": "Russell", "forenames": "Zoe", "state": "reserved" },
+  { "book_title": "The Catcher in the Rye", "user_id": "user_dylan_4", "surname": "Martin", "forenames": "Dylan", "state": "reserved" },
+  { "book_title": "The Catcher in the Rye", "user_id": "user_amy_5", "surname": "White", "forenames": "Amy", "state": "reserved" },
+
+
+  { "book_title": "Brave New World", "user_id": "user_emma_b1", "surname": "Brown", "forenames": "Emma", "state": "reserved" },
+  { "book_title": "Brave New World", "user_id": "user_anna_b2", "surname": "Bennett", "forenames": "Anna", "state": "pending" },
+  { "book_title": "Brave New World", "user_id": "user_matt_b3", "surname": "Baker", "forenames": "Matt", "state": "reserved" },
+
+
+  { "book_title": "Moby Dick", "user_id": "user_julia_m1", "surname": "Mills", "forenames": "Julia", "state": "pending" },
+  { "book_title": "Moby Dick", "user_id": "user_simon_m2", "surname": "Moore", "forenames": "Simon", "state": "reserved" },
+  { "book_title": "Moby Dick", "user_id": "user_helen_m3", "surname": "Miles", "forenames": "Helen", "state": "reserved" },
+
+
+  { "book_title": "War and Peace", "user_id": "user_zoe_w1", "surname": "Wilson", "forenames": "Zoe", "state": "reserved" },
+  { "book_title": "War and Peace", "user_id": "user_kevin_w2", "surname": "Walker", "forenames": "Kevin", "state": "pending" },
+  { "book_title": "War and Peace", "user_id": "user_lina_w3", "surname": "Walsh", "forenames": "Lina", "state": "reserved" },
+
+
+  { "book_title": "The Odyssey", "user_id": "user_ben_c1", "surname": "Clark", "forenames": "Ben", "state": "reserved" },
+  { "book_title": "The Odyssey", "user_id": "user_tina_c2", "surname": "Carter", "forenames": "Tina", "state": "pending" },
+  { "book_title": "The Odyssey", "user_id": "user_irene_c3", "surname": "Cole", "forenames": "Irene", "state": "reserved" },
+
+
+  { "book_title": "Jane Eyre", "user_id": "user_zoe_j1", "surname": "Jones", "forenames": "Zoe", "state": "reserved" },
+  { "book_title": "Jane Eyre", "user_id": "user_kate_j2", "surname": "Johnson", "forenames": "Kate", "state": "cancelled" },
+  { "book_title": "Jane Eyre", "user_id": "user_luke_j3", "surname": "James", "forenames": "Luke", "state": "reserved" },
+
+  { "book_title": "Frankenstein", "user_id": "user_sara_k1", "surname": "Kaur", "forenames": "Sara", "state": "reserved" },
+  { "book_title": "Frankenstein", "user_id": "user_peter_k2", "surname": "Kim", "forenames": "Peter", "state": "pending" },
+  { "book_title": "Frankenstein", "user_id": "user_gina_k3", "surname": "Kimball", "forenames": "Gina", "state": "reserved" },
+
+
+  { "book_title": "The Iliad", "user_id": "user_dan_i1", "surname": "Irving", "forenames": "Daniel", "state": "reserved" },
+  { "book_title": "The Iliad", "user_id": "user_ella_i2", "surname": "Ingram", "forenames": "Ella", "state": "pending" },
+
+
+  { "book_title": "Les Misérables", "user_id": "user_amy_l1", "surname": "Lewis", "forenames": "Amy", "state": "reserved" },
+  { "book_title": "Les Misérables", "user_id": "user_paul_l2", "surname": "Lopez", "forenames": "Paul", "state": "reserved" },
+
+  { "book_title": "Anna Karenina", "user_id": "user_mike_p1", "surname": "Price", "forenames": "Michael", "state": "reserved" },
+  { "book_title": "Anna Karenina", "user_id": "user_susan_p2", "surname": "Perry", "forenames": "Susan", "state": "pending" },
+
+
+  { "book_title": "Don Quixote", "user_id": "user_luke_d1", "surname": "Dawson", "forenames": "Luke", "state": "pending" },
+  { "book_title": "Don Quixote", "user_id": "user_mel_d2", "surname": "Daniel", "forenames": "Melanie", "state": "reserved" },
+
+
+  { "book_title": "The Alchemist", "user_id": "user_brian_w1", "surname": "Walker", "forenames": "Brian", "state": "reserved" },
+  { "book_title": "The Alchemist", "user_id": "user_helen_w2", "surname": "Walters", "forenames": "Helen", "state": "cancelled" }
 ]
