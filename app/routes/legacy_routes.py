@@ -119,16 +119,6 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
                 400,
             )
 
-        # if limit < 0:
-        #     return (
-        #         jsonify(
-        #             {
-        #                 "error": "Query parameters 'limit' and 'offset' cannot be negative."
-        #             }
-        #         ),
-        #         400,
-        #     )
-
         # Validate MAX_OFFSET
         # get the MAX_OFFSET value from env and check
         max_offset = current_app.config["MAX_OFFSET"]

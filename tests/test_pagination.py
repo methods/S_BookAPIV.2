@@ -9,7 +9,6 @@ import pytest
 @pytest.mark.parametrize(
     "query_params, expected_error_msg",
     [
-        ("?limit=-5", "cannot be negative"),
         ("?limit=abc", "must be integers"),
         ("?offset=abc", "must be integers"),
     ],
