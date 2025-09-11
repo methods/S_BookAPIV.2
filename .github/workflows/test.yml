@@ -40,5 +40,6 @@ jobs:
           PROJECT_DATABASE: ${{ secrets.PROJECT_DATABASE }}
           PROJECT_COLLECTION: ${{ secrets.PROJECT_COLLECTION}}
           MAX_OFFSET: 2000
+          MAX_LIMIT: 1000
         run: |
           ./run_tests.sh
