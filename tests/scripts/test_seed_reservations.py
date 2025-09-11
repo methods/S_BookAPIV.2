@@ -389,15 +389,14 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
     WHEN run_reservation_population is called
     THEN it should proceed successfully to the end of the function
     """
-    # ARRANGE: Same setup as the failure test, but with a different return value for the key mock.
-
+    # ARRANGE:
     mock_books_collection = MagicMock()
     sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
     mock_books_collection.find.return_value = sample_book_cursor
 
     # This is our simulated successful data load.
     sample_reservation_data = [
-        {"user_id": "test_user_123", "book_title": "A Book", "state": "reserved"}
+        {"user_id": "test_user_123", "book_title": "A Book", "state": "reserved", "surname": "test1", "forenames": "test1fore"}
     ]
 
     with patch(
@@ -482,6 +481,8 @@ def test_proceeds_if_book_title_is_found(test_app, capsys):
             "book_title": book_title_to_find,
             "user_id": "another_user_456",
             "state": "pending",
+            "surname": "test1",
+            "forenames": "test1fore"
         }
     ]
 
@@ -527,7 +528,7 @@ def test_creates_new_reservation_if_not_exists(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved"}
+        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
     ]
 
     # 2. This is the crucial part: Mock the reservations collection and its method results.
@@ -561,7 +562,7 @@ def test_creates_new_reservation_if_not_exists(test_app):
     # Assert that the database method was called with the correct data
     expected_filter = {"user_id": mock_user_id, "book_id": mock_book_id}
     expected_update = {
-        "$set": {"user_id": mock_user_id, "book_id": mock_book_id, "state": "reserved"}
+        "$set": {"user_id": mock_user_id, "book_id": mock_book_id, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
     }
     mock_reservations_collection.update_one.assert_called_once_with(
         expected_filter, expected_update, upsert=True
@@ -589,7 +590,7 @@ def test_updates_existing_reservation_if_found(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "returned"}
+        {"user_id": mock_user_id, "book_title": book_title, "state": "returned", "surname": "test1", "forenames": "test1fore"}
     ]
 
     mock_reservations_collection = MagicMock()
@@ -642,7 +643,7 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
     ]
 
     reservations_from_json = [
-        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved"}
+        {"user_id": mock_user_id, "book_title": book_title, "state": "reserved", "surname": "test1", "forenames": "test1fore"}
     ]
 
     mock_reservations_collection = MagicMock()
