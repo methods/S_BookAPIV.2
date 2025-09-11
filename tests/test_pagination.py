@@ -29,8 +29,6 @@ def test_get_books_with_invalid_params(client, query_params, expected_error_msg)
 
 
 invalid_offset_values = [-1, 2001]
-
-
 @pytest.mark.parametrize("invalid_offset", invalid_offset_values)
 def test_get_books_fails_for_out_of_range_offset(client, invalid_offset):
     """
@@ -47,6 +45,30 @@ def test_get_books_fails_for_out_of_range_offset(client, invalid_offset):
 
     # Act
     response = client.get(f"/books?offset={invalid_offset}")
+    json_data = response.get_json()
+
+    # Assert
+    assert response.status_code == 400
+    assert "error" in json_data
+    assert json_data["error"] in expected_error_msg
+
+invalid_limit_values = [-1, 1001]
+@pytest.mark.parametrize("invalid_limit", invalid_limit_values)
+def test_get_books_fail_got_out_of_range_limit(client, invalid_limit):
+    """
+    GIVEN an limit that is either negative or exceeds the configured max
+    WHEN a GET request is made to /books with that offset
+    THEN it should return a 400 Bad Request with the correct error message.
+    """
+    # Arrange
+    # Get the max_offset from the app's config to build the expected message.
+    max_limit = client.application.config["MAX_LIMIT"]
+    expected_error_msg = (
+        f"Limit has to be a positive number no greater than {max_limit}."
+    )
+
+    # Act
+    response = client.get(f"/books?limit={invalid_limit}")
     json_data = response.get_json()
 
     # Assert
