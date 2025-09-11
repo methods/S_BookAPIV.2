@@ -1,3 +1,4 @@
+# pylint: disable=duplicate-code
 """
 Tests for the GET /books endpoint, specifically focusing on pagination logic.
 """
