@@ -102,13 +102,6 @@ def get_reservations_for_book_id(book_id_str):
             400,
         )  # pylint: disable=line-too-long
 
-    if limit < 0:
-        return (
-            jsonify(
-                {"error": "Query parameters 'limit' and 'offset' cannot be negative."}
-            ),
-            400,
-        )
     # Validate MAX_OFFSET
     # get the MAX_OFFSET value from env and check
     max_offset = current_app.config["MAX_OFFSET"]
@@ -118,6 +111,18 @@ def get_reservations_for_book_id(book_id_str):
             jsonify(
                 {
                     "error": f"Offset has to be a positive number no greater than {max_offset}."
+                }
+            ),
+            400,
+        )
+    # Validate MAX_LIMIT
+    max_limit = current_app.config["MAX_LIMIT"]
+
+    if limit < 0 or limit > max_limit:
+        return (
+            jsonify(
+                {
+                    "error": f"Limit has to be a positive number no greater than {max_limit}."
                 }
             ),
             400,
