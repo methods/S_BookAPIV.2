@@ -95,7 +95,6 @@ def run_reservation_population():
     except PyMongoError as e:
         return (False, f"ERROR: Failed to fetch data from database: {e}")
 
-
     # ------------------------------------------------------------------------------------------
     # 4. Load the new reservations data from JSON file
     reservations_to_create = load_reservations_json()
@@ -103,7 +102,7 @@ def run_reservation_population():
     if reservations_to_create is None:
         return (False, "Failed to load reservation data.")
 
-     # ------------------------------------------------------------------------------------------
+    # ------------------------------------------------------------------------------------------
     # 5. Process and insert each reservation
     # Initialize count for created and updated
     print("Processing and inserting/updating reservations...")
@@ -122,7 +121,7 @@ def run_reservation_population():
 
         if not book_id or not user_id:
             print(
-                f"WARNING: Skipping reservation because book '{book_title}' or user '{user_email} was not found." #pylint: disable=line-too-long
+                f"WARNING: Skipping reservation because book '{book_title}' or user '{user_email} was not found."  # pylint: disable=line-too-long
             )
             continue
 

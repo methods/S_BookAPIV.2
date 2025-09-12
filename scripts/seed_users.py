@@ -44,10 +44,10 @@ def seed_users(users_to_seed: list) -> str:
         mongo.db.users.insert_one(
             {
                 "email": email,
-                "password": hashed_password.decode("utf-8"), 
+                "password": hashed_password.decode("utf-8"),
                 "forenames": forenames,
                 "surname": surname,
-                "role": role
+                "role": role,
             }
         )
         count += 1

@@ -23,7 +23,7 @@ def test_register_with_valid_data(client, mongo_setup):
         "email": "newuser@example.com",
         "password": "a-secure-password",
         "forenames": "John",
-        "surname": "Smith"
+        "surname": "Smith",
     }
     # ACT
     response = client.post("/auth/register", json=new_user_data)
@@ -51,7 +51,7 @@ def test_register_with_duplicate_email(client, mongo_setup):
         "email": "newuser@example.com",
         "password": "a-secure-password",
         "forenames": "John",
-        "surname": "Smith"
+        "surname": "Smith",
     }
     client.post("/auth/register", json=existing_user_data)
     # sanity-check
@@ -118,13 +118,13 @@ def test_request_fails_with_invalid_json(client, mongo_setup):
             "Missing required fields: password",
         ),
         (
-             {"email": "test@example.com", "password": "a-password", "surname": "Smith"},
-             "Missing required fields: forenames",
+            {"email": "test@example.com", "password": "a-password", "surname": "Smith"},
+            "Missing required fields: forenames",
         ),
         (
             {},
             "Request body cannot be empty",
-        )
+        ),
     ],
 )
 def test_request_fails_with_missing_fields(

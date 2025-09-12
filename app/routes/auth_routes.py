@@ -38,7 +38,6 @@ def register_user():
             message = f"Missing required fields: {', '.join(missing_fields)}"
             return jsonify({"message": message}), 400
 
-
         email = data.get("email")
         password = data.get("password")
         forenames = data.get("forenames")

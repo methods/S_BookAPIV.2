@@ -4,7 +4,8 @@ import pytest
 from pymongo.collection import Collection
 
 from app import create_app
-from app.datastore.mongo_db import get_reservation_collection, get_users_collection
+from app.datastore.mongo_db import (get_reservation_collection,
+                                    get_users_collection)
 from app.extensions import mongo
 
 
@@ -24,7 +25,6 @@ def integration_app():
     # Teardown
     print("\nDropping test database...")
     mongo.cx.drop_database("my_library_db_test")
-
 
 
 def test_get_reservation_collection_integration(
@@ -57,8 +57,9 @@ def test_get_reservation_collection_integration(
             reservations_collection.delete_many({})
 
 
-
-def test_get_users_collection_integration(integration_app):  # pylint: disable=redefined-outer-name
+def test_get_users_collection_integration(
+    integration_app,
+):  # pylint: disable=redefined-outer-name
     """
     GIVEN a Flask application configured for testing
     WHEN the get_users_collection() helper is called within an app context,

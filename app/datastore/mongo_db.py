@@ -31,6 +31,7 @@ def get_reservation_collection():
 
     return reservations_collection
 
+
 def get_users_collection():
     """Returns the PyMongo collection for users."""
     users_collection = mongo.db.users

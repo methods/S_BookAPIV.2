@@ -162,7 +162,7 @@ def get_reservations_for_book_id(book_id_str):
                     # endpoint once it is created.
                     # Currently pointing back to the list endpoint as a placeholder.
                     ".get_reservations_for_book_id",
-                    book_id_str = str(r["book_id"]),
+                    book_id_str=str(r["book_id"]),
                     reservation_id=str(r["_id"]),
                     _external=True,
                 ),
