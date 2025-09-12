@@ -12,7 +12,8 @@ from pymongo.errors import PyMongoError
 
 # Import MongoDB helper functions
 from app.datastore.mongo_db import (get_book_collection,
-                                    get_reservation_collection)
+                                    get_reservation_collection,
+                                    get_users_collection)
 
 
 # upload sample data json to be used
@@ -43,8 +44,9 @@ def run_reservation_population():
     """
     Populates the reservations collection in the database using sample data from a JSON file.
     This function:
-        - Loads book and reservation collections from the database.
+        - Loads books, reservations and users collections from the database.
         - Creates a mapping from book titles to their database IDs.
+        - Creates a mapping from user emails to their database IDs.
         - Loads reservation seed data from a JSON file.
         - Inserts new reservations or updates existing ones based on the data.
         - Handles errors related to database access and data loading.
@@ -58,14 +60,16 @@ def run_reservation_population():
     # 1. need to get the collections
     books_collection = get_book_collection()
     reservations_collection = get_reservation_collection()
+    users_collection = get_users_collection()
 
     if books_collection is None or reservations_collection is None:
         return jsonify({"error": "Required collections could not be loaded."}), 404
 
-    # 3. Build a Python dictionary
-    # Create a lookup map from book title to its DB _id
+    # 3. Build the two lookup maps
     print("Fetching existing books to create a title-to-ID map...")
+    print("Fetching existing users to create an email-to-ID map...")
     try:
+        # --- Create the book lookup map ---
         # collection.find(filter, projection: 1=include, 0=exclude )
         book_cursor = books_collection.find({}, {"_id": 1, "title": 1})
         # MAP book title to book id
@@ -76,15 +80,30 @@ def run_reservation_population():
                 True,
                 "Warning: No books found in the database. Cannot create reservations.",
             )
-    except PyMongoError as e:
-        return (False, f"ERROR: Failed to fetch books from database: {e}")
 
-    # 4. Load the new reservations data from JSON - load_reservation_json helper function
+        # --- Create the user lookup map ---
+        user_cursor = users_collection.find({}, {"_id": 1, "email": 1})
+        # MAP user email to user id
+        user_id_map = {user["email"]: user["_id"] for user in user_cursor}
+
+        if not user_id_map:
+            return (
+                True,
+                "Warning: No users found in the database. Cannot create reservations.",
+            )
+
+    except PyMongoError as e:
+        return (False, f"ERROR: Failed to fetch data from database: {e}")
+
+
+    # ------------------------------------------------------------------------------------------
+    # 4. Load the new reservations data from JSON file
     reservations_to_create = load_reservations_json()
 
     if reservations_to_create is None:
         return (False, "Failed to load reservation data.")
 
+     # ------------------------------------------------------------------------------------------
     # 5. Process and insert each reservation
     # Initialize count for created and updated
     print("Processing and inserting/updating reservations...")
@@ -93,20 +112,23 @@ def run_reservation_population():
 
     # Loop through uploaded reservations JSON list
     for res_data in reservations_to_create:
-        # Take the book title value from the json
-        # look it up in the dictionary
+        # Take the book title value and the user_email from the json
+        # look it up in our maps created above
         book_title = res_data.get("book_title")
-        book_id = book_id_map.get(book_title)
+        user_email = res_data.get("user_email")
 
-        if not book_id:
+        book_id = book_id_map.get(book_title)
+        user_id = user_id_map.get(user_email)
+
+        if not book_id or not user_id:
             print(
-                f"WARNING: Skipping reservation because book '{book_title}' was not found."
+                f"WARNING: Skipping reservation because book '{book_title}' or user '{user_email} was not found." #pylint: disable=line-too-long
             )
             continue
 
         # add book_id (the real Mongo _id) to the reservation_doc object
         reservation_doc = {
-            "user_id": res_data["user_id"],
+            "user_id": user_id,
             "book_id": book_id,
             "state": res_data["state"],
             "surname": res_data["surname"],
@@ -115,8 +137,8 @@ def run_reservation_population():
 
         # query to find which document we want to update
         filter_query = {
-            "user_id": reservation_doc["user_id"],
-            "book_id": reservation_doc["book_id"],
+            "user_id": user_id,
+            "book_id": book_id,
         }
 
         # $set = mongodb update operator
@@ -138,7 +160,7 @@ def run_reservation_population():
         except PyMongoError as e:
             return (
                 False,
-                f"ERROR: Failed to upsert reservation for user '{res_data['user_id']}': {e}",
+                f"ERROR: Failed to upsert reservation for user '{user_email}': {e}",
             )  # pylint: disable=line-too-long
 
     summary = f"Successfully created {created_count} and updated {updated_count} reservations."
