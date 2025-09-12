@@ -158,7 +158,11 @@ def get_reservations_for_book_id(book_id_str):
             "book_id": str(r["book_id"]),
             "links": {
                 "self": url_for(
+                    # TO_DO: Update this 'self' link to point to a 'get_specific_reservation'
+                    # endpoint once it is created.
+                    # Currently pointing back to the list endpoint as a placeholder.
                     ".get_reservations_for_book_id",
+                    book_id_str = str(r["book_id"]),
                     reservation_id=str(r["_id"]),
                     _external=True,
                 ),
