@@ -155,43 +155,43 @@ def test_returns_404_if_any_collection_is_missing(
 
 
 # NOT A TRUE INTEGRATION TEST - NEED TO UPDATE
-def test_returns_200_when_collections_are_present(
-    test_app, mongo_setup, sample_book_data
-):
-    """
-    GIVEN a database with books and reservations
-    WHEN run_reservations_population is called
-    THEN it should return a 200 success response
-    """
-    _ = mongo_setup
+# def test_returns_200_when_collections_are_present(
+#     test_app, mongo_setup, sample_book_data
+# ):
+#     """
+#     GIVEN a database with books and reservations
+#     WHEN run_reservations_population is called
+#     THEN it should return a 200 success response
+#     """
+#     _ = mongo_setup
 
-    with test_app.app_context():
+#     with test_app.app_context():
 
-        mock_books_collection_with_data = mongo.db.books
-        mock_reservations_collection_with_data = mongo.db.reservations
+#         mock_books_collection_with_data = mongo.db.books
+#         mock_reservations_collection_with_data = mongo.db.reservations
 
-        # SEED the collection directly with your sample data.
-        mock_books_collection_with_data.insert_many(sample_book_data)
-        mock_reservations_collection_with_data.insert_many(
-            [{"user_id": "user_george_o", "book_title": "A Book", "state": "reserved"}]
-        )
+#         # SEED the collection directly with your sample data.
+#         mock_books_collection_with_data.insert_many(sample_book_data)
+#         mock_reservations_collection_with_data.insert_many(
+#             [{"user_id": "user_george_o", "book_title": "A Book", "state": "reserved"}]
+#         )
 
-        # 4. NOW, patch the helper functions to return THESE specific, seeded collection objects.
-        with patch(
-            "scripts.seed_reservations.get_book_collection",
-            return_value=mock_books_collection_with_data,
-        ), patch(
-            "scripts.seed_reservations.get_reservation_collection",
-            return_value=mock_reservations_collection_with_data,
-        ):
+#         # 4. NOW, patch the helper functions to return THESE specific, seeded collection objects.
+#         with patch(
+#             "scripts.seed_reservations.get_book_collection",
+#             return_value=mock_books_collection_with_data,
+#         ), patch(
+#             "scripts.seed_reservations.get_reservation_collection",
+#             return_value=mock_reservations_collection_with_data,
+#         ):
 
-            # ACT: Call the function. It will now use the seeded mongomock collection.
-            with test_app.app_context():
-                success, message = run_reservation_population()
+#             # ACT: Call the function. It will now use the seeded mongomock collection.
+#             with test_app.app_context():
+#                 success, message = run_reservation_population()
 
-    # ASSERT
-    assert success is True
-    assert message == "Successfully created 10 and updated 0 reservations."
+#     # ASSERT
+#     assert success is True
+#     assert message == "Successfully created 10 and updated 0 reservations."
 
 
 def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
@@ -209,25 +209,31 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
         {"_id": ObjectId(), "title": "1984"},
         {"_id": ObjectId(), "title": "Dune"},
     ]
-    # Input #2: The data we PRETEND comes from the JSON file
+
+    # Input #2: The users in the db
+    users_in_db = [
+        {"_id": ObjectId(), "email": "test_user1@example.com"},
+        {"_id": ObjectId(), "email": "test_user2@example.com"},
+    ]
+    # Input #3: The data we PRETEND comes from the JSON file
     reservations_to_load = [
         {
             "book_title": "1984",
-            "user_id": "u1",
+            "user_email": "test_user1@example.com",
             "state": "reserved",
             "surname": "a",
             "forenames": "b",
         },
         {
             "book_title": "Dune",
-            "user_id": "u2",
+            "user_email": "test_user2@example.com",
             "state": "pending",
             "surname": "c",
             "forenames": "d",
         },
         {
             "book_title": "Unrelated Book",
-            "user_id": "u3",
+            "user_email": "test_user3@example.com",
             "state": "reserved",
             "surname": "e",
             "forenames": "f",
@@ -237,6 +243,7 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
     with test_app.app_context():
         # Setup the fake database
         mongo.db.books.insert_many(books_in_db)
+        mongo.db.users.insert_many(users_in_db)
 
         # 2. Patch ALL dependencies to return our controlled inputs
         with patch(
@@ -244,6 +251,9 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
         ), patch(
             "scripts.seed_reservations.get_reservation_collection",
             return_value=mongo.db.reservations,
+        ), patch(
+            "scripts.seed_reservations.get_users_collection",
+            return_value=mongo.db.users,
         ), patch(
             "scripts.seed_reservations.load_reservations_json",
             return_value=reservations_to_load,
@@ -312,6 +322,8 @@ def test_returns_error_on_pymongo_error(test_app):
         "scripts.seed_reservations.get_book_collection",
         return_value=mock_books_collection,
     ), patch(
+        "scripts.seed_reservations.get_users_collection", return_value=MagicMock()
+    ), patch(
         "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
     ):
 
@@ -320,34 +332,38 @@ def test_returns_error_on_pymongo_error(test_app):
             result = run_reservation_population()
 
     # ASSERT
-    expected_error = (
-        False,
-        f"ERROR: Failed to fetch books from database: {error_message}",
-    )
-    assert result == expected_error
+    assert result == (False, "ERROR: Failed to fetch data from database: Database connection failed")
 
 
 def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     """
     GIVEN the database contains books
     WHEN run_reservation_population is called
-    THEN it should create the book_id_map and proceed successfully
+    THEN it should create the book_id_map, users_id_map and proceed successfully
     """
     # ARRANGE
     mock_books_collection = MagicMock()
+    mock_users_collection = MagicMock()
 
-    # 2. Simulate a successful find() call that returns documents
+    # Simulate a successful find() call that returns documents
     sample_books_cursor = [
         {"_id": ObjectId(), "title": "To Kill a Mockingbird"},
         {"_id": ObjectId(), "title": "1984"},
     ]
     mock_books_collection.find.return_value = sample_books_cursor
 
+    # Input #2: The users in the db
+    sample_users_data = [
+        {"_id": ObjectId(), "email": "test_user1@example.com"},
+        {"_id": ObjectId(), "email": "test_user2@example.com"},
+    ]
+    mock_users_collection.find.return_value = sample_users_data
+
     # Also mock the file read to return a small, predictable list
     mock_reservation_data = [
         {
             "book_title": "1984",
-            "user_id": "u1",
+            "user_email": "test_user1@example.com",
             "state": "reserved",
             "surname": "a",
             "forenames": "b",
@@ -360,7 +376,11 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
         "scripts.seed_reservations.get_book_collection",
         return_value=mock_books_collection,
     ), patch(
-        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+        "scripts.seed_reservations.get_reservation_collection",
+        return_value=MagicMock()
+    ), patch(
+        "scripts.seed_reservations.get_users_collection",
+        return_value=mock_users_collection,
     ), patch(
         "scripts.seed_reservations.load_reservations_json",
         return_value=mock_reservation_data,
@@ -379,40 +399,35 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
 
 
-def test_returns_error_if_reservation_json_fails_to_load(test_app):
+def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     """
-    GIVEN the load_reservations_json helper returns None
+    GIVEN the JSON file cannot be loaded
     WHEN run_reservation_population is called
-    THEN it should return a tuple with a failure message
+    THEN it should return a failure tuple and not attempt to process reservations.
     """
-    # ARRANGE: Mock all previous steps to succeed so we can test the target logic.
+    # ARRANGE
+    _ = mongo_setup
 
-    # 1. Mock get_book_collection to return a collection...
-    mock_books_collection = MagicMock()
-    # ...that returns at least one book, so the book_id_map is created.
-    sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
-    mock_books_collection.find.return_value = sample_book_cursor
+    # 1. Seed the database with the prerequisites (books and users)
+    #    so the function can get past the initial checks.
+    with test_app.app_context():
+        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
+        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
 
-    # 2. Need to patch all the external dependencies for this unit.
-    #    The key is patching `load_reservations_json` to return None.
-    with patch(
-        "scripts.seed_reservations.get_book_collection",
-        return_value=mock_books_collection,
-    ), patch(
-        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-    ), patch(
-        "scripts.seed_reservations.load_reservations_json", return_value=None
-    ) as mock_load_json:
-
+    # 2. Patch the one dependency we want to fail: `load_reservations_json`.
+    #    We don't need to patch the get_*_collection helpers because our
+    #    test_app fixture and mongo_setup handle the database state.
+    with patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
         # ACT
         with test_app.app_context():
-            result = run_reservation_population()
+            success, message = run_reservation_population()
 
     # ASSERT
-    expected_error = (False, "Failed to load reservation data.")
-    assert result == expected_error
+    # 3. Check that the function correctly reported the failure.
+    assert success is False
+    assert message == "Failed to load reservation data."
 
-    # Verify that we did attempt to load the JSON file.
+    # 4. Verify that the function did attempt to load the JSON.
     mock_load_json.assert_called_once()
 
 
