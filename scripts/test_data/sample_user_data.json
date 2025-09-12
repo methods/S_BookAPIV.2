@@ -6,18 +6,44 @@
     "password": "AdminPassword123",
     "role": "admin"
   },
-  {
-    "email": "test.user@example.com",
-    "forenames": "Test",
-    "surname": "User",
-    "password": "UserPassword456",
-    "role": "user"
-  },
-  {
-    "email": "miss.s.rai@outlook.com",
-    "forenames": "Shanti",
-    "surname": "Rai",
-    "password": "DAYSend1991",
-    "role": "user"
-  }
+  { "email": "alex.johnson@example.com", "forenames": "Alex", "surname": "Johnson", "password": "Password123!", "role": "user" },
+  { "email": "maya.nguyen@example.com", "forenames": "Maya", "surname": "Nguyen", "password": "Password123!", "role": "user" },
+  { "email": "omar.reyes@example.com", "forenames": "Omar", "surname": "Reyes", "password": "Password123!", "role": "user" },
+  { "email": "claire.hayes@example.com", "forenames": "Claire", "surname": "Hayes", "password": "Password123!", "role": "user" },
+  { "email": "daniel.khan@example.com", "forenames": "Daniel", "surname": "Khan", "password": "Password123!", "role": "user" },
+
+  { "email": "olivia.reid@example.com", "forenames": "Olivia", "surname": "Reid", "password": "Password123!", "role": "user" },
+  { "email": "brian.walker@example.com", "forenames": "Brian", "surname": "Walker", "password": "Password123!", "role": "user" },
+  { "email": "samuel.gonzalez@example.com", "forenames": "Samuel", "surname": "Gonzalez", "password": "Password123!", "role": "user" },
+  { "email": "emma.lewis@example.com", "forenames": "Emma", "surname": "Lewis", "password": "Password123!", "role": "user" },
+  { "email": "raj.prasad@example.com", "forenames": "Raj", "surname": "Prasad", "password": "Password123!", "role": "user" },
+
+  { "email": "samira.patel@example.com", "forenames": "Samira", "surname": "Patel", "password": "Password123!", "role": "user" },
+
+  { "email": "harper.lee@example.com", "forenames": "Harper", "surname": "Lee", "password": "Password123!", "role": "user" },
+  { "email": "zoe.day@example.com", "forenames": "Zoe", "surname": "Day", "password": "Password123!", "role": "user" },
+  { "email": "isla.patel@example.com", "forenames": "Isla", "surname": "Patel", "password": "Password123!", "role": "user" },
+  { "email": "michael.price@example.com", "forenames": "Michael", "surname": "Price", "password": "Password123!", "role": "user" },
+  { "email": "ella.green@example.com", "forenames": "Ella", "surname": "Green", "password": "Password123!", "role": "user" },
+
+  { "email": "jane.austen@example.com", "forenames": "Jane", "surname": "Austen", "password": "Password123!", "role": "user" },
+  { "email": "henry.fisher@example.com", "forenames": "Henry", "surname": "Fisher", "password": "Password123!", "role": "user" },
+  { "email": "rachel.baker@example.com", "forenames": "Rachel", "surname": "Baker", "password": "Password123!", "role": "user" },
+  { "email": "oscar.foster@example.com", "forenames": "Oscar", "surname": "Foster", "password": "Password123!", "role": "user" },
+  { "email": "emma.brown@example.com", "forenames": "Emma", "surname": "Brown", "password": "Password123!", "role": "user" },
+
+  { "email": "zoe.wilson@example.com", "forenames": "Zoe", "surname": "Wilson", "password": "Password123!", "role": "user" },
+  { "email": "kevin.walker@example.com", "forenames": "Kevin", "surname": "Walker", "password": "Password123!", "role": "user" },
+  { "email": "lina.walsh@example.com", "forenames": "Lina", "surname": "Walsh", "password": "Password123!", "role": "user" },
+
+  { "email": "ben.clark@example.com", "forenames": "Ben", "surname": "Clark", "password": "Password123!", "role": "user" },
+  { "email": "tina.carter@example.com", "forenames": "Tina", "surname": "Carter", "password": "Password123!", "role": "user" },
+  { "email": "irene.cole@example.com", "forenames": "Irene", "surname": "Cole", "password": "Password123!", "role": "user" },
+
+  { "email": "sara.kaur@example.com", "forenames": "Sara", "surname": "Kaur", "password": "Password123!", "role": "user" },
+  { "email": "peter.kim@example.com", "forenames": "Peter", "surname": "Kim", "password": "Password123!", "role": "user" },
+  { "email": "gina.kimball@example.com", "forenames": "Gina", "surname": "Kimball", "password": "Password123!", "role": "user" },
+
+  { "email": "brian.walker2@example.com", "forenames": "Brian", "surname": "Walker", "password": "Password123!", "role": "user" },
+  { "email": "helen.walters@example.com", "forenames": "Helen", "surname": "Walters", "password": "Password123!", "role": "user" }
 ]
