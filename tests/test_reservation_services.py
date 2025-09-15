@@ -45,7 +45,7 @@ def test_fetch_reservations_for_book_builds_pipeline_with_defaults(
 ):
     """
     GIVEN a book_id is provided
-    WHEN fetch_reservations_for_book is called with no offset or limit
+    WHEN fetch_reservations_for_book is called with no sort or offset or limit
     THEN it should call the aggregate method with a correctly structured pipeline,
     using the default offset of 0 and limit of 20.
     """
@@ -68,12 +68,13 @@ def test_fetch_reservations_for_book_builds_pipeline_with_defaults(
 
     # 3. Verify the structure and content of the pipeline.
     assert isinstance(actual_pipeline, list)
-    assert len(actual_pipeline) == 5  # We expect 5 stages in our pipeline
+    assert len(actual_pipeline) == 6  # We expect 6 stages in our pipeline
 
     # Check the critical stages
     assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
-    assert actual_pipeline[3] == {"$skip": 0}  # Default value
-    assert actual_pipeline[4] == {"$limit": 20}  # Default value
+    assert actual_pipeline[3] == {"$sort": {"userDetails.surname": 1}} # Default value
+    assert actual_pipeline[4] == {"$skip": 0}  # Default value
+    assert actual_pipeline[5] == {"$limit": 20}  # Default value
 
 
 @patch("app.services.reservation_services.mongo")
@@ -81,28 +82,35 @@ def test_fetch_reservations_for_book_builds_pipeline_with_custom_params(
     mock_mongo, test_app
 ):
     """
-    GIVEN a book_id, a custom offset, and a custom limit
+    GIVEN a book_id, a custom sort, a custom offset, and a custom limit
     WHEN fetch_reservations_for_book is called
     THEN it should call the aggregate method with a pipeline that reflects
-    those custom pagination values.
+    those custom sort and pagination values.
     """
     # ARRANGE
     book_id_obj = ObjectId()
     mock_mongo.db.reservations.aggregate.return_value = []
+    custom_sort_criteria = {"userDetails.forenames": -1} # Sort by forename, descending
     custom_offset = 10
     custom_limit = 5
 
     with test_app.app_context():
         # ACT: Call the function with custom pagination arguments
         fetch_reservations_for_book(
-            book_id_obj, offset=custom_offset, limit=custom_limit
+            book_id_obj,
+            offset=custom_offset,
+            limit=custom_limit,
+            sort_criteria=custom_sort_criteria
         )
 
     # ASSERT
     mock_mongo.db.reservations.aggregate.assert_called_once()
     actual_pipeline = mock_mongo.db.reservations.aggregate.call_args[0][0]
 
+    # Verify the custom values are in the correct stages in the correct order
+    assert len(actual_pipeline) == 6
     # Verify the custom values are in the correct stages
     assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
-    assert actual_pipeline[3] == {"$skip": custom_offset}  # Custom value
-    assert actual_pipeline[4] == {"$limit": custom_limit}  # Custom value
+    assert actual_pipeline[3] == {"$sort": custom_sort_criteria}  # Custom value
+    assert actual_pipeline[4] == {"$skip": custom_offset}  # Custom value
+    assert actual_pipeline[5] == {"$limit": custom_limit}  # Custom value
