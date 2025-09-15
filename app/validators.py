@@ -24,7 +24,7 @@ def parse_and_validate_list_params(args, allowed_sort_fields, default_sort_field
     max_offset = current_app.config["MAX_OFFSET"]
     if not 0 <= offset <= max_offset:
         return None, {
-            "message": f"Offset has to be a positive number no greater then {max_offset}.",
+            "message": f"Offset has to be a positive number no greater than {max_offset}.",
             "status": 400,
         }
 
@@ -46,14 +46,14 @@ def parse_and_validate_list_params(args, allowed_sort_fields, default_sort_field
     )  # if there is sort field use it, or sort will be equal to default sort field value
     sort_direction = 1  # Ascending by default
 
-    if sort_param.startswith("-"): # indicating descending
+    if sort_param.startswith("-"):  # indicating descending
         sort_direction = -1
         sort_field = sort_param[1:]
     else:
         sort_field = sort_param
 
     if sort_field not in allowed_sort_fields:
-        allowed = ", ".join(allowed_sort_fields) #is allowed_sort_fields a list?
+        allowed = ", ".join(allowed_sort_fields)  # is allowed_sort_fields a list?
         return None, {
             "message": f"Invalid sort field '{sort_field}'. Allowed fields are: {allowed}",
             "status": 400,

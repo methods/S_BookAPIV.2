@@ -1,6 +1,6 @@
 """..."""
 
-from flask import Flask, request
+from flask import request
 
 from app.validators import parse_and_validate_list_params
 

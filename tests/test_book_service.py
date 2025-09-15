@@ -47,8 +47,12 @@ def test_fetch_active_books_uses_default_pagination(mock_mongo, test_app):
     # 2. Check that the database methods were called with the correct default values
     expected_filter = {"state": {"$ne": "deleted"}}
     mock_mongo.db.books.find.assert_called_once_with(expected_filter)
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(0)
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(20) #pylint: disable=line-too-long
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(
+        0
+    )
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
+        20
+    )  # pylint: disable=line-too-long
 
 
 @patch("app.services.book_service.mongo")
@@ -69,5 +73,9 @@ def test_fetch_active_books_uses_custom_pagination(mock_mongo, test_app):
     # Check that the database methods were called with the custom values
     expected_filter = {"state": {"$ne": "deleted"}}
     mock_mongo.db.books.find.assert_called_once_with(expected_filter)
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(10)
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(5) # pylint: disable=line-too-long
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(
+        10
+    )
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
+        5
+    )  # pylint: disable=line-too-long
