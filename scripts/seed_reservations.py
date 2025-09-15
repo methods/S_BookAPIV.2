@@ -1,4 +1,4 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, too-many-return-statements
 """
 Script for populating reservations to a database
 """

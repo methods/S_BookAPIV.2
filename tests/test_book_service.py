@@ -50,9 +50,9 @@ def test_fetch_active_books_uses_default_pagination(mock_mongo, test_app):
     mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(
         0
     )
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with( # pylint: disable=line-too-long
         20
-    )  # pylint: disable=line-too-long
+    )
 
 
 @patch("app.services.book_service.mongo")
@@ -76,6 +76,6 @@ def test_fetch_active_books_uses_custom_pagination(mock_mongo, test_app):
     mock_mongo.db.books.find.return_value.sort.return_value.skip.assert_called_once_with(
         10
     )
-    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with(
+    mock_mongo.db.books.find.return_value.sort.return_value.skip.return_value.limit.assert_called_once_with( # pylint: disable=line-too-long
         5
-    )  # pylint: disable=line-too-long
+    )
