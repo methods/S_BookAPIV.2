@@ -9,6 +9,7 @@ from bson import ObjectId
 from pymongo.errors import PyMongoError
 
 from app.extensions import mongo
+from app.datastore.mongo_db import get_book_collection, get_reservation_collection, get_users_collection
 from scripts import seed_reservations as load_reservations_module
 from scripts.seed_reservations import (load_reservations_json,
                                        run_reservation_population)
@@ -431,48 +432,110 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     mock_load_json.assert_called_once()
 
 
+# def test_proceeds_when_reservation_json_loads_successfully(test_app):
+#     """
+#     GIVEN the load_reservations_json helper returns a list of data
+#     WHEN run_reservation_population is called
+#     THEN it should proceed successfully to the end of the function
+#     """
+#     # ARRANGE:
+#     mock_books_collection = MagicMock()
+#     sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
+#     mock_books_collection.find.return_value = sample_book_cursor
+
+#     # This is our simulated successful data load.
+#     sample_reservation_data = [
+#         {
+#             "user_id": "test_user_123",
+#             "book_title": "A Book",
+#             "state": "reserved",
+#             "surname": "test1",
+#             "forenames": "test1fore",
+#         }
+#     ]
+
+#     with patch(
+#         "scripts.seed_reservations.get_book_collection",
+#         return_value=mock_books_collection,
+#     ), patch(
+#         "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
+#     ), patch(
+#         "scripts.seed_reservations.load_reservations_json",
+#         return_value=sample_reservation_data,
+#     ) as mock_load_json:
+
+#         # ACT
+#         with test_app.app_context():
+#             success, message = run_reservation_population()
+
+#     # ASSERT
+#     assert success is True
+#     assert message == "Successfully created 1 and updated 0 reservations."
+
+#     # Verify we attempted to load the JSON file.
+#     mock_load_json.assert_called_once()
+
 def test_proceeds_when_reservation_json_loads_successfully(test_app):
     """
-    GIVEN the load_reservations_json helper returns a list of data
+    GIVEN a database with a book and a user
+    AND the JSON file provides one matching reservation
     WHEN run_reservation_population is called
-    THEN it should proceed successfully to the end of the function
+    THEN it should successfully create one new reservation in the database.
     """
-    # ARRANGE:
-    mock_books_collection = MagicMock()
-    sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
-    mock_books_collection.find.return_value = sample_book_cursor
+    # This test manages its own setup and teardown to have full control over the timing.
+    try:
+        # ARRANGE
+        # 1. Seed the database with prerequisites inside an app context.
+        with test_app.app_context():
+            books = get_book_collection()
+            users = get_users_collection()
+            reservations_collection = get_reservation_collection()
 
-    # This is our simulated successful data load.
-    sample_reservation_data = [
-        {
-            "user_id": "test_user_123",
+            # Start with a clean slate for this specific test
+            books.delete_many({})
+            users.delete_many({})
+            reservations_collection.delete_many({})
+
+            book_id = books.insert_one({"title": "A Book"}).inserted_id
+            user_id = users.insert_one({"email": "test@example.com"}).inserted_id
+
+        # 2. Define the fake data that our patched function will return.
+        sample_reservation_data = [{
+            "user_email": "test@example.com",
             "book_title": "A Book",
             "state": "reserved",
-            "surname": "test1",
-            "forenames": "test1fore",
-        }
-    ]
+            "surname": "User",
+            "forenames": "Test",
+        }]
 
-    with patch(
-        "scripts.seed_reservations.get_book_collection",
-        return_value=mock_books_collection,
-    ), patch(
-        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-    ), patch(
-        "scripts.seed_reservations.load_reservations_json",
-        return_value=sample_reservation_data,
-    ) as mock_load_json:
+        # 3. Patch the file I/O dependency.
+        with patch("scripts.seed_reservations.load_reservations_json", return_value=sample_reservation_data):
+            # ACT
+            with test_app.app_context():
+                success, _message = run_reservation_population()
 
-        # ACT
+        # ASSERT
+        # 4. Check that the function reported success.
+        assert success is True
+
+        # 5. The most important check: Verify the final state of the database.
         with test_app.app_context():
-            success, message = run_reservation_population()
+            reservations_collection = get_reservation_collection()
+            assert reservations_collection.count_documents({}) == 1
+            created_reservation = reservations_collection.find_one()
 
-    # ASSERT
-    assert success is True
-    assert message == "Successfully created 1 and updated 0 reservations."
+            assert created_reservation is not None
+            assert created_reservation["book_id"] == book_id
+            assert created_reservation["user_id"] == user_id
+            assert created_reservation["state"] == "reserved"
 
-    # Verify we attempted to load the JSON file.
-    mock_load_json.assert_called_once()
+    finally:
+        # TEARDOWN: This block is guaranteed to run, even if the assertions fail.
+        with test_app.app_context():
+            get_book_collection().delete_many({})
+            get_users_collection().delete_many({})
+            get_reservation_collection().delete_many({})
+
 
 
 def test_skips_reservation_if_book_title_not_found(test_app, capsys):
