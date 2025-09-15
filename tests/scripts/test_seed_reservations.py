@@ -13,8 +13,7 @@ from app.datastore.mongo_db import (get_book_collection,
                                     get_users_collection)
 from app.extensions import mongo
 from scripts import seed_reservations as load_reservations_module
-from scripts.seed_reservations import (load_reservations_json,
-                                       run_reservation_population)
+from scripts.seed_reservations import (load_reservations_json, run_reservation_population)
 
 
 def test_load_reservations_json_success():
@@ -404,6 +403,35 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
 
 
+# def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
+#     """
+#     GIVEN the JSON file cannot be loaded
+#     WHEN run_reservation_population is called
+#     THEN it should return a failure tuple and not attempt to process reservations.
+#     """
+#     # ARRANGE
+#     _ = mongo_setup
+
+#     # 1. Seed the database with the prerequisites (books and users)
+#     #    so the function can get past the initial checks.
+#     with test_app.app_context():
+#         mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
+#         mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
+
+#     # 2. Patch the one dependency we want to fail: `load_reservations_json`.
+#     #    Use patch.object for better robustness in CI environments.
+#         with patch.object(load_reservations_module, "load_reservations_json", return_value=None) as mock_load_json:
+#             # ACT
+#             with test_app.app_context():
+#                 success, message = load_reservations_module.run_reservation_population()
+
+#     # ASSERT
+#     # 3. Check that the function correctly reported the failure.
+#     assert success is False
+#     assert message == "Failed to load reservation data."
+#     # 4. Verify that the function did attempt to load the JSON.
+#     mock_load_json.assert_called_once()
+
 def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     """
     GIVEN the JSON file cannot be loaded
@@ -413,25 +441,20 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     # ARRANGE
     _ = mongo_setup
 
-    # 1. Seed the database with the prerequisites (books and users)
-    #    so the function can get past the initial checks.
+    # 1. Seed the database with prerequisites.
     with test_app.app_context():
         mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
         mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
 
-    # 2. Patch the one dependency we want to fail: `load_reservations_json`.
-    #    Use patch.object for better robustness in CI environments.
-        with patch.object(load_reservations_module, "load_reservations_json", return_value=None) as mock_load_json:
-            # ACT
-            with test_app.app_context():
-                success, message = load_reservations_module.run_reservation_population()
+        # Patch the function at the point it is looked up
+        with patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
+            # ACT: Call the function through the module
+            success, message = load_reservations_module.run_reservation_population()
 
-    # ASSERT
-    # 3. Check that the function correctly reported the failure.
-    assert success is False
-    assert message == "Failed to load reservation data."
-    # 4. Verify that the function did attempt to load the JSON.
-    mock_load_json.assert_called_once()
+            # ASSERT
+            assert success is False
+            assert message == "Failed to load reservation data."
+            mock_load_json.assert_called_once()
 
 
 def test_proceeds_when_reservation_json_loads_successfully(test_app):
