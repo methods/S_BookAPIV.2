@@ -14,12 +14,13 @@ def count_active_books():
     return count
 
 
-def fetch_active_books(offset: int = 0, limit: int = 20):
+def fetch_active_books(offset: int = 0, limit: int = 20, sort_criteria: dict = None):
     """
     Fetches a paginated list of all active (non-deleted) books from the database.
     """
+    sort_criteria = sort_criteria or {"title": 1} # Default sort if none provided
     query_filter = {"state": {"$ne": "deleted"}}  # Only non-deleted books
-    cursor = mongo.db.books.find(query_filter).skip(offset).limit(limit)
+    cursor = mongo.db.books.find(query_filter).sort(sort_criteria).skip(offset).limit(limit)
 
     return list(cursor)
 
