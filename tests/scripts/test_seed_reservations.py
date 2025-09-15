@@ -432,49 +432,6 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     mock_load_json.assert_called_once()
 
 
-# def test_proceeds_when_reservation_json_loads_successfully(test_app):
-#     """
-#     GIVEN the load_reservations_json helper returns a list of data
-#     WHEN run_reservation_population is called
-#     THEN it should proceed successfully to the end of the function
-#     """
-#     # ARRANGE:
-#     mock_books_collection = MagicMock()
-#     sample_book_cursor = [{"_id": ObjectId(), "title": "A Book"}]
-#     mock_books_collection.find.return_value = sample_book_cursor
-
-#     # This is our simulated successful data load.
-#     sample_reservation_data = [
-#         {
-#             "user_id": "test_user_123",
-#             "book_title": "A Book",
-#             "state": "reserved",
-#             "surname": "test1",
-#             "forenames": "test1fore",
-#         }
-#     ]
-
-#     with patch(
-#         "scripts.seed_reservations.get_book_collection",
-#         return_value=mock_books_collection,
-#     ), patch(
-#         "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-#     ), patch(
-#         "scripts.seed_reservations.load_reservations_json",
-#         return_value=sample_reservation_data,
-#     ) as mock_load_json:
-
-#         # ACT
-#         with test_app.app_context():
-#             success, message = run_reservation_population()
-
-#     # ASSERT
-#     assert success is True
-#     assert message == "Successfully created 1 and updated 0 reservations."
-
-#     # Verify we attempted to load the JSON file.
-#     mock_load_json.assert_called_once()
-
 def test_proceeds_when_reservation_json_loads_successfully(test_app):
     """
     GIVEN a database with a book and a user
@@ -537,46 +494,62 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
             get_reservation_collection().delete_many({})
 
 
-
 def test_skips_reservation_if_book_title_not_found(test_app, capsys):
     """
-    GIVEN a reservation's book_title is not in the book_id_map
+    GIVEN a database with a book and user, but the provided reservation data has an unknown book title
     WHEN run_reservation_population is called
-    THEN it should print a warning and continue, eventually succeeding
+    THEN it should print a warning, create no reservations, and complete successfully.
     """
-    # ARRANGE: Set up the entire function to run, controlling the inputs.
-
-    # 1. Create a book map with known books.
-    mock_books_collection = MagicMock()
-    sample_book_for_map = [{"_id": ObjectId(), "title": "The Hobbit"}]
-    mock_books_collection.find.return_value = sample_book_for_map
-
-    # 2. Create a reservation data from JSON that contains an UNKNOWN book title.
-    reservation_with_bad_title = [{"book_title": "A Book That Does Not Exist"}]
-
-    # 3. Patch all dependencies.
-    with patch(
-        "scripts.seed_reservations.get_book_collection",
-        return_value=mock_books_collection,
-    ), patch(
-        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
-    ), patch(
-        "scripts.seed_reservations.load_reservations_json",
-        return_value=reservation_with_bad_title,
-    ):
-
-        # ACT
+    # This test manages its own setup and teardown to be self-contained.
+    try:
+        # ARRANGE
+        # 1. Seed the DB using the helpers to write to the correct collections.
         with test_app.app_context():
-            success, _message = run_reservation_population()
+            books = get_book_collection()
+            users = get_users_collection()
+            reservations = get_reservation_collection()
 
-    # ASSERT
-    # The function should still complete successfully overall.
-    assert success is True
+            # Start with a clean slate
+            books.delete_many({})
+            users.delete_many({})
+            reservations.delete_many({})
 
-    # Capture the printed output.
-    captured = capsys.readouterr()
-    expected_warning = "WARNING: Skipping reservation because book 'A Book That Does Not Exist' was not found.\n"
-    assert expected_warning in captured.out
+            books.insert_one({"title": "The Hobbit"})
+            users.insert_one({"email": "test@example.com"})
+
+        # 2. Create reservation data that references a book title that does NOT exist.
+        reservation_with_bad_title = [{
+            "book_title": "A Book That Does Not Exist",
+            "user_email": "test@example.com",
+            "state": "reserved",
+            "surname": "User",
+            "forenames": "Test"
+        }]
+
+        # 3. Patch the file I/O dependency.
+        with patch("scripts.seed_reservations.load_reservations_json", return_value=reservation_with_bad_title):
+            # ACT
+            with test_app.app_context():
+                success, _message = run_reservation_population()
+
+        # ASSERT
+        assert success is True
+
+        # Check that the correct warning was printed.
+        captured = capsys.readouterr()
+        assert "WARNING: Skipping reservation" in captured.out
+        assert "'A Book That Does Not Exist'" in captured.out
+
+        # Verify that no reservations were actually created.
+        with test_app.app_context():
+            assert get_reservation_collection().count_documents({}) == 0
+
+    finally:
+        # TEARDOWN: Ensure everything is clean for the next test.
+        with test_app.app_context():
+            get_book_collection().delete_many({})
+            get_users_collection().delete_many({})
+            get_reservation_collection().delete_many({})
 
 
 def test_proceeds_if_book_title_is_found(test_app, capsys):
