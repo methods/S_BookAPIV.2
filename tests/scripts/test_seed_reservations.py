@@ -8,8 +8,10 @@ import pytest
 from bson import ObjectId
 from pymongo.errors import PyMongoError
 
+from app.datastore.mongo_db import (get_book_collection,
+                                    get_reservation_collection,
+                                    get_users_collection)
 from app.extensions import mongo
-from app.datastore.mongo_db import get_book_collection, get_reservation_collection, get_users_collection
 from scripts import seed_reservations as load_reservations_module
 from scripts.seed_reservations import (load_reservations_json,
                                        run_reservation_population)
@@ -333,7 +335,10 @@ def test_returns_error_on_pymongo_error(test_app):
             result = run_reservation_population()
 
     # ASSERT
-    assert result == (False, "ERROR: Failed to fetch data from database: Database connection failed")
+    assert result == (
+        False,
+        "ERROR: Failed to fetch data from database: Database connection failed",
+    )
 
 
 def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
@@ -377,8 +382,7 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
         "scripts.seed_reservations.get_book_collection",
         return_value=mock_books_collection,
     ), patch(
-        "scripts.seed_reservations.get_reservation_collection",
-        return_value=MagicMock()
+        "scripts.seed_reservations.get_reservation_collection", return_value=MagicMock()
     ), patch(
         "scripts.seed_reservations.get_users_collection",
         return_value=mock_users_collection,
@@ -418,7 +422,9 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     # 2. Patch the one dependency we want to fail: `load_reservations_json`.
     #    We don't need to patch the get_*_collection helpers because our
     #    test_app fixture and mongo_setup handle the database state.
-    with patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
+    with patch(
+        "scripts.seed_reservations.load_reservations_json", return_value=None
+    ) as mock_load_json:
         # ACT
         with test_app.app_context():
             success, message = run_reservation_population()
@@ -457,16 +463,21 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
             user_id = users.insert_one({"email": "test@example.com"}).inserted_id
 
         # 2. Define the fake data that our patched function will return.
-        sample_reservation_data = [{
-            "user_email": "test@example.com",
-            "book_title": "A Book",
-            "state": "reserved",
-            "surname": "User",
-            "forenames": "Test",
-        }]
+        sample_reservation_data = [
+            {
+                "user_email": "test@example.com",
+                "book_title": "A Book",
+                "state": "reserved",
+                "surname": "User",
+                "forenames": "Test",
+            }
+        ]
 
         # 3. Patch the file I/O dependency.
-        with patch("scripts.seed_reservations.load_reservations_json", return_value=sample_reservation_data):
+        with patch(
+            "scripts.seed_reservations.load_reservations_json",
+            return_value=sample_reservation_data,
+        ):
             # ACT
             with test_app.app_context():
                 success, _message = run_reservation_population()
@@ -518,16 +529,21 @@ def test_skips_reservation_if_book_title_not_found(test_app, capsys):
             users.insert_one({"email": "test@example.com"})
 
         # 2. Create reservation data that references a book title that does NOT exist.
-        reservation_with_bad_title = [{
-            "book_title": "A Book That Does Not Exist",
-            "user_email": "test@example.com",
-            "state": "reserved",
-            "surname": "User",
-            "forenames": "Test"
-        }]
+        reservation_with_bad_title = [
+            {
+                "book_title": "A Book That Does Not Exist",
+                "user_email": "test@example.com",
+                "state": "reserved",
+                "surname": "User",
+                "forenames": "Test",
+            }
+        ]
 
         # 3. Patch the file I/O dependency.
-        with patch("scripts.seed_reservations.load_reservations_json", return_value=reservation_with_bad_title):
+        with patch(
+            "scripts.seed_reservations.load_reservations_json",
+            return_value=reservation_with_bad_title,
+        ):
             # ACT
             with test_app.app_context():
                 success, _message = run_reservation_population()
@@ -626,24 +642,37 @@ def test_creates_new_reservation_if_not_exists(test_app):
     ]
 
     # 4. Define the data coming from the JSON file.
-    reservations_from_json = [{
-        "user_email": user_email,
-        "book_title": book_title,
-        "state": "reserved", "surname": "test1", "forenames": "test1fore",
-    }]
+    reservations_from_json = [
+        {
+            "user_email": user_email,
+            "book_title": book_title,
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
+    ]
 
     # 5. Mock the reservations collection and the result of its update_one call.
     mock_reservations_collection = MagicMock()
     mock_upsert_result = MagicMock()
-    mock_upsert_result.upserted_id = ObjectId() # A non-None value signals a creation
+    mock_upsert_result.upserted_id = ObjectId()  # A non-None value signals a creation
     mock_upsert_result.matched_count = 0
     mock_reservations_collection.update_one.return_value = mock_upsert_result
 
     # 6. Patch all dependencies.
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection), \
-         patch("scripts.seed_reservations.get_users_collection", return_value=mock_users_collection), \
-         patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_from_json):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection",
+        return_value=mock_reservations_collection,
+    ), patch(
+        "scripts.seed_reservations.get_users_collection",
+        return_value=mock_users_collection,
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json",
+        return_value=reservations_from_json,
+    ):
 
         # ACT
         with test_app.app_context():
@@ -698,12 +727,15 @@ def test_updates_existing_reservation_if_found(test_app):
     ]
 
     # 4. Define the data from the JSON file, which will update an existing record.
-    reservations_from_json = [{
-        "user_email": user_email,
-        "book_title": book_title,
-        "state": "returned", # The new state to be updated
-        "surname": "Updated", "forenames": "User",
-    }]
+    reservations_from_json = [
+        {
+            "user_email": user_email,
+            "book_title": book_title,
+            "state": "returned",  # The new state to be updated
+            "surname": "Updated",
+            "forenames": "User",
+        }
+    ]
 
     # 5. Mock the reservations collection and the result of a successful UPDATE.
     mock_reservations_collection = MagicMock()
@@ -713,10 +745,19 @@ def test_updates_existing_reservation_if_found(test_app):
     mock_reservations_collection.update_one.return_value = mock_update_result
 
     # 6. Patch all dependencies, including the new get_users_collection.
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection), \
-         patch("scripts.seed_reservations.get_users_collection", return_value=mock_users_collection), \
-         patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_from_json):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection",
+        return_value=mock_reservations_collection,
+    ), patch(
+        "scripts.seed_reservations.get_users_collection",
+        return_value=mock_users_collection,
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json",
+        return_value=reservations_from_json,
+    ):
 
         # ACT
         with test_app.app_context():
@@ -757,11 +798,15 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
     ]
 
     # 4. Define the data coming from the JSON file.
-    reservations_from_json = [{
-        "user_email": user_email,
-        "book_title": book_title,
-        "state": "reserved", "surname": "test1", "forenames": "test1fore",
-    }]
+    reservations_from_json = [
+        {
+            "user_email": user_email,
+            "book_title": book_title,
+            "state": "reserved",
+            "surname": "test1",
+            "forenames": "test1fore",
+        }
+    ]
 
     # 5. Mock the reservations collection and configure update_one to RAISE an error.
     mock_reservations_collection = MagicMock()
@@ -769,10 +814,19 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
     mock_reservations_collection.update_one.side_effect = PyMongoError(error_message)
 
     # 6. Patch all dependencies.
-    with patch("scripts.seed_reservations.get_book_collection", return_value=mock_books_collection), \
-         patch("scripts.seed_reservations.get_reservation_collection", return_value=mock_reservations_collection), \
-         patch("scripts.seed_reservations.get_users_collection", return_value=mock_users_collection), \
-         patch("scripts.seed_reservations.load_reservations_json", return_value=reservations_from_json):
+    with patch(
+        "scripts.seed_reservations.get_book_collection",
+        return_value=mock_books_collection,
+    ), patch(
+        "scripts.seed_reservations.get_reservation_collection",
+        return_value=mock_reservations_collection,
+    ), patch(
+        "scripts.seed_reservations.get_users_collection",
+        return_value=mock_users_collection,
+    ), patch(
+        "scripts.seed_reservations.load_reservations_json",
+        return_value=reservations_from_json,
+    ):
 
         # ACT
         with test_app.app_context():
@@ -780,5 +834,7 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
 
     # ASSERT
     assert success is False
-    expected_error_message = f"ERROR: Failed to upsert reservation for user '{user_email}': {error_message}"
+    expected_error_message = (
+        f"ERROR: Failed to upsert reservation for user '{user_email}': {error_message}"
+    )
     assert message == expected_error_message

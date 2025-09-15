@@ -1,12 +1,12 @@
 """Tests for auth/JWT upgrade"""
 
 from unittest.mock import patch
-from email_validator import EmailNotValidError
 
 import jwt
 import pytest
 from conftest import (PLAIN_PASSWORD,  # pylint: disable=import-error
                       TEST_USER_ID)
+from email_validator import EmailNotValidError
 
 from app import bcrypt, mongo
 
@@ -107,8 +107,10 @@ def test_request_fails_with_invalid_json(client, mongo_setup):
     assert "invalid json format" in response.get_json()["message"].lower()
 
 
-@patch('app.routes.auth_routes.validate_email')
-def test_register_user_handles_invalid_email_error(mock_validate_email, client, mongo_setup):
+@patch("app.routes.auth_routes.validate_email")
+def test_register_user_handles_invalid_email_error(
+    mock_validate_email, client, mongo_setup
+):
     """
     GIVEN the validate_email function will raise an EmailNotValidError
     WHEN the /auth/register endpoint is called
@@ -127,7 +129,7 @@ def test_register_user_handles_invalid_email_error(mock_validate_email, client, 
         "email": "any.email@will.fail",
         "password": "a-secure-password",
         "forenames": "Test",
-        "surname": "User"
+        "surname": "User",
     }
 
     # ACT
@@ -141,7 +143,9 @@ def test_register_user_handles_invalid_email_error(mock_validate_email, client, 
     assert json_data["message"] == error_message
 
     # 4. We can also assert that our mock was called.
-    mock_validate_email.assert_called_once_with("any.email@will.fail", check_deliverability=False)
+    mock_validate_email.assert_called_once_with(
+        "any.email@will.fail", check_deliverability=False
+    )
 
 
 @pytest.mark.parametrize(
