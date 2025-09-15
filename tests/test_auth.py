@@ -1,6 +1,7 @@
 """Tests for auth/JWT upgrade"""
 
 from unittest.mock import patch
+from email_validator import EmailNotValidError
 
 import jwt
 import pytest
@@ -104,6 +105,43 @@ def test_request_fails_with_invalid_json(client, mongo_setup):
 
     assert response.status_code == 400
     assert "invalid json format" in response.get_json()["message"].lower()
+
+
+@patch('app.routes.auth_routes.validate_email')
+def test_register_user_handles_invalid_email_error(mock_validate_email, client, mongo_setup):
+    """
+    GIVEN the validate_email function will raise an EmailNotValidError
+    WHEN the /auth/register endpoint is called
+    THEN it should catch the exception and return a 400 Bad Request.
+    """
+    # ARRANGE
+    _ = mongo_setup
+
+    # 1. Configure the mock's side_effect. When our code calls validate_email,
+    #    this mock will raise the specified error with our custom message.
+    error_message = "The email address is not valid."
+    mock_validate_email.side_effect = EmailNotValidError(error_message)
+
+    # 2. Provide a valid-looking payload.
+    payload = {
+        "email": "any.email@will.fail",
+        "password": "a-secure-password",
+        "forenames": "Test",
+        "surname": "User"
+    }
+
+    # ACT
+    response = client.post("/auth/register", json=payload)
+    json_data = response.get_json()
+
+    # ASSERT
+    # 3. Verify that the function behaved as expected.
+    assert response.status_code == 400
+    assert "message" in json_data
+    assert json_data["message"] == error_message
+
+    # 4. We can also assert that our mock was called.
+    mock_validate_email.assert_called_once_with("any.email@will.fail", check_deliverability=False)
 
 
 @pytest.mark.parametrize(
