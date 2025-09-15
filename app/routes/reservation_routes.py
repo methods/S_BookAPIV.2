@@ -86,27 +86,30 @@ def create_reservation(book_id_str):
 @require_admin
 def get_reservations_for_book_id(book_id_str):
     """
-    Retrieves a sorted and paginated list of reservations for a specific book, including total count.
+    Retrieves a sorted and paginated list of reservations for a specific book,
+    including total count.
     Accessible only by users with the 'admin' role.
     """
     # --- 1. Use reusable validator helper and Validate Query Parameters ---
-    allowed_sort_fields = ['surname', 'forenames']
+    allowed_sort_fields = ["surname", "forenames"]
     params, error = parse_and_validate_list_params(
-        request.args,
-        allowed_sort_fields,
-        default_sort_field='surname'
+        request.args, allowed_sort_fields, default_sort_field="surname"
     )
 
     if error:
-        return jsonify({"error": error['message']}), error['status']
+        return jsonify({"error": error["message"]}), error["status"]
 
     # IMPORTANT: The validator uses 'surname', but the DB query needs 'userDetails.surname'
     # here .pop() renames the field, not keep both.
-    if 'surname' in params['sort_criteria']:
-        params['sort_criteria']['userDetails.surname'] = params['sort_criteria'].pop('surname')
+    if "surname" in params["sort_criteria"]:
+        params["sort_criteria"]["userDetails.surname"] = params["sort_criteria"].pop(
+            "surname"
+        )
 
-    if 'forenames' in params['sort_criteria']:
-        params['sort_criteria']['userDetails.forenames'] = params['sort_criteria'].pop('forenames')
+    if "forenames" in params["sort_criteria"]:
+        params["sort_criteria"]["userDetails.forenames"] = params["sort_criteria"].pop(
+            "forenames"
+        )
 
     # Validate the book_id format
     try:
@@ -124,9 +127,9 @@ def get_reservations_for_book_id(book_id_str):
     total_count = count_reservations_for_book(oid)
     raw_reservations = fetch_reservations_for_book(
         oid,
-        offset=params['offset'],
-        limit=params['limit'],
-        sort_criteria=params['sort_criteria']
+        offset=params["offset"],
+        limit=params["limit"],
+        sort_criteria=params["sort_criteria"],
     )
 
     # Format Response

@@ -72,7 +72,7 @@ def test_fetch_reservations_for_book_builds_pipeline_with_defaults(
 
     # Check the critical stages
     assert actual_pipeline[0] == {"$match": {"book_id": book_id_obj}}
-    assert actual_pipeline[3] == {"$sort": {"userDetails.surname": 1}} # Default value
+    assert actual_pipeline[3] == {"$sort": {"userDetails.surname": 1}}  # Default value
     assert actual_pipeline[4] == {"$skip": 0}  # Default value
     assert actual_pipeline[5] == {"$limit": 20}  # Default value
 
@@ -90,7 +90,7 @@ def test_fetch_reservations_for_book_builds_pipeline_with_custom_params(
     # ARRANGE
     book_id_obj = ObjectId()
     mock_mongo.db.reservations.aggregate.return_value = []
-    custom_sort_criteria = {"userDetails.forenames": -1} # Sort by forename, descending
+    custom_sort_criteria = {"userDetails.forenames": -1}  # Sort by forename, descending
     custom_offset = 10
     custom_limit = 5
 
@@ -100,7 +100,7 @@ def test_fetch_reservations_for_book_builds_pipeline_with_custom_params(
             book_id_obj,
             offset=custom_offset,
             limit=custom_limit,
-            sort_criteria=custom_sort_criteria
+            sort_criteria=custom_sort_criteria,
         )
 
     # ASSERT

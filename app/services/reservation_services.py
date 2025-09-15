@@ -18,7 +18,9 @@ def fetch_reservations_for_book(
     aggregation pipeline to include user details.
     """
     # Default sort for reservations is by the user's surname, ascending.
-    sort_criteria = sort_criteria or {"userDetails.surname": 1}  # Default sort if none provided
+    sort_criteria = sort_criteria or {
+        "userDetails.surname": 1
+    }  # Default sort if none provided
 
     pipeline = [
         # Stage 1: Find all reservations that match the book_id
