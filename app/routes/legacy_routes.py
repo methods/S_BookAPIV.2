@@ -1,7 +1,7 @@
 """Flask application module for managing a collection of books."""
 
 from bson.objectid import InvalidId, ObjectId
-from flask import current_app, jsonify, request
+from flask import jsonify, request
 from pymongo.errors import ConnectionFailure
 from werkzeug.exceptions import HTTPException, NotFound
 
@@ -14,6 +14,7 @@ from app.services.book_service import (count_active_books, fetch_active_books,
                                        format_books_for_api)
 from app.utils.api_security import require_api_key
 from app.utils.helper import append_hostname
+from app.validators import parse_and_validate_list_params
 
 
 def register_legacy_routes(app):  # pylint: disable=too-many-statements
@@ -106,53 +107,70 @@ def register_legacy_routes(app):  # pylint: disable=too-many-statements
         including the total count.
         """
         # --- 1. Get and Validate Query Parameters ---
-        offset_str = request.args.get("offset", "0")  # 0 is default
-        limit_str = request.args.get("limit", "20")  # 20 is default
-        try:
-            offset = int(offset_str)
-            limit = int(limit_str)
-        except ValueError:
-            return (
-                jsonify(
-                    {"error": "Query parameters 'limit' and 'offset' must be integers."}
-                ),
-                400,
-            )
 
-        # Validate MAX_OFFSET
-        # get the MAX_OFFSET value from env and check
-        max_offset = current_app.config["MAX_OFFSET"]
+        allowed_sort_fields = ['title', 'author']
+        params, error = parse_and_validate_list_params(
+            request.args,
+            allowed_sort_fields,
+            default_sort_field='title'
+        )
 
-        if offset < 0 or offset > max_offset:
-            return (
-                jsonify(
-                    {
-                        "error": f"Offset has to be a positive number no greater than {max_offset}."
-                    }
-                ),
-                400,
-            )
+        if error:
+            return jsonify({"error": error['message']}), error['status']
 
-        # Validate MAX_LIMIT
-        max_limit = current_app.config["MAX_LIMIT"]
 
-        if limit < 0 or limit > max_limit:
-            return (
-                jsonify(
-                    {
-                        "error": f"Limit has to be a positive number no greater than {max_limit}."
-                    }
-                ),
-                400,
-            )
+
+        # offset_str = request.args.get("offset", "0")  # 0 is default
+        # limit_str = request.args.get("limit", "20")  # 20 is default
+        # try:
+        #     offset = int(offset_str)
+        #     limit = int(limit_str)
+        # except ValueError:
+        #     return (
+        #         jsonify(
+        #             {"error": "Query parameters 'limit' and 'offset' must be integers."}
+        #         ),
+        #         400,
+        #     )
+
+        # # Validate MAX_OFFSET
+        # # get the MAX_OFFSET value from env and check
+        # max_offset = current_app.config["MAX_OFFSET"]
+
+        # if offset < 0 or offset > max_offset:
+        #     return (
+        #         jsonify(
+        #             {
+        #                 "error": f"Offset has to be a positive number no greater than {max_offset}."
+        #             }
+        #         ),
+        #         400,
+        #     )
+
+        # # Validate MAX_LIMIT
+        # max_limit = current_app.config["MAX_LIMIT"]
+
+        # if limit < 0 or limit > max_limit:
+            # return (
+            #     jsonify(
+            #         {
+            #             "error": f"Limit has to be a positive number no greater than {max_limit}."
+            #         }
+            #     ),
+            #     400,
+            # )
+
         # --- 2. Call the Service Layer to Fetch Data ---
-
         try:
             # Get total count for the response metadata
             total_count = count_active_books()
 
             # Next, get a paginated list of documents
-            raw_books = fetch_active_books(offset=offset, limit=limit)
+            raw_books = fetch_active_books(
+                offset=params['offset'],
+                limit=params['limit'],
+                sort_criteria=params['sort_criteria']
+            )
 
         except ConnectionFailure:
             error_payload = {
