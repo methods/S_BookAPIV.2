@@ -202,7 +202,7 @@ def test_get_all_books_success_path(mock_fetch, mock_count, mock_format, client)
     """
     GIVEN a mocked service layer
     WHEN the /books endpoint is called with default parameters
-    THEN the controller calls its dependencies with correct pagination
+    THEN the controller calls its dependencies with correct pagination and sorting
     AND formats the final API response correctly.
     """
     # Arrange:
@@ -230,7 +230,8 @@ def test_get_all_books_success_path(mock_fetch, mock_count, mock_format, client)
 
     # Assert controller logic is correct by checking calls to dependencies
     mock_count.assert_called_once_with()
-    mock_fetch.assert_called_once_with(offset=0, limit=20)
+    expected_sort_criteria = {'title': 1}
+    mock_fetch.assert_called_once_with(offset=0, limit=20, sort_criteria=expected_sort_criteria)
     mock_format.assert_called_once_with(mock_raw_books_from_db, "http://localhost")
 
 
@@ -293,7 +294,8 @@ def test_get_books_success_default_pagination(mock_fetch, mock_count, client):
 
     # Assert that the controller called its dependencies as expected
     mock_count.assert_called_once_with()
-    mock_fetch.assert_called_once_with(offset=0, limit=20)
+    expected_sort_criteria = {'title': 1}
+    mock_fetch.assert_called_once_with(offset=0, limit=20, sort_criteria=expected_sort_criteria)
 
     # Assert that final JSON response is correct
     json_data = response.get_json()
