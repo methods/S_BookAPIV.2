@@ -1,4 +1,4 @@
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name, line-too-long
 """
 This module contains tests for the reservation functionality of the application,
 including setup fixtures and test cases for creating, validating, and handling reservations.
@@ -456,3 +456,87 @@ def test_get_reservations_fails_for_out_of_range_limit(
     assert response.status_code == 400
     assert "error" in json_data
     assert json_data["error"] in expected_error_msg
+
+
+def test_get_reservations_returns_sorted_results(client, test_app, admin_token, mongo_setup):
+    """
+    GIVEN a book with several reservations with unsorted user surnames
+    WHEN the GET /books/{id}/reservations endpoint is called with ?sort=-surname
+    THEN the returned items should be sorted by surname in descending order.
+    """
+    # ARRANGE
+    _ = mongo_setup
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Seed the database with data in a known, non-alphabetical order.
+    with test_app.app_context():
+        book_id = mongo.db.books.insert_one({"title": "Sortable Book"}).inserted_id
+
+        # Surnames are C, B, A (not sorted)
+        user_c = mongo.db.users.insert_one({"email": "c@test.com", "surname": "Carlson"}).inserted_id #pylint: disable=line-too-long
+        user_b = mongo.db.users.insert_one({"email": "b@test.com", "surname": "Brown"}).inserted_id
+        user_a = mongo.db.users.insert_one({"email": "a@test.com", "surname": "Adams"}).inserted_id
+
+        mongo.db.reservations.insert_many([
+            {"book_id": book_id, "user_id": user_c},
+            {"book_id": book_id, "user_id": user_b},
+            {"book_id": book_id, "user_id": user_a},
+        ])
+
+    # ACT: Request the list sorted by surname, descending
+    response = client.get(f"/books/{book_id}/reservations?sort=-surname", headers=headers)
+
+    # ASSERT
+    assert response.status_code == 200
+    data = response.get_json()
+
+    assert data["total_count"] == 3
+    items = data["items"]
+    assert len(items) == 3
+
+    # 2. Check the order of the returned items. Expected order is Carlson, Brown, Adams.
+    assert items[0]['user']['surname'] == 'Carlson'
+    assert items[1]['user']['surname'] == 'Brown'
+    assert items[2]['user']['surname'] == 'Adams'
+
+
+def test_get_reservations_sorts_by_forenames(client, test_app, admin_token, mongo_setup):
+    """
+    GIVEN a book with reservations for users with unsorted forenames
+    WHEN the GET endpoint is called with ?sort=forenames
+    THEN the returned items should be sorted by the user's forename in ascending order.
+    """
+    # ARRANGE
+    _ = mongo_setup
+    headers = {"Authorization": f"Bearer {admin_token}"}
+
+    # 1. Seed the database with data in a known, non-alphabetical order of forenames.
+    with test_app.app_context():
+        book_id = mongo.db.books.insert_one({"title": "Sortable Book"}).inserted_id
+
+        # Forenames are Charlie, Alice, Bob (not sorted)
+        user_c = mongo.db.users.insert_one({"email": "c@test.com", "surname": "User", "forenames": "Charlie"}).inserted_id
+        user_a = mongo.db.users.insert_one({"email": "a@test.com", "surname": "User", "forenames": "Alice"}).inserted_id
+        user_b = mongo.db.users.insert_one({"email": "b@test.com", "surname": "User", "forenames": "Bob"}).inserted_id
+
+        mongo.db.reservations.insert_many([
+            {"book_id": book_id, "user_id": user_c},
+            {"book_id": book_id, "user_id": user_a},
+            {"book_id": book_id, "user_id": user_b},
+        ])
+
+    # ACT: Request the list sorted by forename, ascending
+    response = client.get(f"/books/{book_id}/reservations?sort=forenames", headers=headers)
+
+    # ASSERT
+    assert response.status_code == 200
+    data = response.get_json()
+
+    assert data["total_count"] == 3
+    items = data["items"]
+    assert len(items) == 3
+
+    # 2. Check the order of the returned items. Expected order is Alice, Bob, Charlie.
+    assert items[0]['user']['forenames'] == 'Alice'
+    assert items[1]['user']['forenames'] == 'Bob'
+    assert items[2]['user']['forenames'] == 'Charlie'
