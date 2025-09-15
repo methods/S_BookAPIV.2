@@ -65,6 +65,25 @@ components:
         type: string
         pattern: '^[a-f\d]{24}$'
         example: "635f3a7f3a8e3bcfc8e6a1f1"
+    Offset:
+      name: offset
+      in: query
+      description: The number of items to skip before starting to collect the result set. Must be a positive number and not exceed the system maximum.
+      required: false
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+    Limit:
+      name: limit
+      in: query
+      description: The maximum number of items to return. Must be a positive number and not exceed the system maximum.
+      required: false
+      schema:
+        type: integer
+        default: 20
+        minimum: 1
+        maximum: 1000
  
   schemas:
     # --- Book Schemas ---
@@ -414,27 +433,16 @@ paths:
       description: Retrieve all books from the database and return them in a JSON response including the total count.
       operationId: getAllBooks
       parameters:
-        - name: offset
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - name: sort
+          description: "Field to sort the results by. Prefix with a hyphen (-) for descending order. Allowed fields: `title`, `author`."
           in: query
-          description: The number of items to skip before starting to collect the result set.
           required: false
           schema:
-            type: integer
-            format: int32
-            default: 0
-            minimum: 0
-            example: 20
-        - name: limit
-          in: query
-          description: The number of items to return.
-          required: false
-          schema:
-            type: integer
-            format: int32
-            default: 20
-            minimum: 1
-            maximum: 1000
-            example: 10
+            type: string
+            default: title
+            example: -author
       responses:
         '200':
           description: A list of all books including the total count.
@@ -636,25 +644,16 @@ paths:
       description: Fetches a paginated list of all active reservations for the book identified by {book_id}.
       operationId: get_book_reservations
       parameters:
-        - name: offset
+        - $ref: '#/components/parameters/Offset'
+        - $ref: '#/components/parameters/Limit'
+        - name: sort
           in: query
-          description: The number of reservations to skip before starting to collect the result set.
+          description: "Field to sort the results by. Prefix with a hyphen (-) for descending order. Allowed fields: `surname`, `forenames`."
           required: false
           schema:
-            type: integer
-            format: int32
-            default: 0
-            minimum: 0
-        - name: limit
-          in: query
-          description: The maximum number of reservations to return.
-          required: false
-          schema:
-            type: integer
-            format: int32
-            default: 20
-            minimum: 1
-            maximum: 1000
+            type: string
+            default: surname
+            example: -forenames
       responses:
         '200': 
           description: Successfully retrieved the list of reservations.
