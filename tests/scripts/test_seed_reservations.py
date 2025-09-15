@@ -16,6 +16,28 @@ from scripts import seed_reservations as load_reservations_module
 from scripts.seed_reservations import (load_reservations_json, run_reservation_population)
 
 
+def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
+    """
+    GIVEN the JSON file cannot be loaded
+    WHEN run_reservation_population is called
+    THEN it should return a failure tuple and not attempt to process reservations.
+    """
+    # ARRANGE
+    _ = mongo_setup
+
+    # 1. Seed the database with prerequisites.
+    with test_app.app_context():
+        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
+        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
+
+        with patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
+            success, message = run_reservation_population()
+
+            assert success is False
+            assert message == "Failed to load reservation data."
+            mock_load_json.assert_called_once()
+
+
 def test_load_reservations_json_success():
     """
     GIVEN a valid JSON string representing reservation data
@@ -432,29 +454,6 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
 #     # 4. Verify that the function did attempt to load the JSON.
 #     mock_load_json.assert_called_once()
 
-def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
-    """
-    GIVEN the JSON file cannot be loaded
-    WHEN run_reservation_population is called
-    THEN it should return a failure tuple and not attempt to process reservations.
-    """
-    # ARRANGE
-    _ = mongo_setup
-
-    # 1. Seed the database with prerequisites.
-    with test_app.app_context():
-        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
-        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
-
-        # Patch the function at the point it is looked up
-        with patch("scripts.seed_reservations.load_reservations_json", return_value=None) as mock_load_json:
-            # ACT: Call the function through the module
-            success, message = load_reservations_module.run_reservation_population()
-
-            # ASSERT
-            assert success is False
-            assert message == "Failed to load reservation data."
-            mock_load_json.assert_called_once()
 
 
 def test_proceeds_when_reservation_json_loads_successfully(test_app):
