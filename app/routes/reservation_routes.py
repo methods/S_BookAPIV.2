@@ -5,12 +5,13 @@ import datetime
 
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import Blueprint, current_app, g, jsonify, request, url_for
+from flask import Blueprint, g, jsonify, request, url_for
 
 from app.extensions import mongo
 from app.services.reservation_services import (count_reservations_for_book,
                                                fetch_reservations_for_book)
 from app.utils.decorators import require_admin, require_jwt
+from app.validators import parse_and_validate_list_params
 
 reservations_bp = Blueprint(
     "reservations_bp", __name__, url_prefix="/books/<book_id_str>"
@@ -85,48 +86,27 @@ def create_reservation(book_id_str):
 @require_admin
 def get_reservations_for_book_id(book_id_str):
     """
-    Retrieves a paginated list of reservations for a specific book, including total count.
+    Retrieves a sorted and paginated list of reservations for a specific book, including total count.
     Accessible only by users with the 'admin' role.
     """
-    # --- 1. Get and Validate Query Parameters ---
-    offset_str = request.args.get("offset", "0")  # 0 is default
-    limit_str = request.args.get("limit", "20")  # 20 is default
-    try:
-        offset = int(offset_str)
-        limit = int(limit_str)
-    except ValueError:
-        return (
-            jsonify(
-                {"error": "Query parameters 'limit' and 'offset' must be integers."}
-            ),
-            400,
-        )  # pylint: disable=line-too-long
+    # --- 1. Use reusable validator helper and Validate Query Parameters ---
+    allowed_sort_fields = ['surname', 'forenames']
+    params, error = parse_and_validate_list_params(
+        request.args,
+        allowed_sort_fields,
+        default_sort_field='surname'
+    )
 
-    # Validate MAX_OFFSET
-    # get the MAX_OFFSET value from env and check
-    max_offset = current_app.config["MAX_OFFSET"]
+    if error:
+        return jsonify({"error": error['message']}), error['status']
 
-    if offset < 0 or offset > max_offset:
-        return (
-            jsonify(
-                {
-                    "error": f"Offset has to be a positive number no greater than {max_offset}."
-                }
-            ),
-            400,
-        )
-    # Validate MAX_LIMIT
-    max_limit = current_app.config["MAX_LIMIT"]
+    # IMPORTANT: The validator uses 'surname', but the DB query needs 'userDetails.surname'
+    # here .pop() renames the field, not keep both.
+    if 'surname' in params['sort_criteria']:
+        params['sort_criteria']['userDetails.surname'] = params['sort_criteria'].pop('surname')
 
-    if limit < 0 or limit > max_limit:
-        return (
-            jsonify(
-                {
-                    "error": f"Limit has to be a positive number no greater than {max_limit}."
-                }
-            ),
-            400,
-        )
+    if 'forenames' in params['sort_criteria']:
+        params['sort_criteria']['userDetails.forenames'] = params['sort_criteria'].pop('forenames')
 
     # Validate the book_id format
     try:
@@ -142,7 +122,12 @@ def get_reservations_for_book_id(book_id_str):
 
     # Use service helper functions
     total_count = count_reservations_for_book(oid)
-    raw_reservations = fetch_reservations_for_book(oid, offset=offset, limit=limit)
+    raw_reservations = fetch_reservations_for_book(
+        oid,
+        offset=params['offset'],
+        limit=params['limit'],
+        sort_criteria=params['sort_criteria']
+    )
 
     # Format Response
     items = []
