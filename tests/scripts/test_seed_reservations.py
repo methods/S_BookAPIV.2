@@ -420,20 +420,16 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
         mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
 
     # 2. Patch the one dependency we want to fail: `load_reservations_json`.
-    #    We don't need to patch the get_*_collection helpers because our
-    #    test_app fixture and mongo_setup handle the database state.
-    with patch(
-        "scripts.seed_reservations.load_reservations_json", return_value=None
-    ) as mock_load_json:
-        # ACT
-        with test_app.app_context():
-            success, message = run_reservation_population()
+    #    Use patch.object for better robustness in CI environments.
+        with patch.object(load_reservations_module, "load_reservations_json", return_value=None) as mock_load_json:
+            # ACT
+            with test_app.app_context():
+                success, message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     # 3. Check that the function correctly reported the failure.
     assert success is False
     assert message == "Failed to load reservation data."
-
     # 4. Verify that the function did attempt to load the JSON.
     mock_load_json.assert_called_once()
 
