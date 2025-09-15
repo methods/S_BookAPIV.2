@@ -477,7 +477,7 @@ def test_get_reservations_returns_sorted_results(
         # Surnames are C, B, A (not sorted)
         user_c = mongo.db.users.insert_one(
             {"email": "c@test.com", "surname": "Carlson"}
-        ).inserted_id  # pylint: disable=line-too-long
+        ).inserted_id
         user_b = mongo.db.users.insert_one(
             {"email": "b@test.com", "surname": "Brown"}
         ).inserted_id
