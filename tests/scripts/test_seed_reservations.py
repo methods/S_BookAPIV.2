@@ -13,7 +13,7 @@ from app.datastore.mongo_db import (get_book_collection,
                                     get_users_collection)
 from app.extensions import mongo
 from scripts import seed_reservations as load_reservations_module
-# from scripts.seed_reservations import (load_reservations_json, run_reservation_population)
+
 
 
 def test_load_reservations_json_success():
@@ -415,8 +415,12 @@ def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
     # 1. Seed the database with the prerequisites (books and users)
     #    so the function can get past the initial checks.
     with test_app.app_context():
-        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
-        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
+        # Use the helpers to get the collections your app is configured to use
+        books = get_book_collection()
+        users = get_users_collection()
+
+        books.insert_one({"_id": ObjectId(), "title": "A Book"})
+        users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
 
     # 2. Patch the one dependency we want to fail: `load_reservations_json`.
     #    Use patch.object for better robustness in CI environments.
