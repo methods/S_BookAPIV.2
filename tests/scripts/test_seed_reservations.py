@@ -13,31 +13,7 @@ from app.datastore.mongo_db import (get_book_collection,
                                     get_users_collection)
 from app.extensions import mongo
 from scripts import seed_reservations as load_reservations_module
-from scripts.seed_reservations import (load_reservations_json, run_reservation_population)
-
-
-def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
-    """
-    GIVEN the JSON file cannot be loaded
-    WHEN run_reservation_population is called
-    THEN it should return a failure tuple and not attempt to process reservations.
-    """
-    # ARRANGE
-    _ = mongo_setup
-
-    # 1. Seed the database with prerequisites.
-    with test_app.app_context():
-        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
-        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
-
-        # Replace the name in the function's globals so the function actually calls the stub.
-        stub = MagicMock(return_value=None)
-        with patch.dict(run_reservation_population.__globals__, {"load_reservations_json": stub}):
-            success, message = run_reservation_population()
-
-            assert success is False
-            assert message == "Failed to load reservation data."
-            stub.assert_called_once()
+# from scripts.seed_reservations import (load_reservations_json, run_reservation_population)
 
 
 def test_load_reservations_json_success():
@@ -66,7 +42,7 @@ def test_load_reservations_json_success():
     with patch("builtins.open", mocked_file):
 
         # Act
-        reservations = load_reservations_json()
+        reservations = load_reservations_module.load_reservations_json()
         # Assert
         assert isinstance(reservations, list)
         assert len(reservations) == 2
@@ -86,7 +62,7 @@ def test_load_reservation_file_not_found(capsys):
     THEN the function should return None and print a 'file not found' error message to stderr.
     """
     with patch("builtins.open", side_effect=FileNotFoundError()):
-        result = load_reservations_json()
+        result = load_reservations_module.load_reservations_json()
 
         assert result is None
         captured = capsys.readouterr()
@@ -104,7 +80,7 @@ def test_load_reservations_json_decode_error(capsys):
     m = mock_open(read_data=bad_json)
     # patch builtins.open so json.load() raises JSONDecodeError inside function
     with patch("builtins.open", m):
-        result = load_reservations_json()
+        result = load_reservations_module.load_reservations_json()
 
     assert result is None
     captured = capsys.readouterr()
@@ -132,7 +108,7 @@ def test_load_reservations_integration_reads_file(tmp_path, monkeypatch):
     monkeypatch.setattr(load_reservations_module, "__file__", str(fake_module_file))
 
     # Call the function — it should read the created file
-    result = load_reservations_json()
+    result = load_reservations_module.load_reservations_json()
     assert result == sample_data
 
 
@@ -170,7 +146,7 @@ def test_returns_404_if_any_collection_is_missing(
 
     # ACT
     with test_app.app_context():
-        response, status_code = run_reservation_population()
+        response, status_code = load_reservations_module.run_reservation_population()
 
     # ASSERT: The expected outcome is the same for all parametrized cases
     assert status_code == 404
@@ -286,7 +262,7 @@ def test_run_population_logic_with_controlled_inputs(test_app, mongo_setup):
         ):
 
             # 3. Act: Run the function under test
-            success, message = run_reservation_population()
+            success, message = load_reservations_module.run_reservation_population()
 
     # 4. Assert: Check against a predictable, stable result
     assert success is True
@@ -318,7 +294,7 @@ def test_returns_warning_when_no_books_are_found(test_app):
         with test_app.app_context():
             # In Flask, non-jsonify responses don't get split into (response, status)
             # So we just capture the single return value.
-            result = run_reservation_population()
+            result = load_reservations_module.run_reservation_population()
 
     # ASSERT
     expected_warning = (
@@ -355,7 +331,7 @@ def test_returns_error_on_pymongo_error(test_app):
 
         # ACT
         with test_app.app_context():
-            result = run_reservation_population()
+            result = load_reservations_module.run_reservation_population()
 
     # ASSERT
     assert result == (
@@ -416,7 +392,7 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
 
         # ACT
         with test_app.app_context():
-            success, message = run_reservation_population()
+            success, message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     # Check that we made it to the end of the function successfully
@@ -427,34 +403,34 @@ def test_creates_book_id_map_and_proceeds_on_happy_path(test_app):
     mock_books_collection.find.assert_called_once_with({}, {"_id": 1, "title": 1})
 
 
-# def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
-#     """
-#     GIVEN the JSON file cannot be loaded
-#     WHEN run_reservation_population is called
-#     THEN it should return a failure tuple and not attempt to process reservations.
-#     """
-#     # ARRANGE
-#     _ = mongo_setup
+def test_returns_error_if_reservation_json_fails_to_load(test_app, mongo_setup):
+    """
+    GIVEN the JSON file cannot be loaded
+    WHEN run_reservation_population is called
+    THEN it should return a failure tuple and not attempt to process reservations.
+    """
+    # ARRANGE
+    _ = mongo_setup
 
-#     # 1. Seed the database with the prerequisites (books and users)
-#     #    so the function can get past the initial checks.
-#     with test_app.app_context():
-#         mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
-#         mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
+    # 1. Seed the database with the prerequisites (books and users)
+    #    so the function can get past the initial checks.
+    with test_app.app_context():
+        mongo.db.books.insert_one({"_id": ObjectId(), "title": "A Book"})
+        mongo.db.users.insert_one({"_id": ObjectId(), "email": "a@b.com"})
 
-#     # 2. Patch the one dependency we want to fail: `load_reservations_json`.
-#     #    Use patch.object for better robustness in CI environments.
-#         with patch.object(load_reservations_module, "load_reservations_json", return_value=None) as mock_load_json:
-#             # ACT
-#             with test_app.app_context():
-#                 success, message = load_reservations_module.run_reservation_population()
+    # 2. Patch the one dependency we want to fail: `load_reservations_json`.
+    #    Use patch.object for better robustness in CI environments.
+        with patch.object(load_reservations_module, "load_reservations_json", return_value=None) as mock_load_json:
+            # ACT
+            with test_app.app_context():
+                success, message = load_reservations_module.run_reservation_population()
 
-#     # ASSERT
-#     # 3. Check that the function correctly reported the failure.
-#     assert success is False
-#     assert message == "Failed to load reservation data."
-#     # 4. Verify that the function did attempt to load the JSON.
-#     mock_load_json.assert_called_once()
+    # ASSERT
+    # 3. Check that the function correctly reported the failure.
+    assert success is False
+    assert message == "Failed to load reservation data."
+    # 4. Verify that the function did attempt to load the JSON.
+    mock_load_json.assert_called_once()
 
 
 
@@ -500,7 +476,7 @@ def test_proceeds_when_reservation_json_loads_successfully(test_app):
         ):
             # ACT
             with test_app.app_context():
-                success, _message = run_reservation_population()
+                success, _message = load_reservations_module.run_reservation_population()
 
         # ASSERT
         # 4. Check that the function reported success.
@@ -566,7 +542,7 @@ def test_skips_reservation_if_book_title_not_found(test_app, capsys):
         ):
             # ACT
             with test_app.app_context():
-                success, _message = run_reservation_population()
+                success, _message = load_reservations_module.run_reservation_population()
 
         # ASSERT
         assert success is True
@@ -625,7 +601,7 @@ def test_proceeds_if_book_title_is_found(test_app, capsys):
 
         # ACT
         with test_app.app_context():
-            success, _message = run_reservation_population()
+            success, _message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     assert success is True
@@ -696,7 +672,7 @@ def test_creates_new_reservation_if_not_exists(test_app):
 
         # ACT
         with test_app.app_context():
-            success, message = run_reservation_population()
+            success, message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     assert success is True
@@ -781,7 +757,7 @@ def test_updates_existing_reservation_if_found(test_app):
 
         # ACT
         with test_app.app_context():
-            success, message = run_reservation_population()
+            success, message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     assert success is True
@@ -850,7 +826,7 @@ def test_returns_error_on_reservation_upsert_failure(test_app):
 
         # ACT
         with test_app.app_context():
-            success, message = run_reservation_population()
+            success, message = load_reservations_module.run_reservation_population()
 
     # ASSERT
     assert success is False
